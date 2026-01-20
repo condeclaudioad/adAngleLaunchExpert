@@ -29,7 +29,7 @@ export const ApiSetup: React.FC = () => {
         try {
             const ai = new GoogleGenAI({ apiKey: googleKeyInput.trim() });
             const response = await ai.models.generateContent({
-                model: 'gemini-1.5-flash',
+                model: 'gemini-2.0-flash',
                 contents: 'Responde solo con la palabra: OK',
             });
 
