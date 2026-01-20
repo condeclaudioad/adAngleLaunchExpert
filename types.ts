@@ -1,22 +1,23 @@
+// types.ts - VERSIÓN COMPLETA CORREGIDA
 
 export interface StructuredContext {
   productName: string;
   avatar: string;
-  mechanismOfProblem: string; 
+  mechanismOfProblem: string;
   uniqueMechanism: string;
   bigPromise: string;
 }
 
 export interface KnowledgeBase {
-  generalContext: string; 
+  generalContext: string;
   structuredAnalysis?: StructuredContext;
-  validatedAngles: string; 
+  validatedAngles: string;
 }
 
 export interface Branding {
   logo: string | null;
   personalPhoto: string | null;
-  productMockup: string | null; // NEW FIELD
+  productMockup: string | null;
   includeFace: boolean;
   colors: {
     primary: string;
@@ -30,7 +31,7 @@ export interface Business {
   createdAt: number;
   knowledgeBase: KnowledgeBase;
   branding: Branding;
-  ownerEmail?: string; 
+  ownerEmail?: string;
 }
 
 export interface ImageAnalysis {
@@ -54,18 +55,83 @@ export interface Angle {
 
 export type ApprovalStatus = 'waiting' | 'approved' | 'rejected';
 
+// ═══════════════════════════════════════════════════════════
+// TIPOS PARA GENERACIÓN DE IMÁGENES (GEMINI + GROK)
+// ═══════════════════════════════════════════════════════════
+
+export type ImageProvider = 'gemini' | 'grok' | 'fal';
+
 export interface GeneratedImage {
   id: string;
   angleId: string;
-  url: string; 
+  url: string;
   prompt: string;
-  type: 'main' | 'variation';
+  type: 'master' | 'variation';  // CAMBIADO: 'main' -> 'master'
   parentId?: string;
   status: 'pending' | 'generating' | 'completed' | 'failed';
   approvalStatus?: ApprovalStatus;
   feedback?: string;
   modelUsed?: string;
+  provider?: ImageProvider;  // NUEVO
+  variationIndex?: number;   // NUEVO: 1-9 para variaciones
+  variationCategory?: 'safe' | 'medium' | 'aggressive'; // NUEVO
 }
+
+// ═══════════════════════════════════════════════════════════
+// TIPOS PARA GROK PIPELINE
+// ═══════════════════════════════════════════════════════════
+
+export interface MasterCreative {
+  masterId: string;
+  masterImage: string; // URL o base64
+  angleId: string;
+  brandLockedElements: string[];
+  variationRules: {
+    allowedChanges: string[];
+    forbiddenChanges: string[];
+  };
+  variations: GrokVariation[];
+}
+
+export interface GrokVariation {
+  variationId: string;
+  prompt: string;
+  negativePrompt: string;
+  category: 'safe' | 'medium' | 'aggressive';
+  status: 'pending' | 'generating' | 'completed' | 'failed';
+  resultUrl?: string;
+}
+
+export interface GrokBatchRequest {
+  masters: MasterCreative[];
+  aspectRatio: string;
+  totalExpected: number;
+}
+
+// ═══════════════════════════════════════════════════════════
+// TIPOS PARA SUPABASE AUTH
+// ═══════════════════════════════════════════════════════════
+
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  picture: string;
+  isVip: boolean;
+  createdAt: string;
+}
+
+export interface VipUser {
+  id: string;
+  email: string;
+  added_by: string;
+  added_at: string;
+  is_active: boolean;
+}
+
+// ═══════════════════════════════════════════════════════════
+// APP STEPS (CORREGIDO - SIN DECIMALES)
+// ═══════════════════════════════════════════════════════════
 
 export enum AppStep {
   LOGIN = -3,
@@ -77,18 +143,23 @@ export enum AppStep {
   ANALYSIS = 3,
   ANGLES = 4,
   GENERATION = 5,
-  EXPORT = 6,
+  VARIATIONS = 6,  // NUEVO STEP
+  EXPORT = 7,
 }
 
 export interface GenModel {
   id: string;
   name: string;
-  provider: string;
+  provider: ImageProvider;
   description: string;
 }
 
-export interface User {
-    email: string;
-    name: string;
-    picture: string;
+// ═══════════════════════════════════════════════════════════
+// API KEYS CONFIG
+// ═══════════════════════════════════════════════════════════
+
+export interface ApiKeys {
+  google: string;
+  grok: string;
+  fal?: string;
 }

@@ -1,7 +1,7 @@
+// services/storageService.ts - CORREGIDO CON TIPOS
 
 import { GeneratedImage, Business } from '../types';
 
-// Simple Wrapper for IndexedDB
 const DB_NAME = 'AdAngleDB';
 const DB_VERSION = 2;
 const STORE_IMAGES = 'images';
@@ -9,61 +9,73 @@ const STORE_BUSINESSES = 'businesses';
 
 const openDB = (): Promise<IDBDatabase> => {
   return new Promise((resolve, reject) => {
-    // Check for private mode / quota issues upfront
     try {
-        const request = indexedDB.open(DB_NAME, DB_VERSION);
+      const request = indexedDB.open(DB_NAME, DB_VERSION);
 
-        request.onupgradeneeded = (event) => {
-          const db = (event.target as IDBOpenDBRequest).result;
-          if (!db.objectStoreNames.contains(STORE_IMAGES)) {
-            db.createObjectStore(STORE_IMAGES, { keyPath: 'id' });
-          }
-          if (!db.objectStoreNames.contains(STORE_BUSINESSES)) {
-            db.createObjectStore(STORE_BUSINESSES, { keyPath: 'id' });
-          }
-        };
+      request.onupgradeneeded = (event) => {
+        const db = (event.target as IDBOpenDBRequest).result;
+        if (!db.objectStoreNames.contains(STORE_IMAGES)) {
+          db.createObjectStore(STORE_IMAGES, { keyPath: 'id' });
+        }
+        if (!db.objectStoreNames.contains(STORE_BUSINESSES)) {
+          db.createObjectStore(STORE_BUSINESSES, { keyPath: 'id' });
+        }
+      };
 
-        request.onsuccess = () => resolve(request.result);
-        request.onerror = () => reject(new Error(`IndexedDB Error: ${request.error?.message}`));
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(new Error(`IndexedDB Error: ${request.error?.message}`));
     } catch (e) {
-        reject(new Error("IndexedDB not supported or private mode enabled."));
+      reject(new Error("IndexedDB not supported or private mode enabled."));
     }
   });
 };
 
-// Generic DB Operation Wrapper
-const performDBOp = async <T>(mode: IDBTransactionMode, storeName: string, op: (store: IDBObjectStore) => IDBRequest): Promise<T> => {
-    try {
-        const db = await openDB();
-        return new Promise((resolve, reject) => {
-            const tx = db.transaction(storeName, mode);
-            const store = tx.objectStore(storeName);
-            const request = op(store);
+const performDBOp = async <T>(
+  mode: IDBTransactionMode,
+  storeName: string,
+  op: (store: IDBObjectStore) => IDBRequest
+): Promise<T> => {
+  try {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(storeName, mode);
+      const store = tx.objectStore(storeName);
+      const request = op(store);
 
-            request.onsuccess = () => resolve(request.result);
-            request.onerror = () => reject(new Error(`DB Op Failed: ${request.error?.message}`));
-            
-            tx.onabort = () => reject(new Error("Transaction Aborted"));
-            tx.onerror = () => reject(new Error(`Transaction Failed: ${tx.error?.message}`));
-        });
-    } catch (e: any) {
-        console.error("Storage Error", e);
-        if (e.message?.includes('Quota') || e.name === 'QuotaExceededError') {
-             throw new Error("Storage quota exceeded. Please delete some images.");
-        }
-        throw e;
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(new Error(`DB Op Failed: ${request.error?.message}`));
+
+      tx.onabort = () => reject(new Error("Transaction Aborted"));
+      tx.onerror = () => reject(new Error(`Transaction Failed: ${tx.error?.message}`));
+    });
+  } catch (e: any) {
+    console.error("Storage Error", e);
+    if (e.message?.includes('Quota') || e.name === 'QuotaExceededError') {
+      throw new Error("Storage quota exceeded. Please delete some images.");
     }
+    throw e;
+  }
 };
 
-// --- IMAGES ---
-export const saveImageToDB = (image: GeneratedImage) => performDBOp('readwrite', STORE_IMAGES, (s) => s.put(image));
-export const getAllImagesFromDB = () => performDBOp<GeneratedImage[]>('readonly', STORE_IMAGES, (s) => s.getAll());
-export const deleteImageFromDB = (id: string) => performDBOp('readwrite', STORE_IMAGES, (s) => s.delete(id));
+// IMAGES - CON TIPOS CORRECTOS
+export const saveImageToDB = (image: GeneratedImage) =>
+  performDBOp<IDBValidKey>('readwrite', STORE_IMAGES, (s) => s.put(image));
 
-// --- BUSINESSES ---
-export const saveBusinessToDB = (business: Business) => performDBOp('readwrite', STORE_BUSINESSES, (s) => s.put(business));
-export const getAllBusinessesFromDB = () => performDBOp<Business[]>('readonly', STORE_BUSINESSES, (s) => s.getAll());
-export const deleteBusinessFromDB = (id: string) => performDBOp('readwrite', STORE_BUSINESSES, (s) => s.delete(id));
+export const getAllImagesFromDB = () =>
+  performDBOp<GeneratedImage[]>('readonly', STORE_IMAGES, (s) => s.getAll());
+
+export const deleteImageFromDB = (id: string) =>
+  performDBOp<undefined>('readwrite', STORE_IMAGES, (s) => s.delete(id));
+
+// BUSINESSES - CON TIPOS CORRECTOS
+export const saveBusinessToDB = (business: Business) =>
+  performDBOp<IDBValidKey>('readwrite', STORE_BUSINESSES, (s) => s.put(business));
+
+export const getAllBusinessesFromDB = () =>
+  performDBOp<Business[]>('readonly', STORE_BUSINESSES, (s) => s.getAll());
+
+export const deleteBusinessFromDB = (id: string) =>
+  performDBOp<undefined>('readwrite', STORE_BUSINESSES, (s) => s.delete(id));
 
 export const clearDB = async () => {
   const db = await openDB();
@@ -71,6 +83,6 @@ export const clearDB = async () => {
   tx.objectStore(STORE_IMAGES).clear();
   tx.objectStore(STORE_BUSINESSES).clear();
   return new Promise<void>((resolve) => {
-      tx.oncomplete = () => resolve();
+    tx.oncomplete = () => resolve();
   });
 };
