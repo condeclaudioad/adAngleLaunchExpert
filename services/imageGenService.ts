@@ -279,19 +279,15 @@ export const generateImageService = async (
 
     // PROCEED TO GENERATION
 
-    // 1. IF VARIATION -> USE GROK (User Request)
-    if (variationType && keys.grok) {
-        console.log("🎨 Using GROK for Variation");
-        // For variations, we need a reference image preferably. 
-        // If this is a variation of a Master, we would pass the master image.
-        // But here we are generating from scratch + variation logic.
-        // We will generate a base text prompt and ask Grok.
-
-        // Note: Grok generates better from scratch too if prompt is good.
-        return generateGrokImage(finalPrompt, keys.grok);
+    // 1. VARIATION LOGIC -> FALLBACK TO GEMINI (Grok API is currently broken/unavailable publically)
+    if (variationType) {
+        console.log("🎨 Variation requested. Fallback to GEMINI (Imagen 3) as Grok API is unavailable.");
+        // We append the variation type to the prompt, which buildMasterPrompt already handles.
+        // We use the same Gemini service.
+        return await generateWithGemini(finalPrompt, keys.google, aspectRatio, references);
     }
 
-    // 2. IF MASTER -> USE GEMINI (Imagen 3)
+    // 2. MASTER -> USE GEMINI (Imagen 3)
     if (keys.google) {
         console.log("🎨 Using GEMINI (Imagen 3) for Master");
         return await generateWithGemini(finalPrompt, keys.google, aspectRatio, references);

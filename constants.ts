@@ -15,7 +15,7 @@ export const MODEL_TEXT = 'gemini-2.0-flash';
 // export const MODEL_IMAGE_GEMINI = 'imagen-3.0-generate-001'; 
 export const MODEL_IMAGE_GEMINI = 'gemini-3-pro-image-preview'; // Validated: Nano Banana Pro
 
-// Grok para variaciones (xAI) - NUEVO
+// Grok para variaciones (xAI) - CURRENTLY DISABLED (API Unavailable) -> Fallback to Gemini
 export const MODEL_IMAGE_GROK = 'grok-2-image';
 
 // FAL Model (Backup/Legacy)
