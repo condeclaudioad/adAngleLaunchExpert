@@ -7,7 +7,7 @@ import {
   getVisualAnalyses, getExistingAngles,
   deleteAnalysisFromDb, deleteAngleFromDb
 } from '../services/dbService';
-import { onAuthStateChange, checkIsVip, signOut } from '../services/supabaseClient';
+import { onAuthStateChange, checkIsVip, signOut, signInWithEmail } from '../services/supabaseClient';
 import { VIP_EMAILS } from '../constants';
 import { AppError, errorHandler } from '../services/errorHandler';
 
@@ -20,7 +20,7 @@ interface AdContextType {
   setStep: (step: AppStep) => void;
 
   user: User | null;
-  login: (credentialOrEmail: string) => boolean;
+  login: (email: string, password: string) => Promise<void>;
   logout: () => void;
 
   // API Key Management (User Provided)
@@ -257,11 +257,9 @@ export const AdProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     };
   }, []);
 
-  // Legacy Login wrapper (kept for compatibility with Auth.tsx calling login() manually)
-  const login = (email: string): boolean => {
-    // With Supabase, we rely on the session state change. 
-    // This simple function just returns true to satisfy interface.
-    return true;
+  // Supabase implementation
+  const login = async (email: string, password: string): Promise<void> => {
+    await signInWithEmail(email, password);
   };
 
   const logout = async () => {
