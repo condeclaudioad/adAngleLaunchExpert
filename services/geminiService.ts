@@ -4,6 +4,7 @@ import mammoth from "mammoth";
 import { Angle, KnowledgeBase, ImageAnalysis, StructuredContext } from "../types";
 import { MODEL_ANALYSIS, MODEL_TEXT, SYSTEM_PROMPT } from "../constants";
 import { withRetry } from "./retryService";
+import { saveAnalysisToDb, saveAngleToDb, getExistingAngles } from "./dbService";
 
 // Helper to get the key from storage or env
 const getAuthKey = () => {
@@ -182,7 +183,12 @@ export const analyzeImage = async (base64Image: string, mimeType: string): Promi
             });
         })();
 
-        return Promise.race([genPromise, timeoutPromise]);
+        const result = await Promise.race([genPromise, timeoutPromise]);
+
+        // Save to DB asynchronously (fire and forget)
+        saveAnalysisToDb(result).catch(err => console.error("Failed to save analysis background:", err));
+
+        return result;
     }, { maxRetries: 4, baseDelay: 3000 });
 };
 
@@ -195,11 +201,21 @@ export const generateAngles = async (
 
     const rawContextSnippet = kb.generalContext ? kb.generalContext.slice(0, 50000) : "Contexto genérico de marketing.";
 
+    // 1. Fetch DB History
+    const dbAngles = await getExistingAngles();
+
+    // 2. Combine with session angles (deduplicate by Hook)
+    const combinedHistory = [...(existingAngles || []), ...dbAngles];
+    const uniqueHistory = new Map();
+    combinedHistory.forEach(a => {
+        if (a && a.hook) uniqueHistory.set(a.hook.toLowerCase().trim(), a);
+    });
+    const finalHistory = Array.from(uniqueHistory.values());
+
     let historyInstruction = "";
-    if (existingAngles && existingAngles.length > 0) {
+    if (finalHistory.length > 0) {
         // Safety check: ensure existingAngles elements are valid
-        const validAngles = existingAngles.filter(a => a && a.name && a.hook);
-        const historyList = validAngles.slice(-20).map(a => `- ${a.name}: "${a.hook}"`).join('\n');
+        const historyList = finalHistory.slice(-50).map((a: any) => `- ${a.name}: "${a.hook}"`).join('\n');
 
         historyInstruction = `
       IMPORTANT - HISTORY AWARENESS:
@@ -269,11 +285,20 @@ export const generateAngles = async (
             // so the UI knows something went wrong instead of failing silently with [].
             const parsed = safeJSONParse(response.text, null);
 
-            return parsed.map((a: any, index: number) => ({
+            if (!parsed) return []; // Handle null fallback
+
+            const newAngles = parsed.map((a: any, index: number) => ({
                 ...a,
-                id: `angle-${Date.now()}-${index}`,
+                id: `angle-${Date.now()}-${index}`, // temporary ID until saved? Or just keep this.
                 selected: true
             }));
+
+            // Save NEW angles to DB
+            newAngles.forEach((angle: Angle) => {
+                saveAngleToDb(angle).catch(e => console.error("Background save angle failed", e));
+            });
+
+            return newAngles;
         })();
 
         return Promise.race([genPromise, timeoutPromise]);

@@ -366,7 +366,9 @@ export const ImageFactory: React.FC = () => {
             {/* List of Creative Sets (Angle -> Master -> Variations) */}
             <div className="space-y-12">
                 {angles.filter(a => a.selected).map(angle => (
-                    <MasterSection key={angle.id} angle={angle} />
+                    <div key={angle.id}>
+                        <MasterSection angle={angle} />
+                    </div>
                 ))}
                 {angles.filter(a => a.selected).length === 0 && (
                     <div className="text-center py-20 text-textMuted">No hay ángulos seleccionados. Ve a "Ángulos" y selecciona algunos.</div>
