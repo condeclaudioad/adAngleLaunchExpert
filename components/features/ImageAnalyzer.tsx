@@ -14,10 +14,45 @@ export const ImageAnalyzer: React.FC = () => {
   const readFileAsBase64 = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onload = () => {
-        const result = reader.result as string;
-        const base64 = result.split(',')[1];
-        resolve(base64);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          // Resize image to max 1024px to prevent memory crashes and optimize API usage
+          const MAX_SIZE = 1024;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > MAX_SIZE) {
+              height *= MAX_SIZE / width;
+              width = MAX_SIZE;
+            }
+          } else {
+            if (height > MAX_SIZE) {
+              width *= MAX_SIZE / height;
+              height = MAX_SIZE;
+            }
+          }
+
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+
+          if (!ctx) {
+            reject(new Error("Could not get canvas context"));
+            return;
+          }
+
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // Compress to JPEG 0.8 quality
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+          const base64 = dataUrl.split(',')[1];
+          resolve(base64);
+        };
+        img.onerror = () => reject(new Error("Failed to load image"));
+        img.src = event.target?.result as string;
       };
       reader.onerror = reject;
       reader.readAsDataURL(file);
@@ -37,9 +72,15 @@ export const ImageAnalyzer: React.FC = () => {
       try {
         console.log(`Processing file: ${file.name}`);
         const base64Data = await readFileAsBase64(file);
-        const result = await analyzeImage(base64Data, file.type);
-        console.log(`Success processing ${file.name}`);
-        addImageAnalysis(result);
+        // Force jpeg mime type as our resizer converts everything to jpeg
+        const result = await analyzeImage(base64Data, 'image/jpeg');
+
+        if (result && result.angleDetected) {
+          console.log(`Success processing ${file.name}`);
+          addImageAnalysis(result);
+        } else {
+          console.warn(`Analysis returned incomplete data for ${file.name}`);
+        }
       } catch (err) {
         console.error(`Error analyzing ${file.name}:`, err);
         // Non-blocking error toast could be added here
