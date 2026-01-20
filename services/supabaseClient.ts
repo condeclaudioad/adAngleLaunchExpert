@@ -71,7 +71,16 @@ export const signOut = async (): Promise<void> => {
     if (error) throw error;
 };
 
-// ... (getCurrentUser remains same) ...
+export const getCurrentUser = async (): Promise<SupabaseUser | null> => {
+    const { data: { user } } = await getSupabase().auth.getUser();
+    return user;
+};
+
+export const onAuthStateChange = (callback: (user: SupabaseUser | null) => void) => {
+    return getSupabase().auth.onAuthStateChange((event, session) => {
+        callback(session?.user ?? null);
+    });
+};
 
 // ═══════════════════════════════════════════════════════════
 // VIP MANAGEMENT
@@ -89,8 +98,6 @@ export const checkIsVip = async (email: string): Promise<boolean> => {
     }
     return !!data;
 };
-
-// ... (getAllVipUsers, addVipUser remain same but ensure they use correct imports if needed) ...
 
 export const getAllVipUsers = async (): Promise<VipUser[]> => {
     const { data, error } = await getSupabase()
@@ -124,6 +131,8 @@ export const removeVipUser = async (email: string): Promise<void> => {
 
     if (error) throw error;
 };
+
+
 
 // ═══════════════════════════════════════════════════════════
 // USER PROFILE

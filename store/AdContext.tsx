@@ -5,6 +5,7 @@ import {
   saveImageToDB, getAllImagesFromDB, deleteImageFromDB, clearDB,
   saveBusinessToDB, getAllBusinessesFromDB, deleteBusinessFromDB
 } from '../services/storageService';
+import { onAuthStateChange, checkIsVip, signOut } from '../services/supabaseClient';
 import { VIP_EMAILS } from '../constants';
 import { AppError, errorHandler } from '../services/errorHandler';
 
@@ -194,55 +195,68 @@ export const AdProvider: React.FC<{ children: React.ReactNode }> = ({ children }
   const [generatedImages, setGeneratedImages] = useState<GeneratedImage[]>([]);
 
   // --- Auth Logic ---
-  const login = (credentialOrEmail: string): boolean => {
-    try {
-      console.log("Attempting login...");
+  // --- Auth Logic (Supabase Integration) ---
 
-      let email = "";
-      let name = "Usuario";
-      let picture = "";
+  useEffect(() => {
+    const { data: authListener } = onAuthStateChange(async (supabaseUser) => {
+      if (supabaseUser && supabaseUser.email) {
+        console.log("Supabase Auth Change: Logged In", supabaseUser.email);
 
-      // Check if it's a Google JWT (contains dots) or a plain email
-      if (credentialOrEmail.includes('.') && credentialOrEmail.length > 50) {
-        const payload = parseJwt(credentialOrEmail);
-        if (!payload || !payload.email) {
-          throw new Error("Token JWT inválido");
+        // 1. Check VIP Status again (Security Layer)
+        const isVip = await checkIsVip(supabaseUser.email);
+        if (!isVip) {
+          console.warn("User is not VIP. Signing out.");
+          await signOut();
+          setLastError({ code: 'AUTH-VIP', message: 'No tienes acceso VIP.', timestamp: Date.now() });
+          setUser(null);
+          setStep(AppStep.LOGIN);
+          return;
         }
-        email = payload.email.toLowerCase();
-        name = payload.name || "Usuario Google";
-        picture = payload.picture || "";
+
+        // 2. Construct App User
+        const newUser: User = {
+          id: supabaseUser.id,
+          email: supabaseUser.email,
+          name: supabaseUser.user_metadata?.name || supabaseUser.email.split('@')[0],
+          picture: supabaseUser.user_metadata?.picture || `https://ui-avatars.com/api/?name=${supabaseUser.email}`,
+          isVip: true,
+          createdAt: supabaseUser.created_at || new Date().toISOString()
+        };
+
+        setUser(newUser);
+
+        // 3. Load API Keys from Meta
+        const metaKeys = supabaseUser.user_metadata?.api_keys;
+        if (metaKeys) {
+          if (metaKeys.grok) setGrokApiKey(metaKeys.grok);
+          if (metaKeys.google) setGoogleApiKey(metaKeys.google);
+        }
+
+        // 4. Navigate (if on Login page)
+        if (step === AppStep.LOGIN) {
+          const hasKey = localStorage.getItem('le_api_key') || process.env.VITE_GOOGLE_CLIENT_ID || undefined;
+          // Note: Simplified logic. For MVP we send them to Business Dashboard if authorized.
+          setStep(AppStep.BUSINESS);
+        }
       } else {
-        // Direct Email Login (Bypass)
-        email = credentialOrEmail.trim().toLowerCase();
-        name = email.split('@')[0];
-        picture = `https://ui-avatars.com/api/?name=${name}&background=FF6B00&color=fff`;
+        console.log("Supabase Auth Change: Logged Out");
+        setUser(null);
+        if (step !== AppStep.LOGIN && step !== AppStep.ADMIN) {
+          setStep(AppStep.LOGIN);
+        }
       }
+    });
 
-      console.log("User email detected:", email);
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, []); // Run once on mount
 
-      // Whitelist Check
-      const allAllowed = [...VIP_EMAILS, ...customAllowedEmails].map(e => e.toLowerCase());
-
-      if (!allAllowed.includes(email)) {
-        const err = errorHandler.createError('AUTH-006');
-        setLastError(err);
-        return false;
-      }
-
-      const newUser: User = { email, name, picture };
-
-      setUser(newUser);
-      safeLocalStorageSet('le_user', newUser);
-
-      // Check API Key
-      const hasKey = localStorage.getItem('le_api_key') || process.env.API_KEY;
-      setStep(hasKey ? AppStep.BUSINESS : AppStep.API_SETUP);
-
-      return true;
-    } catch (e) {
-      reportError(e);
-      return false;
-    }
+  // Legacy Login wrapper (kept for compatibility with Auth.tsx calling login() manually)
+  const login = (email: string): boolean => {
+    // With Supabase, we rely on the session state change. 
+    // This simple function just returns true to satisfy interface.
+    return true;
   };
 
   const logout = () => {
@@ -497,6 +511,7 @@ export const AdProvider: React.FC<{ children: React.ReactNode }> = ({ children }
       step, setStep,
       user, login, logout,
       googleApiKey, setGoogleApiKey,
+      grokApiKey, setGrokApiKey,
       adminAddEmail, adminRemoveEmail, customAllowedEmails,
       businesses, currentBusiness, createNewBusiness, saveCurrentBusiness, updateBusinessPartial, selectBusiness, deleteBusiness,
       knowledgeBase, setKnowledgeBase,
