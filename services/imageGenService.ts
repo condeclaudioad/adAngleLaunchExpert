@@ -195,7 +195,7 @@ const buildMasterPrompt = (
     const secondaryColor = branding.colors.secondary;
     const productName = kb.structuredAnalysis?.productName || "Product";
 
-    const cleanHook = hook.replace(/"/g, '').replace(/\.$/, '').toUpperCase().substring(0, 45);
+    const cleanHook = hook.replace(/"/g, '').replace(/\.$/, '').toUpperCase().substring(0, 30); // Shorter hook
 
     let brandingInstructions = "";
     let refIndex = 1;
@@ -216,27 +216,36 @@ const buildMasterPrompt = (
     }
 
     return `
-Create a HYPER-REALISTIC, HIGH-END ADVERTISING IMAGE for Facebook/Instagram Ads.
+ROLE: World-Class Ad Designer specialized in "NanoBanana Pro" style (High-Converting Infographics).
+TASK: Create a scroll-stopping ad image for "${productName}".
+
 ${variationInstruction ? `VARIATION INSTRUCTION: ${variationInstruction}` : ''}
 
-## 1. TEXT RENDER INSTRUCTION (HIGHEST PRIORITY):
-- HEADLINE: "${cleanHook}"
-- The text must be visible, spelled PRECISELY as written above. 
-- Use a bold, modern, sans-serif font.
-- Ensure high contrast between text and background.
-- NO typos, NO gibberish. 
+## 1. STYLE: "NANOBANANA PRO" AESTHETIC
+- **Type**: Modern Infographic / High-End Product Photography Hybrid.
+- **Vibe**: Clean, Professional, Trustworthy, High-Tech.
+- **Lighting**: Bright, Even, Studio Lighting. No dark, moody shadows unless requested.
+- **Color**: Dominant ${primaryColor}, Accent ${secondaryColor}. Use high contrast for readability.
+- **Composition**: Central focus on the benefit/result. Clean negative space.
+- **Visuals**: Use 3D icons, floating elements, or split-screens to demonstrate value visually.
 
-## 2. VISUAL CONCEPT:
+## 2. TEXT RULES (CRITICAL):
+- **HEADLINE**: "${cleanHook}"
+- **Render text EXACTLY as written above.** Spelling mistakes are unacceptable.
+- **MAXIMUM TEXT**: Use NO OTHER TEXT. Only the headline.
+- **Font**: Bold, Sans-Serif, Modern (like Helvetica, Inter, or Roboto).
+- **Placement**: Clear area, away from the product, fully legible.
+- **NO**: Paragraphs, clusters of text, or small labels. KEEP IT MINIMAL.
+
+## 3. PROMPT CONCEPT:
 ${angleVisuals}
 
-## 3. BRANDING ASSETS:
+## 4. BRANDING:
 ${brandingInstructions}
-- COLOR PALETTE: Dominant ${primaryColor}, Accent ${secondaryColor}
-- STYLE: Photorealistic 8k, Commercial Photography, Cinematic Lighting, Sharp Focus.
 
-RULES:
-- Aspect ratio: ${aspectRatio}
-- Product '${productName}' should look premium.
+## 5. TECHNICAL:
+- Aspect Ratio: ${aspectRatio}
+- Quality: 8k, Sharp Focus, No distortion.
 `;
 };
 
