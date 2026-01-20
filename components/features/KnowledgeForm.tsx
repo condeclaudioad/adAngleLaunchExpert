@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAdContext } from '../../store/AdContext';
 import { Button } from '../ui/Button';
@@ -7,6 +6,7 @@ import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 import { AppStep, StructuredContext } from '../../types';
 import { extractTextFromFile, refineContext } from '../../services/geminiService';
+import { UploadCloud, FileText, CheckCircle2, AlertCircle, Wand2, ArrowRight, BrainCircuit } from 'lucide-react';
 
 export const KnowledgeForm: React.FC = () => {
     const {
@@ -53,14 +53,24 @@ export const KnowledgeForm: React.FC = () => {
                 const text = await extractTextFromFile(base64Data, file.type);
 
                 if (text.trim()) {
-                    setFileStatus(prev => prev.map(s => s.includes(file.name) ? `✅ ${file.name}: Listo` : s));
+                    setFileStatus(prev => {
+                        const newStatus = [...prev];
+                        const index = newStatus.findIndex(s => s.includes(file.name));
+                        if (index !== -1) newStatus[index] = `✅ ${file.name}: Listo`;
+                        return newStatus;
+                    });
                     return `\n--- ARCHIVO: ${file.name} ---\n${text}\n`;
                 } else {
                     throw new Error("No text found");
                 }
             } catch (error) {
                 console.error(error);
-                setFileStatus(prev => prev.map(s => s.includes(file.name) ? `❌ Error: ${file.name}` : s));
+                setFileStatus(prev => {
+                    const newStatus = [...prev];
+                    const index = newStatus.findIndex(s => s.includes(file.name));
+                    if (index !== -1) newStatus[index] = `❌ Error: ${file.name}`;
+                    return newStatus;
+                });
                 return "";
             }
         });
@@ -68,13 +78,11 @@ export const KnowledgeForm: React.FC = () => {
         const results = await Promise.all(filePromises);
         newTextAccumulator = results.join("");
 
-        // IMMEDIATE STATE UPDATE - No Refinement Call
         const finalContext = (knowledgeBase.generalContext || "") + newTextAccumulator;
 
         setKnowledgeBase(prev => ({
             ...prev,
             generalContext: finalContext,
-            // Ensure structuredAnalysis exists so UI doesn't break, but keep it generic
             structuredAnalysis: prev.structuredAnalysis || {
                 productName: "Producto (Detectar Automáticamente)",
                 avatar: "Cliente Ideal (Detectar Automáticamente)",
@@ -114,7 +122,6 @@ export const KnowledgeForm: React.FC = () => {
     };
 
     const handleNext = async () => {
-        // Use generic name if not set
         const name = knowledgeBase.structuredAnalysis?.productName?.includes("Detectar")
             ? `Proyecto ${new Date().toLocaleDateString()}`
             : knowledgeBase.structuredAnalysis?.productName || "Nuevo Proyecto";
@@ -128,123 +135,162 @@ export const KnowledgeForm: React.FC = () => {
     };
 
     return (
-        <div className="max-w-5xl mx-auto space-y-8 animate-fade-in pb-20">
-            <div className="flex justify-between items-end">
+        <div className="max-w-6xl mx-auto space-y-8 animate-fade-in pb-20">
+            {/* Header */}
+            <div className="flex flex-col md:flex-row justify-between items-end gap-4 border-b border-border-default pb-6">
                 <div>
-                    <h2 className="text-3xl font-bold text-white">Base de Conocimiento (Modo Rápido ⚡)</h2>
-                    <p className="text-textMuted mt-2">
-                        Sube tus archivos. La IA los leerá y los usará directamente para crear ángulos.
+                    <Badge variant="accent" className="mb-2">Paso 1: Contexto</Badge>
+                    <h2 className="text-3xl font-bold text-white flex items-center gap-2">
+                        <BrainCircuit className="text-accent-primary" /> Base de Conocimiento
+                    </h2>
+                    <p className="text-text-secondary mt-2 max-w-2xl">
+                        Sube tus archivos para entrenar a la IA. Aceptamos PDF, TXT y CSV.
                     </p>
                 </div>
             </div>
 
-            <div className="grid md:grid-cols-3 gap-8">
+            <div className="grid md:grid-cols-12 gap-8">
                 {/* Left Column: Upload */}
-                <div className="md:col-span-1 space-y-4">
-                    <Card
-                        className={`border-dashed border-2 flex flex-col items-center justify-center text-center py-12 relative overflow-hidden transition-all
-                    ${isProcessing ? 'border-primary bg-primary/5' : 'border-borderColor hover:border-primary/50'}`}
-                    >
+                <div className="md:col-span-4 space-y-4">
+                    <Card className="h-64 border-dashed border-2 border-border-default hover:border-accent-primary/50 transition-colors bg-bg-elevated/50 group relative overflow-hidden cursor-pointer flex items-center justify-center">
                         <input
                             type="file"
                             multiple
-                            className="absolute inset-0 opacity-0 cursor-pointer disabled:cursor-wait"
+                            className="absolute inset-0 opacity-0 cursor-pointer z-10 disabled:cursor-not-allowed"
                             onChange={handleFiles}
                             disabled={isProcessing}
                             accept=".pdf,.txt,.md,.docx,.csv"
                         />
-
-                        <div className="w-12 h-12 bg-surfaceHighlight rounded-full flex items-center justify-center mb-4">
-                            {isProcessing ? (
-                                <svg className="animate-spin h-6 w-6 text-primary" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                            ) : (
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 text-textMuted">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
-                                </svg>
-                            )}
+                        <div className="flex flex-col items-center justify-center px-4 text-center">
+                            <div className="w-16 h-16 rounded-full bg-bg-tertiary group-hover:bg-accent-primary/10 flex items-center justify-center mb-4 transition-colors">
+                                {isProcessing ? (
+                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent-primary" />
+                                ) : (
+                                    <UploadCloud size={32} className="text-text-muted group-hover:text-accent-primary" />
+                                )}
+                            </div>
+                            <h3 className="font-bold text-lg text-white mb-1">Sube tus archivos</h3>
+                            <p className="text-sm text-text-muted">
+                                Arrastra o haz clic para explorar.
+                            </p>
                         </div>
-
-                        <h3 className="text-sm font-bold text-white mb-1">
-                            {isProcessing ? 'Leyendo...' : 'Subir Archivos'}
-                        </h3>
-                        <p className="text-xs text-textMuted px-4">
-                            PDFs, Textos, CSVs. Lectura inmediata.
-                        </p>
                     </Card>
 
-                    {/* Log */}
+                    {/* Status Log */}
                     {fileStatus.length > 0 && (
-                        <Card className="bg-black/50 !p-3 max-h-40 overflow-y-auto">
-                            <p className="text-xs font-bold text-textMuted mb-2 uppercase">Historial de Lectura</p>
-                            {fileStatus.map((s, i) => (
-                                <div key={i} className="text-[10px] font-mono text-textMuted border-b border-white/5 pb-1 mb-1 last:border-0">{s}</div>
-                            ))}
+                        <Card className="bg-black/40 border-border-subtle !p-0 overflow-hidden">
+                            <div className="p-3 border-b border-white/5 bg-white/5 flex items-center justify-between">
+                                <p className="text-xs font-bold text-text-muted uppercase flex items-center gap-2">
+                                    <FileText size={12} /> Log
+                                </p>
+                                <Badge size="sm" variant="outline">{fileStatus.length}</Badge>
+                            </div>
+                            <div className="p-3 max-h-40 overflow-y-auto space-y-2">
+                                {fileStatus.map((s, i) => (
+                                    <div key={i} className="flex items-center gap-2 text-xs text-text-secondary">
+                                        {s.includes('Listo')
+                                            ? <CheckCircle2 size={12} className="text-green-500 shrink-0" />
+                                            : s.includes('Leyendo')
+                                                ? <div className="w-3 h-3 rounded-full border-2 border-text-muted border-t-transparent animate-spin shrink-0" />
+                                                : <AlertCircle size={12} className="text-red-500 shrink-0" />
+                                        }
+                                        <span className="truncate">{s.replace(/✅|⏳|❌/, '').trim()}</span>
+                                    </div>
+                                ))}
+                            </div>
                         </Card>
                     )}
                 </div>
 
-                {/* Right Column: Form */}
-                <div className="md:col-span-2">
-                    {knowledgeBase.structuredAnalysis && (
+                {/* Right Column: Structured Data */}
+                <div className="md:col-span-8">
+                    {knowledgeBase.structuredAnalysis ? (
                         <Card className="space-y-6">
-                            <div className="flex justify-between items-center border-b border-white/5 pb-4">
+                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-border-default pb-4">
                                 <div className="flex items-center gap-2">
                                     <h3 className="font-bold text-lg text-white">
-                                        🧠 Estructura (Opcional)
+                                        Estructura de Ventas
                                     </h3>
-                                    <span className="text-[10px] bg-primary/20 text-primary px-2 py-0.5 rounded">
-                                        {knowledgeBase.generalContext.length > 0 ? `${Math.round(knowledgeBase.generalContext.length / 1024)} KB Contexto` : 'Vacío'}
+                                    <span className="text-[10px] bg-accent-primary/10 text-accent-primary px-2 py-0.5 rounded font-mono">
+                                        {knowledgeBase.generalContext.length > 0 ? `${(knowledgeBase.generalContext.length / 1024).toFixed(1)} KB` : '0 KB'}
                                     </span>
                                 </div>
 
-                                {/* Manual Trigger for Analysis */}
                                 <Button
                                     variant="secondary"
-                                    className="!py-1 !px-3 text-xs"
+                                    size="sm"
                                     onClick={manualRefine}
                                     disabled={isProcessing || !knowledgeBase.generalContext}
+                                    className="gap-2"
                                 >
-                                    {isProcessing ? 'Analizando...' : '⚡ Auto-completar con IA'}
+                                    {isProcessing ? (
+                                        <>
+                                            <div className="animate-spin h-3 w-3 border-b-2 border-current rounded-full" />
+                                            Analizando...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Wand2 size={14} /> Auto-completar con IA
+                                        </>
+                                    )}
                                 </Button>
                             </div>
 
-                            <p className="text-xs text-textMuted italic">
-                                Nota: Puedes dejar esto en blanco. La IA usará el contenido de tus archivos directamente para generar los ángulos.
-                            </p>
-
-                            <div className="space-y-6 opacity-80 hover:opacity-100 transition-opacity">
+                            <div className="space-y-5">
                                 <Input
                                     label="Producto / Servicio"
                                     value={knowledgeBase.structuredAnalysis.productName}
                                     onChange={(e) => updateField('productName', e.target.value)}
+                                    placeholder="Ej. Curso de Marketing..."
                                 />
-                                <div className="grid md:grid-cols-2 gap-4">
+                                <div className="grid md:grid-cols-2 gap-5">
                                     <TextArea
                                         label="Avatar (Cliente Ideal)"
                                         value={knowledgeBase.structuredAnalysis.avatar}
                                         onChange={(e) => updateField('avatar', e.target.value)}
-                                        className="h-24"
+                                        className="h-28"
+                                        placeholder="¿A quién le vendes?"
                                     />
                                     <TextArea
                                         label="Gran Promesa"
                                         value={knowledgeBase.structuredAnalysis.bigPromise}
                                         onChange={(e) => updateField('bigPromise', e.target.value)}
+                                        className="h-28"
+                                        placeholder="¿Qué resultado garantizas?"
+                                    />
+                                </div>
+                                <div className="grid md:grid-cols-2 gap-5">
+                                    <TextArea
+                                        label="Mecanismo (Problema)"
+                                        value={knowledgeBase.structuredAnalysis.mechanismOfProblem}
+                                        onChange={(e) => updateField('mechanismOfProblem', e.target.value)}
+                                        className="h-24"
+                                    />
+                                    <TextArea
+                                        label="Mecanismo (Solución)"
+                                        value={knowledgeBase.structuredAnalysis.uniqueMechanism}
+                                        onChange={(e) => updateField('uniqueMechanism', e.target.value)}
                                         className="h-24"
                                     />
                                 </div>
                             </div>
                         </Card>
+                    ) : (
+                        <div className="text-center py-20 text-text-muted">
+                            Sube un archivo para comenzar o espera a que se inicialice...
+                        </div>
                     )}
                 </div>
             </div>
 
-            <div className="flex justify-end pt-4">
+            <div className="flex justify-end pt-6 border-t border-border-default">
                 <Button
                     onClick={handleNext}
                     disabled={isProcessing}
-                    className="w-full md:w-auto shadow-glow"
+                    size="lg"
+                    className="shadow-glow-orange gap-2"
                 >
-                    Confirmar y Continuar &rarr;
+                    Confirmar y Continuar <ArrowRight size={18} />
                 </Button>
             </div>
         </div>

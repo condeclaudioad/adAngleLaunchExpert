@@ -8,8 +8,8 @@ import { generateImageService, editGeneratedImage } from '../../services/imageGe
 import { AppStep, GeneratedImage, Angle } from '../../types';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
+import { Download, Edit2, Check, X, Wand2, Play, AlertTriangle, ZoomIn, Loader2, Sparkles, Image as ImageIcon } from 'lucide-react';
 
-// Pre-defined variations to ensure diversity
 const VARIATION_TYPES = [
     "Close-up shot with intense emotion",
     "Wide angle shot showing environment",
@@ -32,11 +32,7 @@ export const ImageFactory: React.FC = () => {
     const [isProcessing, setIsProcessing] = useState(false);
     const [aspectRatio, setAspectRatio] = useState<string>("3:4");
     const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
-
-    // Custom Variation Count State
     const [variationCounts, setVariationCounts] = useState<Record<string, number>>({});
-
-    // Edit State
     const [isEditing, setIsEditing] = useState(false);
     const [imageToEdit, setImageToEdit] = useState<GeneratedImage | null>(null);
     const [editInstruction, setEditInstruction] = useState("");
@@ -49,7 +45,7 @@ export const ImageFactory: React.FC = () => {
         return () => { isMounted.current = false; stopSignal.current = true; };
     }, []);
 
-    // --- ZOMBIE KILLER / WATCHDOG ---
+    // Watchdog
     useEffect(() => {
         const watchdog = setInterval(() => {
             const now = Date.now();
@@ -71,21 +67,17 @@ export const ImageFactory: React.FC = () => {
                 setIsProcessing(false);
             }
         }, 5000);
-
         return () => clearInterval(watchdog);
     }, [generatedImages, updateImageStatus]);
 
-    // --- EXPORT SET LOGIC ---
     const handleExportSet = async (master: GeneratedImage) => {
         const variations = generatedImages.filter(img => img.parentId === master.id && img.status === 'completed');
         const setImages = [master, ...variations];
-
         if (setImages.length === 0) return;
 
         const zip = new JSZip();
         const folderName = `Set_${master.angleId.slice(-4)}`;
         const folder = zip.folder(folderName);
-
         if (!folder) return;
 
         // Add Master
@@ -103,7 +95,6 @@ export const ImageFactory: React.FC = () => {
         saveAs(content, `Creative_Set_${master.angleId}_${Date.now()}.zip`);
     };
 
-    // --- STOP LOGIC ---
     const handleStop = () => {
         stopSignal.current = true;
         setIsProcessing(false);
@@ -147,11 +138,7 @@ export const ImageFactory: React.FC = () => {
                     try {
                         const url = await generateImageService(
                             `GEMINI 3 PRO: VISUAL: ${angle.visuals}. HOOK: ${angle.hook}.`,
-                            aspectRatio,
-                            keys,
-                            branding,
-                            knowledgeBase,
-                            imageAnalysis
+                            aspectRatio, keys, branding, knowledgeBase, imageAnalysis
                         );
                         if (isMounted.current && !stopSignal.current) updateImageStatus(imgId, 'completed', url);
                     } catch (e: any) {
@@ -175,7 +162,7 @@ export const ImageFactory: React.FC = () => {
         const angle = angles.find(a => a.id === parentImg.angleId);
         if (!angle) return;
 
-        const limit = Math.min(Math.max(count, 2), 9); // Force between 2 and 9
+        const limit = Math.min(Math.max(count, 2), 9);
         const variationPrompts = VARIATION_TYPES.slice(0, limit);
 
         variationPrompts.forEach((variationPrompt, index) => {
@@ -204,7 +191,6 @@ export const ImageFactory: React.FC = () => {
         processQueue(tasks);
     };
 
-    // --- EDIT LOGIC (Simplified for brevity) ---
     const openEditModal = (e: React.MouseEvent, img: GeneratedImage) => {
         e.stopPropagation();
         setImageToEdit(img);
@@ -212,6 +198,7 @@ export const ImageFactory: React.FC = () => {
         setEditInstruction(`Corrige el texto a: "${cleanPrompt}"`);
         setIsEditing(true);
     };
+
     const submitEdit = async () => {
         if (!imageToEdit || !editInstruction.trim()) return;
         setIsProcessing(true);
@@ -226,38 +213,55 @@ export const ImageFactory: React.FC = () => {
         } catch (e) { console.error(e); } finally { setIsProcessing(false); }
     };
 
-    // --- COMPONENTS ---
     const ImageCard = ({ img, minimal = false }: { img: GeneratedImage, minimal?: boolean }) => {
         return (
-            <div className={`relative group flex flex-col rounded-xl overflow-hidden bg-surface border transition-all duration-300 ${img.approvalStatus === 'approved' ? 'border-green-500/50 shadow-[0_0_10px_rgba(34,197,94,0.1)]' : 'border-borderColor'} ${minimal ? 'w-full' : ''}`}>
-                <div className="relative aspect-[3/4] bg-black/50 overflow-hidden cursor-zoom-in" onClick={() => setSelectedImageId(img.id)}>
+            <div className={`relative group flex flex-col rounded-xl overflow-hidden bg-bg-tertiary border transition-all duration-300 ${img.approvalStatus === 'approved' ? 'border-green-500/50 ring-1 ring-green-500/20' : 'border-border-default hover:border-border-hover'} ${minimal ? 'w-full' : ''}`}>
+                <div className="relative aspect-[3/4] bg-bg-elevated overflow-hidden" onClick={() => setSelectedImageId(img.id)}>
                     {img.status === 'generating' ? (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-surfaceHighlight">
-                            <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
-                            <span className="text-[10px] text-primary mt-2">Generando...</span>
+                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-bg-tertiary animate-pulse">
+                            <Loader2 size={24} className="text-accent-primary animate-spin mb-2" />
+                            <span className="text-[10px] text-text-muted font-medium">Generando...</span>
                         </div>
                     ) : img.status === 'failed' ? (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-red-900/20 text-red-500 text-xs text-center p-2">
-                            Error
-                            <Button variant="danger" className="mt-2 !text-[10px] !py-0.5 !px-2" onClick={(e) => { e.stopPropagation(); deleteImage(img.id); }}>X</Button>
+                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-red-900/10 text-red-400 text-xs text-center p-2">
+                            <AlertTriangle size={24} className="mb-2" />
+                            <span className="mb-2">Error de Generación</span>
+                            <Button variant="danger" size="sm" className="!text-[10px] !py-0.5" onClick={(e) => { e.stopPropagation(); deleteImage(img.id); }}>
+                                Eliminar
+                            </Button>
                         </div>
                     ) : (
                         <>
-                            <img src={img.url} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" alt="Generado" />
+                            <img src={img.url} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 cursor-zoom-in" alt="Generado" />
                             <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button onClick={(e) => openEditModal(e, img)} className="p-1.5 bg-primary rounded-lg text-white" title="Editar">✏️</button>
+                                <button onClick={(e) => openEditModal(e, img)} className="p-2 bg-black/60 hover:bg-black/80 backdrop-blur rounded-lg text-white transition-colors" title="Editar">
+                                    <Edit2 size={14} />
+                                </button>
                             </div>
                         </>
                     )}
                 </div>
+
                 {!minimal && img.status === 'completed' && (
-                    <div className="p-2 bg-surfaceHighlight/50 border-t border-white/5 flex justify-between gap-1">
+                    <div className="p-3 bg-bg-tertiary border-t border-border-default flex justify-between gap-2">
                         {img.approvalStatus === 'approved' ? (
-                            <span className="text-[10px] text-green-500 font-bold flex items-center gap-1">✅ Aprobado</span>
+                            <div className="flex-1 flex items-center justify-center gap-2 text-green-500 text-xs font-bold py-1 bg-green-500/10 rounded-lg">
+                                <Check size={14} /> Aprobado
+                            </div>
                         ) : (
                             <>
-                                <button onClick={(e) => { e.stopPropagation(); setApprovalStatus(img.id, 'approved'); }} className="flex-1 bg-green-600 hover:bg-green-500 text-white text-[10px] font-bold py-1 rounded">SI</button>
-                                <button onClick={(e) => { e.stopPropagation(); deleteImage(img.id); }} className="px-2 bg-white/10 hover:bg-red-500 hover:text-white text-textMuted text-[10px] py-1 rounded">NO</button>
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); setApprovalStatus(img.id, 'approved'); }}
+                                    className="flex-1 flex items-center justify-center gap-1 bg-green-600/10 hover:bg-green-600 text-green-500 hover:text-white text-xs font-bold py-1.5 rounded-lg transition-all"
+                                >
+                                    <Check size={14} /> Aprobar
+                                </button>
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); deleteImage(img.id); }}
+                                    className="px-3 flex items-center justify-center bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white text-xs font-bold py-1.5 rounded-lg transition-all"
+                                >
+                                    <X size={14} />
+                                </button>
                             </>
                         )}
                     </div>
@@ -269,77 +273,85 @@ export const ImageFactory: React.FC = () => {
     const MasterSection = ({ angle }: { angle: Angle }) => {
         const masterImg = generatedImages.find(i => i.angleId === angle.id && i.type === 'master');
         const variations = generatedImages.filter(i => i.parentId === masterImg?.id || (i.angleId === angle.id && i.type === 'variation'));
-
-        // Local state for this master's input
         const [count, setCount] = useState(2);
 
         if (!masterImg && !isProcessing) return (
-            <div className="p-4 border border-dashed border-borderColor rounded-xl text-center">
-                <p className="text-xs text-textMuted uppercase mb-2">{angle.name}</p>
-                <Button onClick={generateMains} className="text-xs">Generar Maestro</Button>
+            <div className="p-8 border-2 border-dashed border-border-default rounded-2xl text-center hover:bg-bg-elevated transition-colors bg-bg-secondary/30">
+                <div className="w-12 h-12 bg-bg-tertiary rounded-full flex items-center justify-center mx-auto mb-4">
+                    <ImageIcon size={24} className="text-text-muted" />
+                </div>
+                <p className="text-sm font-bold text-white mb-1 uppercase tracking-wide">{angle.name}</p>
+                <p className="text-xs text-text-muted mb-4 max-w-sm mx-auto">{angle.hook}</p>
+                <Button onClick={generateMains} size="sm" variant="secondary">Generar Maestro</Button>
             </div>
         );
 
-        if (!masterImg) return null; // Should not happen if generating
+        if (!masterImg) return null;
 
         return (
-            <div className="bg-surface/30 border border-white/5 rounded-2xl p-4 md:p-6 flex flex-col md:flex-row gap-6 animate-fade-in">
+            <div className="bg-bg-elevated/50 border border-border-default rounded-3xl p-6 flex flex-col lg:flex-row gap-8 animate-fade-in relative overflow-hidden">
+                {/* Background Decor */}
+                <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-accent-primary/5 rounded-full blur-[100px] pointer-events-none" />
+
                 {/* LEFT: MASTER IMAGE */}
-                <div className="w-full md:w-1/3 flex flex-col gap-4">
-                    <div className="flex justify-between items-center">
-                        <Badge variant="default" className="text-[10px]">MASTER</Badge>
-                        <p className="text-xs font-bold text-textMuted truncate max-w-[150px]">{angle.name}</p>
+                <div className="w-full lg:w-1/3 flex flex-col gap-4 relative z-10">
+                    <div className="flex justify-between items-center mb-2">
+                        <Badge variant="accent" className="text-[10px]">MASTER</Badge>
+                        <p className="text-xs font-bold text-text-secondary truncate max-w-[150px]">{angle.name}</p>
                     </div>
-                    <div className="w-full max-w-[280px] mx-auto md:max-w-none">
+                    <div className="w-full max-w-[320px] mx-auto lg:max-w-none shadow-2xl rounded-xl">
                         <ImageCard img={masterImg} />
                     </div>
 
-                    {/* Export & Generate Controls */}
                     {masterImg.status === 'completed' && masterImg.approvalStatus === 'approved' && (
-                        <div className="space-y-3 p-3 bg-surfaceHighlight/30 rounded-xl border border-white/5">
+                        <div className="space-y-3 p-4 bg-bg-secondary rounded-xl border border-border-default mt-2">
+                            <p className="text-xs font-bold text-text-primary uppercase tracking-wider mb-2">Acciones</p>
                             <div className="flex gap-2 items-center">
                                 <Input
                                     type="number" min={2} max={9}
                                     value={count}
                                     onChange={(e) => setCount(parseInt(e.target.value))}
-                                    className="!w-16 !text-center !p-1 !text-sm"
+                                    className="!w-16 !text-center !p-2 !text-sm font-bold"
                                 />
                                 <Button
                                     onClick={(e) => handleBatchVariations(e, masterImg, count)}
-                                    className="flex-1 !text-xs !py-2 bg-gradient-to-r from-blue-600 to-indigo-600 border-none"
+                                    className="flex-1 !text-xs !py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 border-none shadow-lg shadow-blue-900/20"
                                 >
-                                    ⚡ Generar Variaciones
+                                    <Sparkles size={14} className="mr-1" /> Generar Variaciones
                                 </Button>
                             </div>
                             <Button
                                 variant="secondary"
-                                className="w-full !py-2 !text-xs bg-orange-500/10 text-orange-400 hover:bg-orange-500 hover:text-white border-orange-500/50"
+                                className="w-full !py-2.5 !text-xs border-orange-500/20 text-orange-400 hover:text-orange-300 hover:bg-orange-500/10"
                                 onClick={() => handleExportSet(masterImg)}
                             >
-                                📦 Exportar Set (ZIP)
+                                <Download size={14} className="mr-1" /> Exportar Set (ZIP)
                             </Button>
                         </div>
                     )}
                 </div>
 
                 {/* RIGHT: VARIATIONS GRID */}
-                <div className="w-full md:w-2/3 border-l border-white/5 md:pl-6 space-y-4">
-                    <div className="flex items-center gap-2">
+                <div className="w-full lg:w-2/3 lg:border-l border-border-default lg:pl-8 space-y-5 relative z-10">
+                    <div className="flex items-center gap-3">
+                        <Badge variant="outline" className="text-[10px] w-6 h-6 flex items-center justify-center p-0">{variations.length}</Badge>
                         <h4 className="text-sm font-bold text-white">Variaciones Generadas</h4>
-                        <Badge variant="outline" className="text-[10px]">{variations.length}</Badge>
                     </div>
 
                     {variations.length === 0 ? (
-                        <div className="h-full min-h-[200px] flex items-center justify-center border border-dashed border-borderColor rounded-xl bg-black/20 text-textMuted text-xs">
-                            Sin variaciones aún. Usa el panel izquierdo para crear.
+                        <div className="h-full min-h-[250px] flex flex-col items-center justify-center border-2 border-dashed border-border-default rounded-2xl bg-bg-secondary/30 text-text-muted gap-4">
+                            <div className="w-16 h-16 bg-bg-tertiary rounded-full flex items-center justify-center">
+                                <ImageIcon className="text-text-muted opacity-50" />
+                            </div>
+                            <p className="text-xs">Sin variaciones. Usa el panel izquierdo para crear.</p>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-3 lg:grid-cols-4 gap-3">
-                            {variations.map(v => (
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                            {variations.map((v, i) => (
                                 <div key={v.id} className="relative group">
                                     <ImageCard img={v} minimal />
-                                    <div className="absolute top-1 left-1 bg-black/60 text-[8px] text-white px-1 rounded backdrop-blur">
-                                        {v.id.split('-')[2]} {/* Index/ID hint */}
+                                    <div className="absolute top-2 left-2 bg-black/70 text-[10px] text-white px-2 py-0.5 rounded backdrop-blur font-mono border border-white/10">
+                                        V-{i + 1}
                                     </div>
                                 </div>
                             ))}
@@ -351,51 +363,91 @@ export const ImageFactory: React.FC = () => {
     };
 
     return (
-        <div className="max-w-7xl mx-auto pb-20 space-y-8 animate-fade-in relative">
+        <div className="max-w-7xl mx-auto pb-20 space-y-8 animate-fade-in relative px-4 md:px-0">
             {/* Header */}
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col md:flex-row justify-between items-end gap-4 border-b border-border-default pb-6">
                 <div>
-                    <h2 className="text-2xl font-bold text-white">Fábrica Creativa Pro</h2>
-                    <p className="text-textMuted text-sm">Design System: Master (Izq) vs Variaciones (Der)</p>
+                    <Badge variant="accent" className="mb-2">Paso 4: Producción</Badge>
+                    <h2 className="text-3xl font-bold text-white flex items-center gap-2">
+                        <ImageIcon className="text-accent-primary" /> Fábrica Creativa
+                    </h2>
+                    <p className="text-text-secondary mt-2">
+                        Gestiona tus assets visuales. Crea masters y variaciones ilimitadas.
+                    </p>
                 </div>
                 <div className="flex gap-2">
-                    {isProcessing && <Button variant="danger" onClick={handleStop}>⛔ Detener Todo</Button>}
+                    {isProcessing && <Button variant="danger" onClick={handleStop} icon={<X size={16} />}>Detener</Button>}
                 </div>
             </div>
 
-            {/* List of Creative Sets (Angle -> Master -> Variations) */}
+            {/* Content */}
             <div className="space-y-12">
                 {angles.filter(a => a.selected).map(angle => (
                     <div key={angle.id}>
                         <MasterSection angle={angle} />
                     </div>
                 ))}
+
                 {angles.filter(a => a.selected).length === 0 && (
-                    <div className="text-center py-20 text-textMuted">No hay ángulos seleccionados. Ve a "Ángulos" y selecciona algunos.</div>
+                    <div className="text-center py-24 bg-bg-elevated/30 rounded-3xl border border-dashed border-border-default">
+                        <div className="w-20 h-20 bg-bg-tertiary rounded-full flex items-center justify-center mx-auto mb-4">
+                            <AlertTriangle size={32} className="text-text-muted" />
+                        </div>
+                        <h3 className="text-xl font-bold text-white mb-2">No hay ángulos seleccionados</h3>
+                        <p className="text-text-muted mb-6">Regresa al paso anterior para seleccionar tus mejores ángulos.</p>
+                        <Button onClick={() => setStep(AppStep.ANGLES)} variant="secondary">
+                            Ir a Ángulos
+                        </Button>
+                    </div>
                 )}
             </div>
 
-            {/* Global Generate Button if no images exist */}
+            {/* Initial CTA */}
             {generatedImages.length === 0 && angles.filter(a => a.selected).length > 0 && (
                 <div className="flex justify-center pt-8">
-                    <Button onClick={generateMains} className="px-8 py-4 text-lg shadow-glow animate-pulse">
-                        🚀 Iniciar Generación de Masters
+                    <Button onClick={generateMains} size="lg" className="px-10 py-5 text-lg shadow-glow-orange animate-pulse">
+                        <Play size={24} className="mr-2 fill-current" /> Iniciar Producción
                     </Button>
                 </div>
             )}
 
-            {/* Modals & Overlays */}
+            {/* Lightbox */}
             {selectedImageId && (
-                <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-sm flex items-center justify-center p-4 cursor-zoom-out" onClick={() => setSelectedImageId(null)}>
-                    <img src={generatedImages.find(i => i.id === selectedImageId)?.url} className="max-w-full max-h-full object-contain rounded-lg shadow-2xl" />
+                <div className="fixed inset-0 z-[60] bg-black/95 backdrop-blur-xl flex items-center justify-center p-4" onClick={() => setSelectedImageId(null)}>
+                    <div className="relative max-w-5xl max-h-screen">
+                        <img src={generatedImages.find(i => i.id === selectedImageId)?.url} className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl" />
+                        <button className="absolute -top-12 right-0 text-white p-2 hover:bg-white/10 rounded-full transition-colors">
+                            <X size={24} />
+                        </button>
+                    </div>
                 </div>
             )}
+
+            {/* Edit Modal */}
             {isEditing && imageToEdit && (
-                <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setIsEditing(false)}>
-                    <Card className="w-full max-w-lg bg-surface space-y-4" onClick={(e) => e.stopPropagation()}>
-                        <h3 className="text-lg font-bold">Editar Master</h3>
-                        <TextArea value={editInstruction} onChange={e => setEditInstruction(e.target.value)} className="h-32" />
-                        <div className="flex justify-end gap-2"><Button onClick={submitEdit}>Guardar</Button></div>
+                <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setIsEditing(false)}>
+                    <Card className="w-full max-w-lg bg-bg-elevated border-border-default space-y-4" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex justify-between items-center border-b border-border-default pb-4">
+                            <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                                <Edit2 size={18} /> Editar Imagen
+                            </h3>
+                            <button onClick={() => setIsEditing(false)}><X size={18} className="text-text-muted" /></button>
+                        </div>
+                        <div className="bg-bg-tertiary p-3 rounded-xl border border-border-default">
+                            <p className="text-xs text-text-muted mb-1 uppercase font-bold">Instrucción Actual:</p>
+                            <p className="text-sm text-text-secondary italic">"{imageToEdit.prompt}"</p>
+                        </div>
+                        <TextArea
+                            label="Instrucción de corrección"
+                            value={editInstruction}
+                            onChange={e => setEditInstruction(e.target.value)}
+                            className="h-32 font-mono text-sm"
+                            placeholder="Ej: Quita el texto del fondo, haz la luz más cálida..."
+                        />
+                        <div className="flex justify-end gap-3 pt-2">
+                            <Button variant="ghost" onClick={() => setIsEditing(false)}>Cancelar</Button>
+                            <Button onClick={submitEdit} icon={<Wand2 size={16} />}>Aplicar Cambios</Button>
+                        </div>
                     </Card>
                 </div>
             )}

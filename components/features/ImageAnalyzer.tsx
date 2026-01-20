@@ -1,9 +1,11 @@
-
 import React, { useState } from 'react';
 import { useAdContext } from '../../store/AdContext';
 import { Button } from '../ui/Button';
+import { Card } from '../ui/Card';
+import { Badge } from '../ui/Badge';
 import { AppStep, ImageAnalysis } from '../../types';
 import { analyzeImage } from '../../services/geminiService';
+import { UploadCloud, Eye, ArrowRight, Loader2, ImageIcon, ScanLine, X } from 'lucide-react';
 
 export const ImageAnalyzer: React.FC = () => {
   const { addImageAnalysis, imageAnalysis, setStep } = useAdContext();
@@ -17,40 +19,22 @@ export const ImageAnalyzer: React.FC = () => {
       reader.onload = (event) => {
         const img = new Image();
         img.onload = () => {
-          // Resize image to max 1024px to prevent memory crashes and optimize API usage
           const MAX_SIZE = 1024;
           let width = img.width;
           let height = img.height;
-
           if (width > height) {
-            if (width > MAX_SIZE) {
-              height *= MAX_SIZE / width;
-              width = MAX_SIZE;
-            }
+            if (width > MAX_SIZE) { height *= MAX_SIZE / width; width = MAX_SIZE; }
           } else {
-            if (height > MAX_SIZE) {
-              width *= MAX_SIZE / height;
-              height = MAX_SIZE;
-            }
+            if (height > MAX_SIZE) { width *= MAX_SIZE / height; height = MAX_SIZE; }
           }
-
           const canvas = document.createElement('canvas');
           canvas.width = width;
           canvas.height = height;
           const ctx = canvas.getContext('2d');
-
-          if (!ctx) {
-            reject(new Error("Could not get canvas context"));
-            return;
-          }
-
+          if (!ctx) { reject(new Error("Could not get canvas context")); return; }
           ctx.drawImage(img, 0, 0, width, height);
-
-          // Compress to JPEG 0.8 quality
           const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-          // dataUrl format is "data:image/jpeg;base64,..."
-          const base64 = dataUrl.split(',')[1];
-          resolve(base64);
+          resolve(dataUrl.split(',')[1]);
         };
         img.onerror = () => reject(new Error("Failed to load image"));
         img.src = event.target?.result as string;
@@ -68,125 +52,146 @@ export const ImageAnalyzer: React.FC = () => {
     setProcessedCount(0);
     setTotalToProcess(files.length);
 
-    // Create a copy of the promises array to track completion
     const processFile = async (file: File) => {
       try {
-        console.log(`Processing file: ${file.name}`);
         const base64Data = await readFileAsBase64(file);
-
-        // Force jpeg mime type as our resizer converts everything to jpeg
         const result = await analyzeImage(base64Data, 'image/jpeg');
-
         if (result && result.angleDetected) {
-          console.log(`Success processing ${file.name}`);
           addImageAnalysis(result);
-        } else {
-          console.warn(`Analysis returned incomplete data for ${file.name}`);
         }
       } catch (err) {
         console.error(`Error analyzing ${file.name}:`, err);
-        // Non-blocking error toast could be added here
       } finally {
         setProcessedCount(prev => prev + 1);
       }
     };
 
     try {
-      // Process sequentially to be safer with memory/API limits, or parallel with limit
-      // Currently parallel is fine for small batches (Gemini has decent rate limits)
       await Promise.all(files.map(processFile));
     } catch (err) {
-      console.error("Critical error in batch processing:", err);
-      alert("Hubo un error al procesar las imágenes. Por favor intenta de nuevo con menos archivos.");
+      console.error(err);
     } finally {
       setIsAnalyzing(false);
-      // Don't reset processed counts immediately so user sees "Done" state
-      setTimeout(() => {
-        setTotalToProcess(0);
-        setProcessedCount(0);
-      }, 2000);
+      setTimeout(() => { setTotalToProcess(0); setProcessedCount(0); }, 2000);
       e.target.value = '';
     }
   };
 
-  // Safe render function
   const renderAnalysis = (analysis: ImageAnalysis, idx: number) => {
     if (!analysis) return null;
     return (
-      <div key={idx} className="bg-surface p-5 rounded-xl border border-borderColor space-y-3 animate-fade-in">
-        <div className="flex justify-between items-start">
-          <span className="text-xs font-bold bg-primary/20 text-primary px-2 py-1 rounded">DETECTADO</span>
-          <span className="text-xs text-textMuted">#{idx + 1}</span>
+      <Card key={idx} className="bg-bg-elevated/50 border-border-default hover:border-accent-primary/30 transition-all">
+        <div className="flex justify-between items-start mb-4">
+          <Badge variant="accent" className="flex items-center gap-1">
+            <ScanLine size={12} /> DETECTADO
+          </Badge>
+          <span className="text-xs text-text-muted font-mono bg-bg-tertiary px-2 py-1 rounded">#{idx + 1}</span>
         </div>
-        <h4 className="font-semibold text-textMain">{analysis.angleDetected || 'Ángulo detectado'}</h4>
-        <div className="text-sm space-y-2">
-          <p className="text-textMuted"><strong className="text-textMain">Composición:</strong> {analysis.composition || 'N/A'}</p>
-          <p className="text-textMuted"><strong className="text-textMain">Copy:</strong> {analysis.copy || 'N/A'}</p>
+
+        <h4 className="font-bold text-white text-lg mb-3 leading-snug">
+          {analysis.angleDetected || 'Ángulo detectado'}
+        </h4>
+
+        <div className="space-y-4 mb-4">
+          <div className="bg-bg-tertiary p-3 rounded-xl border border-border-default/50">
+            <p className="text-xs text-text-muted uppercase font-bold mb-1">Composición</p>
+            <p className="text-sm text-text-secondary">{analysis.composition || 'N/A'}</p>
+          </div>
         </div>
-        <div className="flex flex-wrap gap-2 pt-2">
+
+        <div className="flex flex-wrap gap-2 pt-2 border-t border-border-default/50">
           {Array.isArray(analysis.emotions) && analysis.emotions.map((e, i) => (
-            <span key={i} className="text-xs bg-surfaceHighlight px-2 py-1 rounded text-textMuted">{e}</span>
+            <Badge key={i} variant="outline" size="sm" className="bg-black/20 text-text-muted border-white/10">
+              {e}
+            </Badge>
           ))}
           {Array.isArray(analysis.colors) && analysis.colors.map((c, i) => (
-            <span key={`c-${i}`} className="text-xs border border-borderColor px-2 py-1 rounded text-textMuted flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-current" style={{ color: c }}></span>
-              {c}
-            </span>
+            <span key={`c-${i}`} className="flex items-center justify-center w-5 h-5 rounded-full border border-white/10 ring-1 ring-black/20" style={{ backgroundColor: c }} title={c} />
           ))}
         </div>
-      </div>
+      </Card>
     );
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8 animate-fade-in">
-      <div className="flex justify-between items-center">
+    <div className="max-w-6xl mx-auto space-y-8 animate-fade-in pb-20">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row justify-between items-end gap-4 border-b border-border-default pb-6">
         <div>
-          <h2 className="text-3xl font-bold text-textMain">Análisis Visual</h2>
-          <p className="text-textMuted mt-1">Sube anuncios exitosos (múltiples permitidos). Gemini extraerá el "ADN" de lo que funciona.</p>
+          <Badge variant="accent" className="mb-2">Paso 2: Análisis</Badge>
+          <h2 className="text-3xl font-bold text-white flex items-center gap-2">
+            <Eye className="text-accent-primary" /> Análisis Visual
+          </h2>
+          <p className="text-text-secondary mt-2 max-w-2xl">
+            Sube anuncios exitosos (múltiples permitidos). Gemini extraerá el "ADN" de lo que funciona.
+          </p>
         </div>
         <div className="flex gap-3">
-          <Button variant="secondary" onClick={() => setStep(AppStep.ANGLES)}>
-            Omitir / Listo
+          <Button
+            onClick={() => setStep(AppStep.ANGLES)}
+            disabled={isAnalyzing}
+            className="gap-2 shadow-glow-orange"
+          >
+            Continuar <ArrowRight size={18} />
           </Button>
         </div>
       </div>
 
-      <div className={`bg-surface border-2 border-dashed rounded-2xl p-12 text-center transition-colors relative ${isAnalyzing ? 'border-primary/50 bg-primary/5' : 'border-borderColor hover:border-primary/50'}`}>
-        <input
-          type="file"
-          id="fileUpload"
-          className="hidden"
-          accept="image/*"
-          multiple
-          onChange={handleFileUpload}
-          disabled={isAnalyzing}
-        />
-        <label htmlFor="fileUpload" className={`cursor-pointer flex flex-col items-center gap-4 ${isAnalyzing ? 'cursor-wait' : ''}`}>
-          <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-            {isAnalyzing ? (
-              <svg className="animate-spin h-8 w-8" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
+      <div className="grid md:grid-cols-12 gap-8">
+        {/* Upload Section */}
+        <div className="md:col-span-4 space-y-4">
+          <Card className={`h-64 border-dashed border-2 transition-all relative overflow-hidden group flex items-center justify-center cursor-pointer ${isAnalyzing ? 'border-accent-primary/50 bg-accent-primary/5' : 'border-border-default hover:border-accent-primary/50 bg-bg-elevated/30 hover:bg-bg-elevated/50'}`}>
+            <input
+              type="file"
+              className="absolute inset-0 opacity-0 z-10 cursor-pointer disabled:cursor-not-allowed"
+              accept="image/*"
+              multiple
+              onChange={handleFileUpload}
+              disabled={isAnalyzing}
+            />
+            <div className="flex flex-col items-center justify-center px-4 text-center pointer-events-none">
+              <div className="w-16 h-16 rounded-full bg-bg-tertiary group-hover:bg-accent-primary/10 flex items-center justify-center mb-4 transition-colors">
+                {isAnalyzing ? (
+                  <Loader2 size={32} className="text-accent-primary animate-spin" />
+                ) : (
+                  <UploadCloud size={32} className="text-text-muted group-hover:text-accent-primary transition-colors" />
+                )}
+              </div>
+              <h3 className="font-bold text-lg text-white mb-1">
+                {isAnalyzing ? `Analizando ${processedCount}/${totalToProcess}...` : 'Sube tus Creativos'}
+              </h3>
+              <p className="text-sm text-text-muted">
+                {isAnalyzing ? 'Extrayendo patrones visuales...' : 'Arrastra o haz clic para subir imágenes (PNG, JPG)'}
+              </p>
+            </div>
+          </Card>
+
+          {/* Instructions */}
+          <Card className="bg-blue-500/5 border-blue-500/20">
+            <h4 className="font-bold text-blue-400 text-sm mb-2 flex items-center gap-2">
+              <ImageIcon size={14} /> ¿Qué subir?
+            </h4>
+            <ul className="text-xs text-text-secondary space-y-2 list-disc list-inside">
+              <li>Anuncios que han tenido buenas ventas.</li>
+              <li>Imágenes de competidores exitosos.</li>
+              <li>Fotos de tu producto en uso.</li>
+            </ul>
+          </Card>
+        </div>
+
+        {/* Results Grid */}
+        <div className="md:col-span-8">
+          <div className="grid grid-cols-1 gap-4">
+            {imageAnalysis.length > 0 ? (
+              imageAnalysis.map((analysis, idx) => renderAnalysis(analysis, idx))
             ) : (
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
-              </svg>
+              <div className="h-64 flex flex-col items-center justify-center border-2 border-dashed border-border-default rounded-2xl text-text-muted bg-bg-tertiary/20">
+                <ScanLine size={48} className="opacity-20 mb-4" />
+                <p>Sube imágenes para ver el análisis de IA aquí.</p>
+              </div>
             )}
           </div>
-          <div>
-            <span className="text-primary font-semibold">
-              {isAnalyzing ? `Analizando ${processedCount}/${totalToProcess}...` : 'Clic para subir imágenes'}
-            </span>
-            {!isAnalyzing && <span className="text-textMuted"> o arrastra y suelta (varias a la vez)</span>}
-          </div>
-          <p className="text-xs text-textMuted">PNG, JPG hasta 10MB</p>
-        </label>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {imageAnalysis.map((analysis, idx) => renderAnalysis(analysis, idx))}
+        </div>
       </div>
     </div>
   );

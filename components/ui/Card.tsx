@@ -1,32 +1,44 @@
 import React from 'react';
 
-interface CardProps {
-  children: React.ReactNode;
-  className?: string;
-  variant?: 'default' | 'glass' | 'interactive';
-  onClick?: React.MouseEventHandler<HTMLDivElement>;
+interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
+  variant?: 'default' | 'glass' | 'accent' | 'interactive';
+  noPadding?: boolean;
 }
 
-export const Card: React.FC<CardProps> = ({ 
-  children, 
-  className = '', 
+export const Card: React.FC<CardProps> = ({
+  children,
   variant = 'default',
-  onClick
+  noPadding = false,
+  className = '',
+  ...props
 }) => {
-  const baseStyles = "rounded-2xl p-6 transition-all duration-300";
-  
+  const baseStyles = "rounded-2xl transition-all duration-300 relative overflow-hidden";
+
   const variants = {
-    default: "bg-surface border border-borderColor shadow-card",
-    glass: "glass-card",
-    interactive: "bg-surface border border-borderColor hover:border-primary/50 hover:bg-surfaceHighlight cursor-pointer hover:-translate-y-1 hover:shadow-glow"
+    default: "bg-bg-secondary border border-border-default",
+    glass: "glass-card", // Defined in globals.css
+    accent: "bg-accent-primary/5 border border-accent-primary/20",
+    interactive: "bg-bg-secondary border border-border-default hover:border-accent-primary/50 hover:shadow-glow-soft hover:-translate-y-1 cursor-pointer group"
   };
 
   return (
-    <div 
-      className={`${baseStyles} ${variants[variant]} ${className}`}
-      onClick={onClick}
+    <div
+      className={`${baseStyles} ${variants[variant]} ${noPadding ? '' : 'p-6'} ${className}`}
+      {...props}
     >
       {children}
     </div>
   );
 };
+
+export const CardHeader: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({ className = '', ...props }) => (
+  <div className={`p-6 pb-2 ${className}`} {...props} />
+);
+
+export const CardContent: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({ className = '', ...props }) => (
+  <div className={`p-6 pt-2 pb-6 ${className}`} {...props} />
+);
+
+export const CardFooter: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({ className = '', ...props }) => (
+  <div className={`p-6 pt-0 flex items-center gap-4 ${className}`} {...props} />
+);

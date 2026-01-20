@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { AdProvider, useAdContext } from './store/AdContext';
 import { Layout } from './components/Layout';
@@ -7,6 +6,7 @@ import { BrandingForm } from './components/features/BrandingForm';
 import { ImageAnalyzer } from './components/features/ImageAnalyzer';
 import { AngleGenerator } from './components/features/AngleGenerator';
 import { ImageFactory } from './components/features/ImageFactory';
+import { ExportPage } from './components/features/ExportPage';
 
 import { BusinessManager } from './components/features/BusinessManager';
 import { ApiSetup } from './components/features/ApiSetup';
@@ -26,6 +26,7 @@ const CurrentStep: React.FC = () => {
     case AppStep.ANALYSIS: return <ImageAnalyzer />;
     case AppStep.ANGLES: return <AngleGenerator />;
     case AppStep.GENERATION: return <ImageFactory />;
+    case AppStep.EXPORT: return <ExportPage />;
     default: return <BusinessManager />;
   }
 };

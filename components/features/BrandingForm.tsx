@@ -1,8 +1,11 @@
-
 import React, { useState } from 'react';
 import { useAdContext } from '../../store/AdContext';
 import { Button } from '../ui/Button';
+import { Card } from '../ui/Card';
+import { Input } from '../ui/Input';
+import { Badge } from '../ui/Badge';
 import { AppStep } from '../../types';
+import { Palette, Upload, User, Image as ImageIcon, Box, ArrowRight, ArrowLeft, Trash2 } from 'lucide-react';
 
 export const BrandingForm: React.FC = () => {
   const { branding, setBranding, setStep, saveCurrentBusiness, currentBusiness } = useAdContext();
@@ -20,178 +23,167 @@ export const BrandingForm: React.FC = () => {
   };
 
   const handleSaveAndNext = async () => {
-      let nameToSave = bizName;
-      if (!nameToSave) {
-          nameToSave = prompt("Dale un nombre a este negocio para guardarlo:") || "";
-          if (!nameToSave) return;
-          setBizName(nameToSave);
-      }
-      
-      await saveCurrentBusiness(nameToSave);
-      setStep(AppStep.ANALYSIS);
+    let nameToSave = bizName;
+    if (!nameToSave) {
+      nameToSave = prompt("Dale un nombre a este negocio para guardarlo:") || "";
+      if (!nameToSave) return;
+      setBizName(nameToSave);
+    }
+
+    await saveCurrentBusiness(nameToSave);
+    setStep(AppStep.ANALYSIS);
   };
 
+  const UploadCard = ({ title, subtitle, icon: Icon, field, value }: { title: string, subtitle: string, icon: any, field: 'logo' | 'personalPhoto' | 'productMockup', value: string | null | undefined }) => (
+    <Card className="flex flex-col items-center text-center p-6 bg-bg-elevated/30 hover:bg-bg-elevated/50 transition-colors border-dashed border-2 border-border-default hover:border-accent-primary/50 group h-full relative overflow-hidden">
+      <div className={`p-4 rounded-full bg-bg-tertiary mb-3 transition-colors ${value ? 'text-green-500' : 'text-text-muted group-hover:text-accent-primary'}`}>
+        <Icon size={24} />
+      </div>
+      <h3 className="font-bold text-white mb-1">{title}</h3>
+      <p className="text-[10px] text-text-muted mb-4">{subtitle}</p>
+
+      {value ? (
+        <div className="w-full aspect-square rounded-xl overflow-hidden relative border border-border-default bg-black/50 mb-4 group/image">
+          <img src={value} alt={title} className="w-full h-full object-contain" />
+          <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover/image:opacity-100 transition-opacity">
+            <Button
+              variant="danger"
+              size="sm"
+              className="!p-2"
+              onClick={() => setBranding({ ...branding, [field]: null })}
+            >
+              <Trash2 size={16} />
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <div className="mt-auto w-full">
+          <label className="w-full block">
+            <div className="w-full py-2 bg-accent-primary/10 text-accent-primary hover:bg-accent-primary/20 rounded-lg text-xs font-bold cursor-pointer transition-colors flex items-center justify-center gap-2">
+              <Upload size={14} /> Subir
+            </div>
+            <input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(field, e)} />
+          </label>
+        </div>
+      )}
+    </Card>
+  );
+
   return (
-    <div className="max-w-4xl mx-auto space-y-10 animate-fade-in pb-20">
-      <div className="text-center space-y-2">
-        <h2 className="text-3xl font-bold text-textMain">Identidad de Marca</h2>
-        <p className="text-textMuted">Define los elementos visuales. Sube un Mockup de tu producto para mejores resultados.</p>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* LOGO */}
-        <div className="bg-surface rounded-2xl border border-borderColor p-6 flex flex-col items-center text-center space-y-4">
-          <h3 className="font-bold text-textMain">Logo</h3>
-          <p className="text-[10px] text-textMuted">PNG/SVG Transparente</p>
-          
-          <div className="w-24 h-24 rounded-xl bg-surfaceHighlight border-2 border-dashed border-borderColor flex items-center justify-center overflow-hidden relative group">
-            {branding.logo ? (
-              <>
-                <img src={branding.logo} alt="Logo" className="w-full h-full object-contain p-2" />
-                <button 
-                  onClick={() => setBranding({...branding, logo: null})}
-                  className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white text-xs font-bold"
-                >
-                  ✕
-                </button>
-              </>
-            ) : (
-              <span className="text-textMuted text-xs">Subir</span>
-            )}
-          </div>
-          
-          {!branding.logo && (
-             <>
-               <input type="file" id="logo-upload" className="hidden" accept="image/*" onChange={(e) => handleImageUpload('logo', e)} />
-               <label htmlFor="logo-upload" className="w-full py-2 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg text-xs font-bold cursor-pointer transition-colors">
-                 Seleccionar
-               </label>
-             </>
-          )}
-        </div>
-
-        {/* PERSONAL PHOTO */}
-        <div className="bg-surface rounded-2xl border border-borderColor p-6 flex flex-col items-center text-center space-y-4">
-          <h3 className="font-bold text-textMain">Experto (Face ID)</h3>
-          <p className="text-[10px] text-textMuted">Foto clara del rostro</p>
-          
-          <div className="w-24 h-24 rounded-full bg-surfaceHighlight border-2 border-dashed border-borderColor flex items-center justify-center overflow-hidden relative group">
-            {branding.personalPhoto ? (
-               <>
-                 <img src={branding.personalPhoto} alt="Persona" className="w-full h-full object-cover" />
-                 <button 
-                  onClick={() => setBranding({...branding, personalPhoto: null})}
-                  className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white text-xs font-bold"
-                >
-                  ✕
-                </button>
-               </>
-            ) : (
-              <span className="text-textMuted text-xs">Subir</span>
-            )}
-          </div>
-
-          {!branding.personalPhoto && (
-             <>
-               <input type="file" id="photo-upload" className="hidden" accept="image/*" onChange={(e) => handleImageUpload('personalPhoto', e)} />
-               <label htmlFor="photo-upload" className="w-full py-2 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg text-xs font-bold cursor-pointer transition-colors">
-                 Seleccionar
-               </label>
-             </>
-          )}
-
-          <div className="flex items-center gap-2 mt-2">
-            <input 
-              type="checkbox" 
-              id="includeFace" 
-              checked={branding.includeFace}
-              onChange={(e) => setBranding({...branding, includeFace: e.target.checked})}
-              className="rounded border-borderColor text-primary focus:ring-primary"
-            />
-            <label htmlFor="includeFace" className="text-[10px] text-textMain">Usar en Ads</label>
-          </div>
-        </div>
-
-        {/* PRODUCT MOCKUP - NEW */}
-        <div className="bg-surface rounded-2xl border border-borderColor p-6 flex flex-col items-center text-center space-y-4">
-          <h3 className="font-bold text-textMain">Mockup Producto</h3>
-          <p className="text-[10px] text-textMuted">Caja, Botella, Interfaz</p>
-          
-          <div className="w-24 h-24 rounded-xl bg-surfaceHighlight border-2 border-dashed border-borderColor flex items-center justify-center overflow-hidden relative group">
-            {branding.productMockup ? (
-               <>
-                 <img src={branding.productMockup} alt="Mockup" className="w-full h-full object-cover" />
-                 <button 
-                  onClick={() => setBranding({...branding, productMockup: null})}
-                  className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white text-xs font-bold"
-                >
-                  ✕
-                </button>
-               </>
-            ) : (
-              <span className="text-textMuted text-xs">Subir</span>
-            )}
-          </div>
-
-          {!branding.productMockup && (
-             <>
-               <input type="file" id="mockup-upload" className="hidden" accept="image/*" onChange={(e) => handleImageUpload('productMockup', e)} />
-               <label htmlFor="mockup-upload" className="w-full py-2 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg text-xs font-bold cursor-pointer transition-colors">
-                 Seleccionar
-               </label>
-             </>
-          )}
+    <div className="max-w-5xl mx-auto space-y-8 animate-fade-in pb-20">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row justify-between items-end gap-4 border-b border-border-default pb-6">
+        <div>
+          <Badge variant="accent" className="mb-2">Configuración</Badge>
+          <h2 className="text-3xl font-bold text-white flex items-center gap-2">
+            <Palette className="text-accent-primary" /> Identidad de Marca
+          </h2>
+          <p className="text-text-secondary mt-2 max-w-2xl">
+            Define los elementos visuales clave. Esto guiará a la IA para mantener tu estilo.
+          </p>
         </div>
       </div>
 
-      {/* COLORS */}
-      <div className="bg-surface rounded-2xl border border-borderColor p-6">
-        <h3 className="font-bold text-textMain mb-4">Paleta de Colores</h3>
-        <div className="flex flex-wrap gap-8">
-          <div className="flex items-center gap-4">
-            <input 
-              type="color" 
-              value={branding.colors.primary}
-              onChange={(e) => setBranding({...branding, colors: { ...branding.colors, primary: e.target.value }})}
-              className="w-12 h-12 rounded-lg cursor-pointer border-0 p-0"
+      <div className="grid md:grid-cols-12 gap-8">
+        {/* Left Column: Business Info & Colors */}
+        <div className="md:col-span-4 space-y-6">
+          <Card className="space-y-4">
+            <h3 className="font-bold text-white flex items-center gap-2">
+              Generales
+            </h3>
+            <Input
+              label="Nombre del Negocio"
+              placeholder="Ej. Agencia de Viajes X"
+              value={bizName}
+              onChange={(e) => setBizName(e.target.value)}
             />
-            <div>
-              <p className="text-xs font-bold text-textMain">Color Primario</p>
-              <p className="text-xs text-textMuted uppercase">{branding.colors.primary}</p>
+          </Card>
+
+          <Card className="space-y-4">
+            <h3 className="font-bold text-white flex items-center gap-2">
+              <Palette size={18} className="text-accent-primary" /> Paleta de Colores
+            </h3>
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 p-2 bg-bg-tertiary rounded-xl border border-border-default">
+                <input
+                  type="color"
+                  value={branding.colors.primary}
+                  onChange={(e) => setBranding({ ...branding, colors: { ...branding.colors, primary: e.target.value } })}
+                  className="w-10 h-10 rounded-lg cursor-pointer bg-transparent border-0 p-0"
+                />
+                <div className="flex-1">
+                  <p className="text-xs font-bold text-white">Primario</p>
+                  <p className="text-[10px] text-text-muted uppercase font-mono">{branding.colors.primary}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 p-2 bg-bg-tertiary rounded-xl border border-border-default">
+                <input
+                  type="color"
+                  value={branding.colors.secondary}
+                  onChange={(e) => setBranding({ ...branding, colors: { ...branding.colors, secondary: e.target.value } })}
+                  className="w-10 h-10 rounded-lg cursor-pointer bg-transparent border-0 p-0"
+                />
+                <div className="flex-1">
+                  <p className="text-xs font-bold text-white">Secundario</p>
+                  <p className="text-[10px] text-text-muted uppercase font-mono">{branding.colors.secondary}</p>
+                </div>
+              </div>
             </div>
-          </div>
+          </Card>
+        </div>
 
-          <div className="flex items-center gap-4">
-            <input 
-              type="color" 
-              value={branding.colors.secondary}
-              onChange={(e) => setBranding({...branding, colors: { ...branding.colors, secondary: e.target.value }})}
-              className="w-12 h-12 rounded-lg cursor-pointer border-0 p-0"
-            />
-            <div>
-              <p className="text-xs font-bold text-textMain">Color Secundario</p>
-              <p className="text-xs text-textMuted uppercase">{branding.colors.secondary}</p>
+        {/* Right Column: Assets */}
+        <div className="md:col-span-8">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 h-full">
+            <div className="h-full">
+              <UploadCard
+                title="Logo"
+                subtitle="PNG/SVG Transparente"
+                icon={Box}
+                field="logo"
+                value={branding.logo}
+              />
+            </div>
+            <div className="h-full flex flex-col gap-4">
+              <UploadCard
+                title="Experto (Face ID)"
+                subtitle="Foto clara del rostro"
+                icon={User}
+                field="personalPhoto"
+                value={branding.personalPhoto}
+              />
+              {branding.personalPhoto && (
+                <div className="flex items-center justify-center gap-2 bg-bg-elevated/30 p-2 rounded-lg border border-border-default">
+                  <input
+                    type="checkbox"
+                    id="includeFace"
+                    checked={branding.includeFace}
+                    onChange={(e) => setBranding({ ...branding, includeFace: e.target.checked })}
+                    className="rounded border-border-default text-accent-primary focus:ring-accent-primary bg-bg-tertiary"
+                  />
+                  <label htmlFor="includeFace" className="text-xs text-text-secondary cursor-pointer select-none">Usar en Ads</label>
+                </div>
+              )}
+            </div>
+            <div className="h-full">
+              <UploadCard
+                title="Mockup Producto"
+                subtitle="Caja, Botella, App..."
+                icon={ImageIcon}
+                field="productMockup"
+                value={branding.productMockup}
+              />
             </div>
           </div>
         </div>
       </div>
 
-      {/* NAME INPUT FOR BUSINESS */}
-      <div className="bg-surface rounded-2xl border border-primary/20 p-6 flex flex-col gap-4">
-          <h3 className="font-bold text-textMain">Nombre del Negocio</h3>
-          <input 
-            type="text" 
-            placeholder="Ej: Agencia de Viajes X"
-            value={bizName}
-            onChange={(e) => setBizName(e.target.value)}
-            className="w-full bg-background border border-borderColor rounded-xl px-4 py-3 text-textMain focus:border-primary focus:ring-1 focus:ring-primary outline-none"
-          />
-      </div>
-
-      <div className="flex justify-between pt-4">
-        <Button variant="ghost" onClick={() => setStep(AppStep.ONBOARDING)}>&larr; Volver</Button>
-        <Button onClick={handleSaveAndNext}>
-             💾 Guardar Negocio y Continuar &rarr;
+      <div className="flex justify-between pt-6 border-t border-border-default">
+        <Button variant="ghost" onClick={() => setStep(AppStep.ONBOARDING)}>
+          <ArrowLeft size={18} className="mr-2" /> Volver
+        </Button>
+        <Button onClick={handleSaveAndNext} className="shadow-glow-orange gap-2">
+          Guardar y Continuar <ArrowRight size={18} />
         </Button>
       </div>
     </div>

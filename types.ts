@@ -114,7 +114,8 @@ export enum AppStep {
   BRANDING = 2,
   ANALYSIS = 3,
   ANGLES = 4,
-  GENERATION = 5
+  GENERATION = 5,
+  EXPORT = 6
 }
 
 export interface GenModel {
