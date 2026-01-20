@@ -3,37 +3,48 @@
 @tailwind utilities;
 
 :root {
-  /* Backgrounds */
-  --bg-primary: #0a0a0a;           /* Fondo principal negro profundo */
-  --bg-secondary: #111111;         /* Fondo de cards */
-  --bg-tertiary: #1a1a1a;          /* Fondo de inputs/hover */
-  --bg-elevated: #0f0f0f;          /* Sidebar */
-  
-  /* Accent Colors */
-  --accent-primary: #FF6B35;       /* Naranja principal (botones, CTAs) */
-  --accent-secondary: #FF8C5A;     /* Naranja claro (hover states) */
+  /* LIGHT MODE (Default) */
+  /* Backgrounds (RGB) */
+  --bg-primary: 255 255 255;
+  /* #ffffff */
+  --bg-secondary: 249 250 251;
+  /* #f9fafb */
+  --bg-tertiary: 243 244 246;
+  /* #f3f4f6 */
+  --bg-elevated: 255 255 255;
+  /* #ffffff */
+
+  /* Accent Colors (RGB) */
+  --accent-primary: 255 107 53;
+  /* #FF6B35 */
+  --accent-secondary: 255 140 90;
+  /* #FF8C5A */
   --accent-gradient-start: #FF6B35;
   --accent-gradient-end: #FF4500;
   --accent-glow: rgba(255, 107, 53, 0.4);
-  
-  /* Text */
-  --text-primary: #FFFFFF;         /* Títulos, texto importante */
-  --text-secondary: #A1A1A1;       /* Texto descriptivo */
-  --text-muted: #666666;           /* Texto deshabilitado */
-  
-  /* Borders */
-  --border-subtle: rgba(255, 255, 255, 0.06);
-  --border-default: rgba(255, 255, 255, 0.1);
-  --border-hover: rgba(255, 255, 255, 0.15);
-  --border-accent: rgba(255, 107, 53, 0.3);
-  
+
+  /* Text (RGB) */
+  --text-primary: 17 24 39;
+  /* #111827 */
+  --text-secondary: 75 85 99;
+  /* #4b5563 */
+  --text-muted: 156 163 175;
+  /* #9ca3af */
+
+  /* Borders (RGBA - Preserving default opacity) */
+  --border-subtle: rgba(0, 0, 0, 0.05);
+  --border-default: rgba(0, 0, 0, 0.1);
+  --border-hover: rgba(0, 0, 0, 0.2);
+  --border-accent: 255 107 53;
+  /* Accent border usually wants full control so RGB is fine, but checking config mapping: I set it to RGB / alpha in config. So this must be RGB. */
+
   /* Effects */
-  --glow-orange: 0 0 60px rgba(255, 107, 53, 0.3);
-  --glow-soft: 0 0 40px rgba(255, 107, 53, 0.15);
-  
-  /* Glassmorphism */
-  --glass-bg: rgba(17, 17, 17, 0.8);
-  --glass-border: rgba(255, 255, 255, 0.08);
+  --glow-orange: 0 0 40px rgba(255, 107, 53, 0.2);
+  --glow-soft: 0 0 20px rgba(255, 107, 53, 0.1);
+
+  /* Glassmorphism (Light) */
+  --glass-bg: rgba(255, 255, 255, 0.8);
+  --glass-border: rgba(0, 0, 0, 0.05);
   --glass-blur: blur(20px);
 
   /* Radius */
@@ -45,11 +56,47 @@
   --radius-full: 9999px;
 }
 
+.dark {
+  /* DARK MODE Overrides */
+  /* Backgrounds (RGB) */
+  --bg-primary: 10 10 10;
+  /* #0a0a0a */
+  --bg-secondary: 17 17 17;
+  /* #111111 */
+  --bg-tertiary: 26 26 26;
+  /* #1a1a1a */
+  --bg-elevated: 15 15 15;
+  /* #0f0f0f */
+
+  /* Text (RGB) */
+  --text-primary: 255 255 255;
+  /* #FFFFFF */
+  --text-secondary: 161 161 161;
+  /* #A1A1A1 */
+  --text-muted: 102 102 102;
+  /* #666666 */
+
+  /* Borders (RGBA) */
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-default: rgba(255, 255, 255, 0.1);
+  --border-hover: rgba(255, 255, 255, 0.15);
+  --border-accent: 255 107 53;
+
+  /* Effects */
+  --glow-orange: 0 0 60px rgba(255, 107, 53, 0.3);
+  --glow-soft: 0 0 40px rgba(255, 107, 53, 0.15);
+
+  /* Glassmorphism (Dark) */
+  --glass-bg: rgba(17, 17, 17, 0.8);
+  --glass-border: rgba(255, 255, 255, 0.08);
+}
+
 body {
-  background-color: var(--bg-primary);
-  color: var(--text-primary);
+  background-color: rgb(var(--bg-primary));
+  color: rgb(var(--text-primary));
   font-family: 'Inter', sans-serif;
   overflow-x: hidden;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* Custom Scrolls */
@@ -58,22 +105,32 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--bg-primary);
+  background: rgb(var(--bg-primary));
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--bg-tertiary);
+  background: rgb(var(--bg-tertiary));
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--border-hover) / 0.5);
+  /* Use RGB text color or similar for hover logic */
+  /* wait, border-hover is now rgba. Opacity modifier on rgba string is invalid in standard css.
+     But tailwind utilities usually don't apply opacity to arbitrary values if relying on var() mapping.
+     It's acceptable to just use the var as is. */
   background: var(--border-hover);
 }
 
 /* Animations */
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 .animate-fade-in {
@@ -84,16 +141,20 @@ body {
   background: var(--glass-bg);
   backdrop-filter: var(--glass-blur);
   border: 1px solid var(--glass-border);
-  box-shadow: 
+  box-shadow:
+    0 0 0 1px var(--border-subtle),
+    0 20px 50px rgba(0, 0, 0, 0.1);
+}
+
+.dark .glass-card {
+  box-shadow:
     0 0 0 1px rgba(255, 255, 255, 0.05),
     0 20px 50px rgba(0, 0, 0, 0.5);
 }
 
 .login-glow-effect {
-  background: radial-gradient(
-    ellipse 80% 50% at 50% 100%,
-    rgba(255, 107, 53, 0.3) 0%,
-    rgba(255, 69, 0, 0.1) 40%,
-    transparent 70%
-  );
+  background: radial-gradient(ellipse 80% 50% at 50% 100%,
+      rgba(255, 107, 53, 0.3) 0%,
+      rgba(255, 69, 0, 0.1) 40%,
+      transparent 70%);
 }

@@ -35,7 +35,7 @@ export const Sidebar: React.FC<{ mobile?: boolean; onClose?: () => void }> = ({ 
                         <Rocket size={24} fill="white" />
                     </div>
                     <div>
-                        <h1 className="font-bold text-xl tracking-tight text-white leading-none">Launch<span className="text-accent-primary">Expert</span></h1>
+                        <h1 className="font-bold text-xl tracking-tight text-text-primary leading-none">Launch<span className="text-accent-primary">Expert</span></h1>
                         <span className="text-[10px] uppercase tracking-[0.2em] text-text-muted font-bold">ACADEMIA</span>
                     </div>
                 </div>
@@ -85,7 +85,7 @@ export const Sidebar: React.FC<{ mobile?: boolean; onClose?: () => void }> = ({ 
             {/* Footer */}
             <div className="p-4 border-t border-border-default space-y-2">
                 <div className="flex items-center justify-between">
-                    <button onClick={toggleTheme} className="p-2 text-text-muted hover:text-white transition-colors">
+                    <button onClick={toggleTheme} className="p-2 text-text-muted hover:text-text-primary transition-colors">
                         {theme === 'dark' ? <Moon size={18} /> : <Sun size={18} />}
                     </button>
                     <button onClick={logout} className="p-2 text-text-muted hover:text-red-400 transition-colors flex items-center gap-2 text-xs font-medium">
