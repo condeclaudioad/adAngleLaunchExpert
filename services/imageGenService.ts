@@ -291,15 +291,7 @@ export const generateImageService = async (
     // 2. IF MASTER -> USE GEMINI (Imagen 3)
     if (keys.google) {
         console.log("🎨 Using GEMINI (Imagen 3) for Master");
-        try {
-            return await generateWithGemini(finalPrompt, keys.google, aspectRatio, references);
-        } catch (e) {
-            console.error("Gemini Image Gen Failed, trying Grok fallback if available", e);
-            if (keys.grok) {
-                return generateGrokImage(finalPrompt, keys.grok);
-            }
-            throw e;
-        }
+        return await generateWithGemini(finalPrompt, keys.google, aspectRatio, references);
     }
 
     throw new Error("No available API keys for image generation");
