@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { KnowledgeBase, ImageAnalysis, Angle, GeneratedImage, AppStep, ApprovalStatus, Branding, Business, User } from '../types';
 import {
   saveImageToDB, getAllImagesFromDB, deleteImageFromDB, clearDB,
@@ -56,7 +56,7 @@ interface AdContextType {
   generatedImages: GeneratedImage[];
   addGeneratedImage: (img: GeneratedImage) => void;
   updateImageStatus: (id: string, status: GeneratedImage['status'], url?: string, errorMessage?: string) => void;
-  updateImageType: (id: string, type: 'main' | 'variation') => void;
+  updateImageType: (id: string, type: 'master' | 'variation') => void;
 
   setApprovalStatus: (id: string, status: ApprovalStatus) => void;
   updateImageFeedback: (id: string, feedback: string) => void;
@@ -197,6 +197,10 @@ export const AdProvider: React.FC<{ children: React.ReactNode }> = ({ children }
   // --- Auth Logic ---
   // --- Auth Logic (Supabase Integration) ---
 
+  // Ref to access current step inside the closure
+  const stepRef = useRef(step);
+  useEffect(() => { stepRef.current = step; }, [step]);
+
   useEffect(() => {
     const { data: authListener } = onAuthStateChange(async (supabaseUser) => {
       if (supabaseUser && supabaseUser.email) {
@@ -232,8 +236,8 @@ export const AdProvider: React.FC<{ children: React.ReactNode }> = ({ children }
           if (metaKeys.google) setGoogleApiKey(metaKeys.google);
         }
 
-        // 4. Navigate (only if on Login page - don't interrupt API_SETUP or other flows)
-        if (step === AppStep.LOGIN) {
+        // 4. Navigate using Ref to avoid stale state
+        if (stepRef.current === AppStep.LOGIN) {
           // Check if user has API keys configured
           const hasGoogleKey = metaKeys?.google || localStorage.getItem('le_api_key');
 
@@ -249,7 +253,7 @@ export const AdProvider: React.FC<{ children: React.ReactNode }> = ({ children }
       } else {
         console.log("Supabase Auth Change: Logged Out");
         setUser(null);
-        if (step !== AppStep.LOGIN && step !== AppStep.ADMIN) {
+        if (stepRef.current !== AppStep.LOGIN && stepRef.current !== AppStep.ADMIN) {
           setStep(AppStep.LOGIN);
         }
       }
@@ -258,7 +262,7 @@ export const AdProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     return () => {
       authListener.subscription.unsubscribe();
     };
-  }, []); // Run once on mount
+  }, []);
 
   // Legacy Login wrapper (kept for compatibility with Auth.tsx calling login() manually)
   const login = (email: string): boolean => {
@@ -267,7 +271,12 @@ export const AdProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     return true;
   };
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      await signOut();
+    } catch (e) {
+      console.error("Logout error", e);
+    }
     setUser(null);
     setCurrentBusiness(null);
     localStorage.removeItem('le_user');
@@ -461,7 +470,7 @@ export const AdProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     });
   };
 
-  const updateImageType = (id: string, type: 'main' | 'variation') => {
+  const updateImageType = (id: string, type: 'master' | 'variation') => {
     setGeneratedImages(prev => {
       const newImages = prev.map(img =>
         img.id === id ? { ...img, type } : img

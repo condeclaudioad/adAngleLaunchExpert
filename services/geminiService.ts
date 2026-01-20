@@ -89,7 +89,7 @@ export const extractTextFromFile = async (base64Data: string, mimeType: string):
         })();
 
         return Promise.race([genPromise, timeoutPromise]);
-    }, { maxRetries: 2, baseDelay: 1000, maxDelay: 5000 });
+    }, { maxRetries: 4, baseDelay: 3000, maxDelay: 10000 });
 };
 
 export const refineContext = async (rawText: string): Promise<StructuredContext> => {
@@ -127,7 +127,7 @@ export const refineContext = async (rawText: string): Promise<StructuredContext>
         const response = await Promise.race([genPromise, timeoutPromise]) as any;
         // Fallback to default if it fails, don't block user
         return safeJSONParse(response.text, FALLBACK_CONTEXT);
-    }, { maxRetries: 2, baseDelay: 1000, maxDelay: 5000 });
+    }, { maxRetries: 4, baseDelay: 3000, maxDelay: 10000 });
 };
 
 export const analyzeImage = async (base64Image: string, mimeType: string): Promise<ImageAnalysis> => {
@@ -183,7 +183,7 @@ export const analyzeImage = async (base64Image: string, mimeType: string): Promi
         })();
 
         return Promise.race([genPromise, timeoutPromise]);
-    }, { maxRetries: 2, baseDelay: 1000 });
+    }, { maxRetries: 4, baseDelay: 3000 });
 };
 
 export const generateAngles = async (
@@ -277,5 +277,5 @@ export const generateAngles = async (
         })();
 
         return Promise.race([genPromise, timeoutPromise]);
-    }, { maxRetries: 2, baseDelay: 2000 });
+    }, { maxRetries: 5, baseDelay: 4000 });
 };

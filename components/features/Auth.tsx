@@ -8,6 +8,7 @@ import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 import { AppStep } from '../../types';
 import { ADMIN_PASSWORD } from '../../constants';
+// Note: We use checkAdminPassword for secure verification, using constant as fallback/dev reference if needed
 import {
     signInWithGoogle,
     signInWithEmail,
@@ -15,7 +16,8 @@ import {
     checkIsVip,
     getAllVipUsers,
     addVipUser,
-    removeVipUser
+    removeVipUser,
+    checkAdminPassword
 } from '../../services/supabaseClient';
 
 export const Login: React.FC = () => {
@@ -180,12 +182,21 @@ export const AdminPanel: React.FC = () => {
     const [vipUsers, setVipUsers] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(false);
 
-    const handleLogin = () => {
-        if (password === ADMIN_PASSWORD) {
-            setIsAuth(true);
-            loadVipUsers();
-        } else {
-            alert("Contraseña incorrecta");
+    const handleLogin = async () => {
+        setIsLoading(true);
+        try {
+            const isValid = await checkAdminPassword(password);
+            if (isValid) {
+                setIsAuth(true);
+                loadVipUsers();
+            } else {
+                alert("Contraseña incorrecta");
+            }
+        } catch (error) {
+            console.error(error);
+            alert("Error al verificar contraseña");
+        } finally {
+            setIsLoading(false);
         }
     };
 

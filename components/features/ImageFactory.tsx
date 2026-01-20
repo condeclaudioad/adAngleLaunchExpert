@@ -106,7 +106,7 @@ export const ImageFactory: React.FC = () => {
         const tasks: (() => Promise<void>)[] = [];
 
         for (const angle of selectedAngles) {
-            const existing = generatedImages.find(img => img.angleId === angle.id && img.type === 'main' && img.approvalStatus !== 'rejected');
+            const existing = generatedImages.find(img => img.angleId === angle.id && img.type === 'master' && img.approvalStatus !== 'rejected');
 
             if (!existing || existing.status === 'failed') {
                 tasks.push(async () => {
@@ -116,13 +116,12 @@ export const ImageFactory: React.FC = () => {
                     if (!existing) {
                         await addGeneratedImage({
                             id: imgId, angleId: angle.id, url: '', prompt: `Gemini 3: ${angle.hook}`,
-                            type: 'main', status: 'generating', approvalStatus: 'waiting', modelUsed: 'gemini-3-pro-image'
+                            type: 'master', status: 'generating', approvalStatus: 'waiting', modelUsed: 'gemini-3-pro-image'
                         });
                     } else { updateImageStatus(imgId, 'generating'); }
 
                     try {
                         const url = await generateImageService(
-                            'gemini-3-pro-image',
                             `GEMINI 3 PRO: VISUAL: ${angle.visuals}. HOOK: ${angle.hook}.`,
                             aspectRatio,
                             keys,
@@ -178,7 +177,6 @@ export const ImageFactory: React.FC = () => {
 
                 try {
                     const url = await generateImageService(
-                        'gemini-3-pro-image',
                         `VISUAL: ${angle.visuals}. HOOK: ${angle.hook}.`,
                         aspectRatio,
                         keys,
@@ -435,7 +433,7 @@ export const ImageFactory: React.FC = () => {
 
                     <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
                         {angles.filter(a => a.selected).map(angle => {
-                            const img = generatedImages.find(i => i.angleId === angle.id && i.type === 'main' && i.approvalStatus !== 'rejected');
+                            const img = generatedImages.find(i => i.angleId === angle.id && i.type === 'master' && i.approvalStatus !== 'rejected');
 
                             return (
                                 <div key={angle.id} className="space-y-2">

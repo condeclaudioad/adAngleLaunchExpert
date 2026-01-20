@@ -170,6 +170,7 @@ const buildMasterPrompt = (
     angleVisuals: string,
     branding: Branding,
     kb: KnowledgeBase,
+    aspectRatio: string = "3:4",
     variationInstruction: string = ""
 ): string => {
     const primaryColor = branding.colors.primary;
@@ -216,7 +217,8 @@ RULES:
 - Text must be legible, bold, and modern sans-serif
 - NO spelling errors
 - Product '${productName}' should look premium
-- Aspect ratio: 3:4 vertical (for Stories/Reels)
+- Aspect ratio: ${aspectRatio}
+
 `;
 };
 
@@ -225,7 +227,7 @@ RULES:
 // ═══════════════════════════════════════════════════════════
 
 export const generateImageService = async (
-    modelId: string,
+    // modelId removed
     basePrompt: string,
     aspectRatio: string,
     keys: { google?: string; grok?: string },
@@ -271,6 +273,7 @@ export const generateImageService = async (
         angleVisuals,
         branding,
         knowledgeBase,
+        aspectRatio,
         variationType
     );
 

@@ -1,0 +1,315 @@
+diff --git a/components/features/Auth.tsx b/components/features/Auth.tsx
+index c1552ec..38a8d90 100644
+--- a/components/features/Auth.tsx
++++ b/components/features/Auth.tsx
+@@ -8,6 +8,7 @@ import { Card } from '../ui/Card';
+ import { Badge } from '../ui/Badge';
+ import { AppStep } from '../../types';
+ import { ADMIN_PASSWORD } from '../../constants';
++// Note: We use checkAdminPassword for secure verification, using constant as fallback/dev reference if needed
+ import {
+     signInWithGoogle,
+     signInWithEmail,
+@@ -15,7 +16,8 @@ import {
+     checkIsVip,
+     getAllVipUsers,
+     addVipUser,
+-    removeVipUser
++    removeVipUser,
++    checkAdminPassword
+ } from '../../services/supabaseClient';
+ 
+ export const Login: React.FC = () => {
+@@ -180,12 +182,21 @@ export const AdminPanel: React.FC = () => {
+     const [vipUsers, setVipUsers] = useState<any[]>([]);
+     const [isLoading, setIsLoading] = useState(false);
+ 
+-    const handleLogin = () => {
+-        if (password === ADMIN_PASSWORD) {
+-            setIsAuth(true);
+-            loadVipUsers();
+-        } else {
+-            alert("Contraseña incorrecta");
++    const handleLogin = async () => {
++        setIsLoading(true);
++        try {
++            const isValid = await checkAdminPassword(password);
++            if (isValid) {
++                setIsAuth(true);
++                loadVipUsers();
++            } else {
++                alert("Contraseña incorrecta");
++            }
++        } catch (error) {
++            console.error(error);
++            alert("Error al verificar contraseña");
++        } finally {
++            setIsLoading(false);
+         }
+     };
+ 
+diff --git a/components/features/ImageFactory.tsx b/components/features/ImageFactory.tsx
+index f1d5424..4e83b42 100644
+--- a/components/features/ImageFactory.tsx
++++ b/components/features/ImageFactory.tsx
+@@ -106,7 +106,7 @@ export const ImageFactory: React.FC = () => {
+         const tasks: (() => Promise<void>)[] = [];
+ 
+         for (const angle of selectedAngles) {
+-            const existing = generatedImages.find(img => img.angleId === angle.id && img.type === 'main' && img.approvalStatus !== 'rejected');
++            const existing = generatedImages.find(img => img.angleId === angle.id && img.type === 'master' && img.approvalStatus !== 'rejected');
+ 
+             if (!existing || existing.status === 'failed') {
+                 tasks.push(async () => {
+@@ -116,13 +116,12 @@ export const ImageFactory: React.FC = () => {
+                     if (!existing) {
+                         await addGeneratedImage({
+                             id: imgId, angleId: angle.id, url: '', prompt: `Gemini 3: ${angle.hook}`,
+-                            type: 'main', status: 'generating', approvalStatus: 'waiting', modelUsed: 'gemini-3-pro-image'
++                            type: 'master', status: 'generating', approvalStatus: 'waiting', modelUsed: 'gemini-3-pro-image'
+                         });
+                     } else { updateImageStatus(imgId, 'generating'); }
+ 
+                     try {
+                         const url = await generateImageService(
+-                            'gemini-3-pro-image',
+                             `GEMINI 3 PRO: VISUAL: ${angle.visuals}. HOOK: ${angle.hook}.`,
+                             aspectRatio,
+                             keys,
+@@ -178,7 +177,6 @@ export const ImageFactory: React.FC = () => {
+ 
+                 try {
+                     const url = await generateImageService(
+-                        'gemini-3-pro-image',
+                         `VISUAL: ${angle.visuals}. HOOK: ${angle.hook}.`,
+                         aspectRatio,
+                         keys,
+@@ -435,7 +433,7 @@ export const ImageFactory: React.FC = () => {
+ 
+                     <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
+                         {angles.filter(a => a.selected).map(angle => {
+-                            const img = generatedImages.find(i => i.angleId === angle.id && i.type === 'main' && i.approvalStatus !== 'rejected');
++                            const img = generatedImages.find(i => i.angleId === angle.id && i.type === 'master' && i.approvalStatus !== 'rejected');
+ 
+                             return (
+                                 <div key={angle.id} className="space-y-2">
+diff --git a/list_models.ts b/list_models.ts
+index 9c1ac51..fbed715 100644
+--- a/list_models.ts
++++ b/list_models.ts
+@@ -11,7 +11,7 @@ function getEnvKey() {
+             const content = fs.readFileSync(envPath, 'utf-8');
+             const lines = content.split('\n');
+             for (const line of lines) {
+-                if (line.startsWith('VITE_GOOGLE_api_KEY=')) {
++                if (line.startsWith('VITE_GOOGLE_API_KEY=')) {
+                     return line.split('=')[1].trim().replace(/"/g, '');
+                 }
+                 if (line.startsWith('VITE_GOOGLE_API_KEY=')) {
+@@ -20,7 +20,7 @@ function getEnvKey() {
+             }
+         }
+     } catch (e) { }
+-    return process.env.VITE_GOOGLE_api_KEY || process.env.GOOGLE_API_KEY;
++    return process.env.VITE_GOOGLE_API_KEY || process.env.GOOGLE_API_KEY;
+ }
+ 
+ const apiKey = getEnvKey();
+@@ -44,8 +44,9 @@ async function listModels() {
+         // Based on typical Google AI SDK:
+         for await (const model of response) {
+             // Check if it supports generation
+-            const methods = model.supportedGenerationMethods || [];
+-            console.log(`- ${model.name} | Display: ${model.displayName} | Methods: ${methods.join(', ')}`);
++            const m = model as any;
++            const methods = m.supportedGenerationMethods || [];
++            console.log(`- ${m.name} | Display: ${m.displayName} | Methods: ${methods.join(', ')}`);
+         }
+     } catch (e) {
+         console.error("Error listing models:", e);
+diff --git a/services/grokService.ts b/services/grokService.ts
+index 487c424..b9b1601 100644
+--- a/services/grokService.ts
++++ b/services/grokService.ts
+@@ -13,11 +13,7 @@ interface GrokImageRequest {
+     model: string;
+     prompt: string;
+     n: number;
+-    size: string;
+     response_format: 'url' | 'b64_json';
+-    // Image-to-image specific
+-    image?: string;  // base64 reference image
+-    strength?: number; // 0.0-1.0, lower = more similar to reference
+ }
+ 
+ interface GrokImageResponse {
+@@ -93,27 +89,17 @@ const VARIATION_PROMPTS = {
+ 
+ export const generateGrokImage = async (
+     prompt: string,
+-    grokApiKey: string,
+-    referenceImage?: string,
+-    strength: number = 0.3
++    grokApiKey: string
++    // referenceImage and strength removed as per xAI docs (text-to-image only)
+ ): Promise<string> => {
+ 
+     const requestBody: GrokImageRequest = {
+         model: MODEL_IMAGE_GROK,
+         prompt: prompt,
+         n: 1,
+-        size: '1152x1536', // 3:4 aspect ratio
+         response_format: 'url'
+     };
+ 
+-    // Add reference image for image-to-image generation
+-    if (referenceImage) {
+-        // Clean base64 if needed
+-        const cleanBase64 = referenceImage.replace(/^data:image\/\w+;base64,/, '');
+-        requestBody.image = cleanBase64;
+-        requestBody.strength = strength;
+-    }
+-
+     const response = await fetch(`${GROK_API_BASE}/images/generations`, {
+         method: 'POST',
+         headers: {
+@@ -180,9 +166,7 @@ CRITICAL BRAND LOCK RULES:
+ 
+             const resultUrl = await generateGrokImage(
+                 fullPrompt,
+-                grokApiKey,
+-                master.masterImage,
+-                strength
++                grokApiKey
+             );
+ 
+             const variation: GrokVariation = {
+@@ -302,5 +286,5 @@ CRITICAL RULES:
+ - Keep exact same layout structure
+ - Keep 3:4 vertical aspect ratio`;
+ 
+-    return generateGrokImage(prompt, grokApiKey, masterImage, strength);
++    return generateGrokImage(prompt, grokApiKey);
+ };
+diff --git a/services/imageGenService.ts b/services/imageGenService.ts
+index 2b341c6..c008757 100644
+--- a/services/imageGenService.ts
++++ b/services/imageGenService.ts
+@@ -170,6 +170,7 @@ const buildMasterPrompt = (
+     angleVisuals: string,
+     branding: Branding,
+     kb: KnowledgeBase,
++    aspectRatio: string = "3:4",
+     variationInstruction: string = ""
+ ): string => {
+     const primaryColor = branding.colors.primary;
+@@ -216,7 +217,8 @@ RULES:
+ - Text must be legible, bold, and modern sans-serif
+ - NO spelling errors
+ - Product '${productName}' should look premium
+-- Aspect ratio: 3:4 vertical (for Stories/Reels)
++- Aspect ratio: ${aspectRatio}
++
+ `;
+ };
+ 
+@@ -225,7 +227,7 @@ RULES:
+ // ═══════════════════════════════════════════════════════════
+ 
+ export const generateImageService = async (
+-    modelId: string,
++    // modelId removed
+     basePrompt: string,
+     aspectRatio: string,
+     keys: { google?: string; grok?: string },
+@@ -271,6 +273,7 @@ export const generateImageService = async (
+         angleVisuals,
+         branding,
+         knowledgeBase,
++        aspectRatio,
+         variationType
+     );
+ 
+diff --git a/store/AdContext.tsx b/store/AdContext.tsx
+index 26145a2..b5f4d12 100644
+--- a/store/AdContext.tsx
++++ b/store/AdContext.tsx
+@@ -1,5 +1,5 @@
+ 
+-import React, { createContext, useContext, useState, useEffect } from 'react';
++import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+ import { KnowledgeBase, ImageAnalysis, Angle, GeneratedImage, AppStep, ApprovalStatus, Branding, Business, User } from '../types';
+ import {
+   saveImageToDB, getAllImagesFromDB, deleteImageFromDB, clearDB,
+@@ -56,7 +56,7 @@ interface AdContextType {
+   generatedImages: GeneratedImage[];
+   addGeneratedImage: (img: GeneratedImage) => void;
+   updateImageStatus: (id: string, status: GeneratedImage['status'], url?: string, errorMessage?: string) => void;
+-  updateImageType: (id: string, type: 'main' | 'variation') => void;
++  updateImageType: (id: string, type: 'master' | 'variation') => void;
+ 
+   setApprovalStatus: (id: string, status: ApprovalStatus) => void;
+   updateImageFeedback: (id: string, feedback: string) => void;
+@@ -197,6 +197,10 @@ export const AdProvider: React.FC<{ children: React.ReactNode }> = ({ children }
+   // --- Auth Logic ---
+   // --- Auth Logic (Supabase Integration) ---
+ 
++  // Ref to access current step inside the closure
++  const stepRef = useRef(step);
++  useEffect(() => { stepRef.current = step; }, [step]);
++
+   useEffect(() => {
+     const { data: authListener } = onAuthStateChange(async (supabaseUser) => {
+       if (supabaseUser && supabaseUser.email) {
+@@ -232,8 +236,8 @@ export const AdProvider: React.FC<{ children: React.ReactNode }> = ({ children }
+           if (metaKeys.google) setGoogleApiKey(metaKeys.google);
+         }
+ 
+-        // 4. Navigate (only if on Login page - don't interrupt API_SETUP or other flows)
+-        if (step === AppStep.LOGIN) {
++        // 4. Navigate using Ref to avoid stale state
++        if (stepRef.current === AppStep.LOGIN) {
+           // Check if user has API keys configured
+           const hasGoogleKey = metaKeys?.google || localStorage.getItem('le_api_key');
+ 
+@@ -249,7 +253,7 @@ export const AdProvider: React.FC<{ children: React.ReactNode }> = ({ children }
+       } else {
+         console.log("Supabase Auth Change: Logged Out");
+         setUser(null);
+-        if (step !== AppStep.LOGIN && step !== AppStep.ADMIN) {
++        if (stepRef.current !== AppStep.LOGIN && stepRef.current !== AppStep.ADMIN) {
+           setStep(AppStep.LOGIN);
+         }
+       }
+@@ -258,7 +262,7 @@ export const AdProvider: React.FC<{ children: React.ReactNode }> = ({ children }
+     return () => {
+       authListener.subscription.unsubscribe();
+     };
+-  }, []); // Run once on mount
++  }, []);
+ 
+   // Legacy Login wrapper (kept for compatibility with Auth.tsx calling login() manually)
+   const login = (email: string): boolean => {
+@@ -267,7 +271,12 @@ export const AdProvider: React.FC<{ children: React.ReactNode }> = ({ children }
+     return true;
+   };
+ 
+-  const logout = () => {
++  const logout = async () => {
++    try {
++      await signOut();
++    } catch (e) {
++      console.error("Logout error", e);
++    }
+     setUser(null);
+     setCurrentBusiness(null);
+     localStorage.removeItem('le_user');
+@@ -461,7 +470,7 @@ export const AdProvider: React.FC<{ children: React.ReactNode }> = ({ children }
+     });
+   };
+ 
+-  const updateImageType = (id: string, type: 'main' | 'variation') => {
++  const updateImageType = (id: string, type: 'master' | 'variation') => {
+     setGeneratedImages(prev => {
+       const newImages = prev.map(img =>
+         img.id === id ? { ...img, type } : img

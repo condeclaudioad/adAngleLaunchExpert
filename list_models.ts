@@ -11,7 +11,7 @@ function getEnvKey() {
             const content = fs.readFileSync(envPath, 'utf-8');
             const lines = content.split('\n');
             for (const line of lines) {
-                if (line.startsWith('VITE_GOOGLE_api_KEY=')) {
+                if (line.startsWith('VITE_GOOGLE_API_KEY=')) {
                     return line.split('=')[1].trim().replace(/"/g, '');
                 }
                 if (line.startsWith('VITE_GOOGLE_API_KEY=')) {
@@ -20,7 +20,7 @@ function getEnvKey() {
             }
         }
     } catch (e) { }
-    return process.env.VITE_GOOGLE_api_KEY || process.env.GOOGLE_API_KEY;
+    return process.env.VITE_GOOGLE_API_KEY || process.env.GOOGLE_API_KEY;
 }
 
 const apiKey = getEnvKey();
@@ -44,8 +44,9 @@ async function listModels() {
         // Based on typical Google AI SDK:
         for await (const model of response) {
             // Check if it supports generation
-            const methods = model.supportedGenerationMethods || [];
-            console.log(`- ${model.name} | Display: ${model.displayName} | Methods: ${methods.join(', ')}`);
+            const m = model as any;
+            const methods = m.supportedGenerationMethods || [];
+            console.log(`- ${m.name} | Display: ${m.displayName} | Methods: ${methods.join(', ')}`);
         }
     } catch (e) {
         console.error("Error listing models:", e);

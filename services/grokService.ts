@@ -13,11 +13,7 @@ interface GrokImageRequest {
     model: string;
     prompt: string;
     n: number;
-    size: string;
     response_format: 'url' | 'b64_json';
-    // Image-to-image specific
-    image?: string;  // base64 reference image
-    strength?: number; // 0.0-1.0, lower = more similar to reference
 }
 
 interface GrokImageResponse {
@@ -93,26 +89,16 @@ const VARIATION_PROMPTS = {
 
 export const generateGrokImage = async (
     prompt: string,
-    grokApiKey: string,
-    referenceImage?: string,
-    strength: number = 0.3
+    grokApiKey: string
+    // referenceImage and strength removed as per xAI docs (text-to-image only)
 ): Promise<string> => {
 
     const requestBody: GrokImageRequest = {
         model: MODEL_IMAGE_GROK,
         prompt: prompt,
         n: 1,
-        size: '1152x1536', // 3:4 aspect ratio
         response_format: 'url'
     };
-
-    // Add reference image for image-to-image generation
-    if (referenceImage) {
-        // Clean base64 if needed
-        const cleanBase64 = referenceImage.replace(/^data:image\/\w+;base64,/, '');
-        requestBody.image = cleanBase64;
-        requestBody.strength = strength;
-    }
 
     const response = await fetch(`${GROK_API_BASE}/images/generations`, {
         method: 'POST',
@@ -180,9 +166,7 @@ CRITICAL BRAND LOCK RULES:
 
             const resultUrl = await generateGrokImage(
                 fullPrompt,
-                grokApiKey,
-                master.masterImage,
-                strength
+                grokApiKey
             );
 
             const variation: GrokVariation = {
@@ -302,5 +286,5 @@ CRITICAL RULES:
 - Keep exact same layout structure
 - Keep 3:4 vertical aspect ratio`;
 
-    return generateGrokImage(prompt, grokApiKey, masterImage, strength);
+    return generateGrokImage(prompt, grokApiKey);
 };
