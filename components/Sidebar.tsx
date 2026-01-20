@@ -35,7 +35,7 @@ export const Sidebar: React.FC<{ mobile?: boolean; onClose?: () => void }> = ({ 
                         <Rocket size={24} fill="white" />
                     </div>
                     <div>
-                        <h1 className="font-bold text-xl tracking-tight text-text-primary leading-none">Launch<span className="text-accent-primary">Expert</span></h1>
+                        <h1 className="font-bold text-xl tracking-tight text-accent-primary leading-none">LaunchExpert</h1>
                         <span className="text-[10px] uppercase tracking-[0.2em] text-text-muted font-bold">ACADEMIA</span>
                     </div>
                 </div>

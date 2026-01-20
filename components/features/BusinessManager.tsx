@@ -19,7 +19,7 @@ export const BusinessManager: React.FC = () => {
                 <div className="relative z-10">
                     <Badge variant="accent" className="mb-3">Beta Access</Badge>
                     <h2 className="text-4xl font-bold text-text-primary mb-2 tracking-tight">
-                        Hola, <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent-primary to-orange-500">{user?.name?.split(' ')[0]}</span> 👋
+                        Hola, <span className="text-text-primary">{user?.name?.split(' ')[0]}</span> 👋
                     </h2>
                     <p className="text-text-secondary max-w-xl text-lg">
                         Gestiona tus proyectos y crea campañas publicitarias de alto impacto con IA.

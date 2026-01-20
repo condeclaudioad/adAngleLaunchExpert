@@ -30,7 +30,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
           <div className="w-8 h-8 rounded-lg bg-accent-primary flex items-center justify-center text-white font-bold shadow-glow-orange">
             LE
           </div>
-          <h1 className="font-bold text-lg text-text-primary">Launch Expert</h1>
+          <h1 className="font-bold text-lg text-accent-primary">Launch Expert</h1>
         </div>
         <button onClick={() => setMobileMenuOpen(true)} className="p-2 text-text-primary hover:bg-bg-tertiary rounded-lg">
           <Menu />

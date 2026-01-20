@@ -144,7 +144,7 @@ export const Login: React.FC = () => {
             </Card>
 
             <p className="absolute bottom-6 text-xs text-text-muted opacity-50">
-                Launch Expert Academia &copy; 2024
+                Launch Expert Academia &copy; 2026
             </p>
         </div>
     );
