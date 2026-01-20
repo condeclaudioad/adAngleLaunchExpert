@@ -7,11 +7,10 @@ import { BrandingForm } from './components/features/BrandingForm';
 import { ImageAnalyzer } from './components/features/ImageAnalyzer';
 import { AngleGenerator } from './components/features/AngleGenerator';
 import { ImageFactory } from './components/features/ImageFactory';
-import { DriveExport } from './components/features/DriveExport';
+
 import { BusinessManager } from './components/features/BusinessManager';
 import { ApiSetup } from './components/features/ApiSetup';
 import { Login, AdminPanel } from './components/features/Auth';
-import { VariationFactory } from './components/features/VariationFactory';
 import { AppStep } from './types';
 
 const CurrentStep: React.FC = () => {
@@ -27,8 +26,6 @@ const CurrentStep: React.FC = () => {
     case AppStep.ANALYSIS: return <ImageAnalyzer />;
     case AppStep.ANGLES: return <AngleGenerator />;
     case AppStep.GENERATION: return <ImageFactory />;
-    case AppStep.VARIATIONS: return <VariationFactory />;
-    case AppStep.EXPORT: return <DriveExport />;
     default: return <BusinessManager />;
   }
 };

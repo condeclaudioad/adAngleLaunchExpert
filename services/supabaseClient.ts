@@ -26,15 +26,7 @@ export const getSupabase = (): SupabaseClient => {
 
 
 
-export const signInWithGoogle = async (): Promise<void> => {
-    const { error } = await getSupabase().auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-            redirectTo: window.location.origin
-        }
-    });
-    if (error) throw error;
-};
+
 
 export const signInWithEmail = async (email: string, password: string): Promise<SupabaseUser | null> => {
     const { data, error } = await getSupabase().auth.signInWithPassword({

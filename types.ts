@@ -59,7 +59,7 @@ export type ApprovalStatus = 'waiting' | 'approved' | 'rejected';
 // TIPOS PARA GENERACIÓN DE IMÁGENES (GEMINI + GROK)
 // ═══════════════════════════════════════════════════════════
 
-export type ImageProvider = 'gemini' | 'grok' | 'fal';
+export type ImageProvider = 'gemini' | 'fal';
 
 export interface GeneratedImage {
   id: string;
@@ -78,36 +78,7 @@ export interface GeneratedImage {
   errorMessage?: string; // NUEVO: Para guardar el error
 }
 
-// ═══════════════════════════════════════════════════════════
-// TIPOS PARA GROK PIPELINE
-// ═══════════════════════════════════════════════════════════
 
-export interface MasterCreative {
-  masterId: string;
-  masterImage: string; // URL o base64
-  angleId: string;
-  brandLockedElements: string[];
-  variationRules: {
-    allowedChanges: string[];
-    forbiddenChanges: string[];
-  };
-  variations: GrokVariation[];
-}
-
-export interface GrokVariation {
-  variationId: string;
-  prompt: string;
-  negativePrompt: string;
-  category: 'safe' | 'medium' | 'aggressive';
-  status: 'pending' | 'generating' | 'completed' | 'failed';
-  resultUrl?: string;
-}
-
-export interface GrokBatchRequest {
-  masters: MasterCreative[];
-  aspectRatio: string;
-  totalExpected: number;
-}
 
 // ═══════════════════════════════════════════════════════════
 // TIPOS PARA SUPABASE AUTH
@@ -143,9 +114,7 @@ export enum AppStep {
   BRANDING = 2,
   ANALYSIS = 3,
   ANGLES = 4,
-  GENERATION = 5,
-  VARIATIONS = 6,  // NUEVO STEP
-  EXPORT = 7,
+  GENERATION = 5
 }
 
 export interface GenModel {
@@ -161,6 +130,5 @@ export interface GenModel {
 
 export interface ApiKeys {
   google: string;
-  grok: string;
   fal?: string;
 }

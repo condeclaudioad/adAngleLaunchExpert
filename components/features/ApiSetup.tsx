@@ -21,11 +21,7 @@ const GoogleIcon = () => (
     </svg>
 );
 
-const GrokIcon = () => (
-    <svg viewBox="0 0 24 24" className="w-6 h-6" fill="currentColor">
-        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-    </svg>
-);
+
 
 const CheckIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5">
@@ -61,20 +57,15 @@ interface ApiValidation {
 // ═══════════════════════════════════════════════════════════
 
 export const ApiSetup: React.FC = () => {
-    const { setGoogleApiKey, setGrokApiKey, googleApiKey, grokApiKey, setStep, user } = useAdContext();
+    const { setGoogleApiKey, googleApiKey, setStep, user } = useAdContext();
 
     // Input states
     const [googleKeyInput, setGoogleKeyInput] = useState(googleApiKey || '');
-    const [grokKeyInput, setGrokKeyInput] = useState(grokApiKey || '');
 
     // Validation states
     const [googleValidation, setGoogleValidation] = useState<ApiValidation>({
         status: googleApiKey ? 'success' : 'idle',
         message: googleApiKey ? 'API conectada anteriormente' : ''
-    });
-    const [grokValidation, setGrokValidation] = useState<ApiValidation>({
-        status: grokApiKey ? 'success' : 'idle',
-        message: grokApiKey ? 'API conectada anteriormente' : ''
     });
 
     const [isSaving, setIsSaving] = useState(false);
@@ -120,84 +111,7 @@ export const ApiSetup: React.FC = () => {
         }
     };
 
-    const validateGrokApi = async () => {
-        if (!grokKeyInput.trim()) {
-            setGrokValidation({ status: 'error', message: 'Ingresa una API Key' });
-            return;
-        }
 
-        // First, validate the format of the key
-        const trimmedKey = grokKeyInput.trim();
-        if (!trimmedKey.startsWith('xai-') && !trimmedKey.startsWith('sk-')) {
-            setGrokValidation({
-                status: 'error',
-                message: 'Formato inválido. La key debe comenzar con "xai-" o "sk-"'
-            });
-            return;
-        }
-
-        setGrokValidation({ status: 'validating', message: 'Validando conexión...' });
-
-        try {
-            // Test Grok API with a simple chat request
-            const response = await fetch('https://api.x.ai/v1/chat/completions', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${trimmedKey}`
-                },
-                body: JSON.stringify({
-                    model: 'grok-2-latest',
-                    messages: [{ role: 'user', content: 'Say OK' }],
-                    max_tokens: 5
-                })
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                if (data.choices && data.choices.length > 0) {
-                    setGrokValidation({ status: 'success', message: '¡Conexión exitosa! Grok está listo.' });
-                } else {
-                    throw new Error('Respuesta inesperada');
-                }
-            } else {
-                // Try to get error details
-                const errorData = await response.json().catch(() => ({}));
-                const errorMsg = errorData.error?.message || '';
-
-                if (response.status === 401) {
-                    setGrokValidation({ status: 'error', message: 'API Key inválida. Verifica en console.x.ai' });
-                } else if (response.status === 429) {
-                    setGrokValidation({ status: 'error', message: 'Límite de tasa excedido. Intenta más tarde.' });
-                } else if (response.status === 403) {
-                    setGrokValidation({ status: 'error', message: 'Sin permisos. Verifica los permisos de tu API key.' });
-                } else {
-                    // Unknown error but key format is valid, allow with warning
-                    setGrokValidation({
-                        status: 'success',
-                        message: `Key guardada. Error de validación: ${response.status}`
-                    });
-                }
-            }
-        } catch (e: any) {
-            console.error('Grok API validation error:', e);
-
-            // CORS error or network issue - the key format is valid, so we accept it
-            if (e.message?.includes('Failed to fetch') || e.name === 'TypeError') {
-                // This is likely a CORS issue - xAI API doesn't allow browser requests
-                // We validate format only and trust the user
-                setGrokValidation({
-                    status: 'success',
-                    message: '✓ Formato válido. La key se validará al generar variaciones.'
-                });
-            } else {
-                setGrokValidation({
-                    status: 'error',
-                    message: `Error: ${e.message || 'Verifica tu conexión'}`
-                });
-            }
-        }
-    };
 
     // ═══════════════════════════════════════════════════════════
     // SAVE & CONTINUE
@@ -215,14 +129,10 @@ export const ApiSetup: React.FC = () => {
         try {
             // Save to local context first (for immediate use)
             setGoogleApiKey(googleKeyInput.trim());
-            if (grokKeyInput.trim()) {
-                setGrokApiKey(grokKeyInput.trim());
-            }
 
             // Save to Supabase user metadata (for persistence across devices)
             await saveApiKeys({
-                google: googleKeyInput.trim(),
-                grok: grokKeyInput.trim() || undefined
+                google: googleKeyInput.trim()
             });
 
             // Navigate to main app
@@ -268,8 +178,7 @@ export const ApiSetup: React.FC = () => {
     // RENDER
     // ═══════════════════════════════════════════════════════════
 
-    const bothValidated = googleValidation.status === 'success' && grokValidation.status === 'success';
-    const googleOnly = googleValidation.status === 'success' && grokValidation.status !== 'success';
+
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-background p-4 relative overflow-hidden">
@@ -352,64 +261,6 @@ export const ApiSetup: React.FC = () => {
                     </div>
                 </Card>
 
-                {/* Grok API Card */}
-                <Card className="!p-6 space-y-4 border-white/10 relative overflow-hidden">
-                    {grokValidation.status === 'success' && (
-                        <div className="absolute top-0 right-0 w-20 h-20 bg-emerald-500/10 rounded-bl-full" />
-                    )}
-
-                    <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center border border-white/10">
-                            <GrokIcon />
-                        </div>
-                        <div className="flex-1">
-                            <h2 className="text-lg font-semibold text-white">Grok API (xAI)</h2>
-                            <p className="text-xs text-textMuted">Para variaciones de anuncios (opcional pero recomendado)</p>
-                        </div>
-                        {grokValidation.status === 'success' && (
-                            <div className="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center">
-                                <CheckIcon />
-                            </div>
-                        )}
-                    </div>
-
-                    <div className="space-y-3">
-                        <div className="flex gap-2">
-                            <Input
-                                placeholder="Pegar API Key (xai-...)"
-                                value={grokKeyInput}
-                                onChange={(e) => {
-                                    setGrokKeyInput(e.target.value);
-                                    if (grokValidation.status !== 'idle') {
-                                        setGrokValidation({ status: 'idle', message: '' });
-                                    }
-                                }}
-                                type="password"
-                                className="flex-1"
-                            />
-                            <Button
-                                onClick={validateGrokApi}
-                                isLoading={grokValidation.status === 'validating'}
-                                disabled={!grokKeyInput.trim() || grokValidation.status === 'validating'}
-                                variant={grokValidation.status === 'success' ? 'outline' : 'primary'}
-                            >
-                                {grokValidation.status === 'success' ? 'Reconectar' : 'Validar'}
-                            </Button>
-                        </div>
-
-                        <StatusBadge validation={grokValidation} />
-
-                        <a
-                            href="https://console.x.ai/"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
-                        >
-                            <span>Obtener API Key de Grok →</span>
-                        </a>
-                    </div>
-                </Card>
-
                 {/* Continue Button */}
                 <div className="space-y-4">
                     <Button
@@ -419,14 +270,8 @@ export const ApiSetup: React.FC = () => {
                         disabled={googleValidation.status !== 'success'}
                         className="!py-4 text-base"
                     >
-                        {bothValidated ? '🚀 Comenzar a Crear Anuncios' : googleOnly ? 'Continuar solo con Gemini' : 'Continuar'}
+                        🚀 Comenzar a Crear Anuncios
                     </Button>
-
-                    {googleOnly && (
-                        <p className="text-center text-xs text-yellow-500/80">
-                            ⚠️ Sin Grok API no podrás generar variaciones de anuncios
-                        </p>
-                    )}
                 </div>
 
                 {/* Footer */}

@@ -26,7 +26,7 @@ export const ImageFactory: React.FC = () => {
     const {
         angles, branding, knowledgeBase, imageAnalysis, generatedImages,
         addGeneratedImage, updateImageStatus, updateImageType, setStep, setApprovalStatus,
-        deleteImage, googleApiKey, grokApiKey
+        deleteImage, googleApiKey
     } = useAdContext();
 
     const [isProcessing, setIsProcessing] = useState(false);
@@ -126,7 +126,7 @@ export const ImageFactory: React.FC = () => {
     const generateMains = async () => {
         stopSignal.current = false;
         setIsProcessing(true);
-        const keys = { google: googleApiKey || undefined, grok: grokApiKey || undefined };
+        const keys = { google: googleApiKey || undefined };
         const selectedAngles = angles.filter(a => a.selected);
         const tasks: (() => Promise<void>)[] = [];
 
@@ -170,7 +170,7 @@ export const ImageFactory: React.FC = () => {
         stopSignal.current = false;
         setIsProcessing(true);
 
-        const keys = { google: googleApiKey || undefined, grok: grokApiKey || undefined };
+        const keys = { google: googleApiKey || undefined };
         const tasks: (() => Promise<void>)[] = [];
         const angle = angles.find(a => a.id === parentImg.angleId);
         if (!angle) return;

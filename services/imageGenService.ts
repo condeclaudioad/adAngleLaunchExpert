@@ -1,12 +1,11 @@
-// services/imageGenService.ts - VERSIÓN CORREGIDA
+// services/imageGenService.ts - GEMINI ONLY (ROBUST)
 
 import { GoogleGenAI } from "@google/genai";
 import { Branding, KnowledgeBase, ImageAnalysis } from '../types';
 import { MODEL_IMAGE_GEMINI } from '../constants';
-import { generateGrokImage } from './grokService';
 
 // ═══════════════════════════════════════════════════════════
-// ROBUST RETRY LOGIC
+// ROBUST RETRY LOGIC (ENHANCED)
 // ═══════════════════════════════════════════════════════════
 
 const robustGeminiCall = async <T>(
@@ -14,30 +13,48 @@ const robustGeminiCall = async <T>(
     retries = 3,
     baseDelay = 2000
 ): Promise<T> => {
+    let lastError: any;
+
     for (let i = 0; i < retries; i++) {
         try {
             return await operation();
         } catch (error: any) {
+            lastError = error;
             const msg = error?.message || JSON.stringify(error);
+
+            // Check for specific error types to decide retry strategy
             const isQuota = msg.includes('429') || msg.includes('Resource has been exhausted');
             const isInternal = msg.includes('500') || msg.includes('Internal error');
             const isOverloaded = msg.includes('503') || msg.includes('overloaded');
+            const isTimeout = msg.includes('Timeout') || msg.includes('timed out');
 
-            if ((isQuota || isInternal || isOverloaded) && i < retries - 1) {
-                const delay = baseDelay * Math.pow(2, i) + (Math.random() * 1000);
-                console.warn(`⚠️ API Error (${isQuota ? '429' : '500/503'}). Retrying in ${Math.round(delay)}ms... (Attempt ${i + 1}/${retries})`);
-                await new Promise(res => setTimeout(res, delay));
-            } else {
-                console.error("❌ Fatal API Error after retries:", msg);
+            // If it's a fatal client error (400, 401, 403, 404), do not retry
+            const isFatal = msg.includes('400') || msg.includes('401') || msg.includes('403') || msg.includes('404');
+
+            if (isFatal) {
+                console.error(`❌ Fatal API Error (No Retry): ${msg}`);
                 throw error;
+            }
+
+            if (i < retries - 1) {
+                // Exponential backoff with jitter
+                // 429 errors need longer wait times
+                const backoff = isQuota ? 5000 : baseDelay;
+                const delay = backoff * Math.pow(2, i) + (Math.random() * 1000);
+
+                console.warn(`⚠️ API Error (${msg.substring(0, 50)}...). Retrying in ${Math.round(delay)}ms... (Attempt ${i + 1}/${retries})`);
+                await new Promise(res => setTimeout(res, delay));
             }
         }
     }
-    throw new Error("Failed after max retries");
+
+    // If we get here, all retries failed
+    console.error("❌ Fatal API Error after retries:", lastError?.message);
+    throw lastError || new Error("Failed after max retries");
 };
 
 // ═══════════════════════════════════════════════════════════
-// GEMINI IMAGE GENERATION (MASTER CREATIVES)
+// GEMINI IMAGE GENERATION
 // ═══════════════════════════════════════════════════════════
 
 const generateWithGemini = async (
@@ -51,20 +68,21 @@ const generateWithGemini = async (
     const validRatios = ["1:1", "3:4", "4:3", "9:16", "16:9"];
     const finalRatio = validRatios.includes(aspectRatio) ? aspectRatio : "3:4";
 
-    console.log(`🎨 Generating MASTER Image (${finalRatio}) with ${referenceImages.length} refs`);
+    console.log(`🎨 Generating Image (${finalRatio}) - Prompt length: ${prompt.length}`);
 
     const ai = new GoogleGenAI({ apiKey });
 
     return robustGeminiCall(async () => {
+        // Reduced timeout to fail faster if stuck, but long enough for generation
         const timeoutPromise = new Promise<string>((_, reject) =>
-            setTimeout(() => reject(new Error("Timeout: Generation took too long (>90s)")), 90000)
+            setTimeout(() => reject(new Error("Timeout: Gemini Generation took too long (>60s)")), 60000)
         );
 
         const genPromise = (async () => {
             const parts: any[] = [];
 
-            // Add reference images first
-            referenceImages.forEach(img => {
+            // Add reference images first (limit to 3 to prevent payload issues)
+            referenceImages.slice(0, 3).forEach(img => {
                 parts.push({ inlineData: { data: img.data, mimeType: img.mimeType } });
             });
 
@@ -100,7 +118,7 @@ TECHNICAL REQUIREMENTS:
         })();
 
         return Promise.race([genPromise, timeoutPromise]);
-    }, 3, 3000);
+    }, 3, 3000); // 3 retries, start with 3s delay
 };
 
 // ═══════════════════════════════════════════════════════════
@@ -130,7 +148,7 @@ RULES:
 
     return robustGeminiCall(async () => {
         const timeoutPromise = new Promise<string>((_, reject) =>
-            setTimeout(() => reject(new Error("Timeout: Edit took too long")), 60000)
+            setTimeout(() => reject(new Error("Timeout: Edit took too long")), 45000)
         );
 
         const genPromise = (async () => {
@@ -158,7 +176,7 @@ RULES:
         })();
 
         return Promise.race([genPromise, timeoutPromise]);
-    });
+    }, 2, 2000); // 2 retries is enough for edit
 };
 
 // ═══════════════════════════════════════════════════════════
@@ -227,10 +245,9 @@ RULES:
 // ═══════════════════════════════════════════════════════════
 
 export const generateImageService = async (
-    // modelId removed
     basePrompt: string,
     aspectRatio: string,
-    keys: { google?: string; grok?: string },
+    keys: { google?: string; },
     branding: Branding,
     knowledgeBase: KnowledgeBase,
     imageAnalysis: ImageAnalysis[],
@@ -278,20 +295,6 @@ export const generateImageService = async (
     );
 
     // PROCEED TO GENERATION
-
-    // 1. VARIATION LOGIC -> FALLBACK TO GEMINI (Grok API is currently broken/unavailable publically)
-    if (variationType) {
-        console.log("🎨 Variation requested. Fallback to GEMINI (Imagen 3) as Grok API is unavailable.");
-        // We append the variation type to the prompt, which buildMasterPrompt already handles.
-        // We use the same Gemini service.
-        return await generateWithGemini(finalPrompt, keys.google, aspectRatio, references);
-    }
-
-    // 2. MASTER -> USE GEMINI (Imagen 3)
-    if (keys.google) {
-        console.log("🎨 Using GEMINI (Imagen 3) for Master");
-        return await generateWithGemini(finalPrompt, keys.google, aspectRatio, references);
-    }
-
-    throw new Error("No available API keys for image generation");
+    console.log(`🎨 Requesting generation with Gemini (Variation: ${!!variationType})`);
+    return await generateWithGemini(finalPrompt, keys.google, aspectRatio, references);
 };

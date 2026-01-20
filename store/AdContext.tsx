@@ -24,8 +24,7 @@ interface AdContextType {
   // API Key Management (User Provided)
   googleApiKey: string | null;
   setGoogleApiKey: (key: string) => void;
-  grokApiKey: string;
-  setGrokApiKey: (key: string) => void;
+
 
   // Admin
   adminAddEmail: (email: string) => void;
@@ -140,16 +139,7 @@ export const AdProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     return localStorage.getItem('le_api_key') || null;
   });
 
-  const [grokApiKey, setGrokApiKey] = useState<string>(() => {
-    try {
-      const key = localStorage.getItem('le_grok_key');
-      return key ? JSON.parse(key) : '';
-    } catch { return ''; }
-  });
 
-  useEffect(() => {
-    safeLocalStorageSet('le_grok_key', grokApiKey);
-  }, [grokApiKey]);
 
   const setGoogleApiKey = (key: string) => {
     setGoogleApiKeyState(key);
@@ -232,7 +222,6 @@ export const AdProvider: React.FC<{ children: React.ReactNode }> = ({ children }
         // 3. Load API Keys from Meta
         const metaKeys = supabaseUser.user_metadata?.api_keys;
         if (metaKeys) {
-          if (metaKeys.grok) setGrokApiKey(metaKeys.grok);
           if (metaKeys.google) setGoogleApiKey(metaKeys.google);
         }
 
@@ -528,7 +517,6 @@ export const AdProvider: React.FC<{ children: React.ReactNode }> = ({ children }
       step, setStep,
       user, login, logout,
       googleApiKey, setGoogleApiKey,
-      grokApiKey, setGrokApiKey,
       adminAddEmail, adminRemoveEmail, customAllowedEmails,
       businesses, currentBusiness, createNewBusiness, saveCurrentBusiness, updateBusinessPartial, selectBusiness, deleteBusiness,
       knowledgeBase, setKnowledgeBase,

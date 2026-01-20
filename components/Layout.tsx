@@ -16,8 +16,6 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     { id: AppStep.ANALYSIS, label: 'Análisis Visual', icon: 'M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z M15 12a3 3 0 11-6 0 3 3 0 016 0z' },
     { id: AppStep.ANGLES, label: 'Ángulos', icon: 'M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z' },
     { id: AppStep.GENERATION, label: 'Fábrica Creativa', icon: 'M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z' },
-    { id: AppStep.VARIATIONS, label: 'Variaciones', icon: 'M4.098 19.902a3.75 3.75 0 005.304 0l6.401-6.402M6.75 21A3.75 3.75 0 013 17.25V4.125C3 3.504 3.504 3 4.125 3h5.25c.621 0 1.125.504 1.125 1.125v4.072c0 .657.66 1.175 1.308 1.055 2.273-.42 4.414 1.252 4.442 3.559a4.49 4.49 0 01-1.35 3.19l-9.802 9.4z' },
-    { id: AppStep.EXPORT, label: 'Exportar', icon: 'M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694-4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75m-16.5-3.75v3.75m16.5 0v3.75C20.25 16.153 16.556 18 12 18s-8.25-1.847-8.25-4.125v-3.75m16.5 0c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125' },
   ];
 
   return (
@@ -141,12 +139,10 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
         {/* Header Badges */}
         <div className="mb-6 flex gap-2">
           {step === AppStep.GENERATION && <Badge className="ml-2">Fábrica</Badge>}
-          {step === AppStep.VARIATIONS && <Badge className="ml-2" variant="vip">Variaciones</Badge>}
-          {step === AppStep.EXPORT && <Badge className="ml-2">Exportar</Badge>}
         </div>
 
         {children}
-      </main>
-    </div>
+      </main >
+    </div >
   );
 };
