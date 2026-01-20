@@ -72,7 +72,7 @@ export const Login: React.FC = () => {
                     </div>
 
                     <Badge variant="vip" className="mb-4 shadow-lg shadow-amber-900/20">VIP ACCESS</Badge>
-                    <h1 className="text-3xl font-bold text-white tracking-tight mb-2">
+                    <h1 className="text-3xl font-bold text-text-primary tracking-tight mb-2">
                         {isSignUp ? 'Crear Cuenta' : 'Bienvenido'}
                     </h1>
                     <p className="text-sm text-text-secondary">
@@ -217,7 +217,7 @@ export const AdminPanel: React.FC = () => {
                     <div className="mx-auto w-12 h-12 bg-red-500/10 rounded-full flex items-center justify-center mb-4">
                         <Lock className="text-red-500" />
                     </div>
-                    <h2 className="text-xl font-bold text-white">Área Restringida</h2>
+                    <h2 className="text-xl font-bold text-text-primary">Área Restringida</h2>
                     <Input
                         type="password"
                         placeholder="Contraseña Maestra"
@@ -247,7 +247,7 @@ export const AdminPanel: React.FC = () => {
                             <ShieldCheck size={24} className="text-accent-primary" />
                         </div>
                         <div>
-                            <h2 className="text-2xl font-bold text-white">Administrar Accesos VIP</h2>
+                            <h2 className="text-2xl font-bold text-text-primary">Administrar Accesos VIP</h2>
                             <p className="text-text-muted text-sm">Gestiona quién tiene acceso a la plataforma</p>
                         </div>
                     </div>
@@ -276,7 +276,7 @@ export const AdminPanel: React.FC = () => {
 
                     <Card className="md:col-span-2">
                         <div className="flex items-center justify-between mb-6">
-                            <h3 className="font-bold text-base text-white">Usuarios Autorizados</h3>
+                            <h3 className="font-bold text-base text-text-primary">Usuarios Autorizados</h3>
                             <Badge variant="accent">{vipUsers.length} Activos</Badge>
                         </div>
 
@@ -296,7 +296,7 @@ export const AdminPanel: React.FC = () => {
                                                 {user.email[0].toUpperCase()}
                                             </div>
                                             <div>
-                                                <p className="text-sm font-medium text-white">{user.email}</p>
+                                                <p className="text-sm font-medium text-text-primary">{user.email}</p>
                                                 <p className="text-[10px] text-text-muted">
                                                     Agregado por {user.added_by}
                                                 </p>

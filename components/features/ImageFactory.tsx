@@ -312,7 +312,7 @@ export const ImageFactory: React.FC = () => {
                 <div className="w-12 h-12 bg-bg-tertiary rounded-full flex items-center justify-center mx-auto mb-4">
                     <ImageIcon size={24} className="text-text-muted" />
                 </div>
-                <p className="text-sm font-bold text-white mb-1 uppercase tracking-wide">{angle.name}</p>
+                <p className="text-sm font-bold text-text-primary mb-1 uppercase tracking-wide">{angle.name}</p>
                 <p className="text-xs text-text-muted mb-4 max-w-sm mx-auto">{angle.hook}</p>
                 <Button onClick={generateMains} size="sm" variant="secondary">Generar Maestro</Button>
             </div>
@@ -367,7 +367,7 @@ export const ImageFactory: React.FC = () => {
                 <div className="w-full lg:w-2/3 lg:border-l border-border-default lg:pl-8 space-y-5 relative z-10">
                     <div className="flex items-center gap-3">
                         <Badge variant="outline" className="text-[10px] w-6 h-6 flex items-center justify-center p-0">{variations.length}</Badge>
-                        <h4 className="text-sm font-bold text-white">Variaciones Generadas</h4>
+                        <h4 className="text-sm font-bold text-text-primary">Variaciones Generadas</h4>
                     </div>
 
                     {variations.length === 0 ? (
@@ -400,7 +400,7 @@ export const ImageFactory: React.FC = () => {
             <div className="flex flex-col md:flex-row justify-between items-end gap-4 border-b border-border-default pb-6">
                 <div>
                     <Badge variant="accent" className="mb-2">Paso 4: Producción</Badge>
-                    <h2 className="text-3xl font-bold text-white flex items-center gap-2">
+                    <h2 className="text-3xl font-bold text-text-primary flex items-center gap-2">
                         <ImageIcon className="text-accent-primary" /> Fábrica Creativa
                     </h2>
                     <p className="text-text-secondary mt-2">
@@ -425,7 +425,7 @@ export const ImageFactory: React.FC = () => {
                         <div className="w-20 h-20 bg-bg-tertiary rounded-full flex items-center justify-center mx-auto mb-4">
                             <AlertTriangle size={32} className="text-text-muted" />
                         </div>
-                        <h3 className="text-xl font-bold text-white mb-2">No hay ángulos seleccionados</h3>
+                        <h3 className="text-xl font-bold text-text-primary mb-2">No hay ángulos seleccionados</h3>
                         <p className="text-text-muted mb-6">Regresa al paso anterior para seleccionar tus mejores ángulos.</p>
                         <Button onClick={() => setStep(AppStep.ANGLES)} variant="secondary">
                             Ir a Ángulos
@@ -460,7 +460,7 @@ export const ImageFactory: React.FC = () => {
                 <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setIsEditing(false)}>
                     <Card className="w-full max-w-lg bg-bg-elevated border-border-default space-y-4" onClick={(e) => e.stopPropagation()}>
                         <div className="flex justify-between items-center border-b border-border-default pb-4">
-                            <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                            <h3 className="text-lg font-bold text-text-primary flex items-center gap-2">
                                 <Edit2 size={18} /> Editar Imagen
                             </h3>
                             <button onClick={() => setIsEditing(false)}><X size={18} className="text-text-muted" /></button>

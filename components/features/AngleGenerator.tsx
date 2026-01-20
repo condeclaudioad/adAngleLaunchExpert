@@ -73,7 +73,7 @@ export const AngleGenerator: React.FC = () => {
       <div className="flex flex-col md:flex-row justify-between items-end gap-4 border-b border-border-default pb-6">
         <div>
           <Badge variant="accent" className="mb-2">Paso 3: Ángulos</Badge>
-          <h2 className="text-3xl font-bold text-white flex items-center gap-2">
+          <h2 className="text-3xl font-bold text-text-primary flex items-center gap-2">
             <Zap className="text-accent-primary" /> Matriz de Ángulos
           </h2>
           <p className="text-text-secondary mt-2 max-w-2xl">
@@ -104,7 +104,7 @@ export const AngleGenerator: React.FC = () => {
           <div className="w-24 h-24 bg-accent-primary/10 rounded-full flex items-center justify-center mb-6 shadow-glow-orange">
             <Sparkles size={48} className="text-accent-primary" />
           </div>
-          <h3 className="text-2xl font-bold text-white mb-2">Lluvia de Ideas IA</h3>
+          <h3 className="text-2xl font-bold text-text-primary mb-2">Lluvia de Ideas IA</h3>
           <p className="text-text-muted mb-8 max-w-md text-center">
             Analizaremos la psicología de tu cliente y generaremos ganchos irresistibles.
           </p>
@@ -162,13 +162,13 @@ export const AngleGenerator: React.FC = () => {
                   <Badge variant={emotionVariant}>{angle.emotion}</Badge>
                 </div>
 
-                <h3 className="text-lg font-bold text-white mb-3 pr-8 leading-tight">{angle.name}</h3>
+                <h3 className="text-lg font-bold text-text-primary mb-3 pr-8 leading-tight">{angle.name}</h3>
                 <p className="text-sm text-text-secondary mb-6 flex-grow leading-relaxed">{angle.description}</p>
 
                 <div className="space-y-3 mt-auto relative z-10">
                   <div className={`p-4 rounded-xl border transition-colors ${angle.selected ? 'bg-accent-primary/20 border-accent-primary/20' : 'bg-bg-tertiary border-border-default'}`}>
                     <span className="text-[10px] text-accent-primary font-bold uppercase block mb-1 tracking-wider">Hook</span>
-                    <p className="text-sm font-bold text-white italic">"{angle.hook}"</p>
+                    <p className="text-sm font-bold text-text-primary italic">"{angle.hook}"</p>
                   </div>
                 </div>
               </Card>

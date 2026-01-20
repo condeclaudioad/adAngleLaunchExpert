@@ -30,7 +30,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
           <div className="w-8 h-8 rounded-lg bg-accent-primary flex items-center justify-center text-white font-bold shadow-glow-orange">
             LE
           </div>
-          <h1 className="font-bold text-lg text-white">Launch Expert</h1>
+          <h1 className="font-bold text-lg text-text-primary">Launch Expert</h1>
         </div>
         <button onClick={() => setMobileMenuOpen(true)} className="p-2 text-text-primary hover:bg-bg-tertiary rounded-lg">
           <Menu />
@@ -43,7 +43,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
           <div className="absolute inset-0 bg-black/80 backdrop-blur-sm transition-opacity" onClick={() => setMobileMenuOpen(false)} />
           <div className="absolute top-0 right-0 h-full w-[85%] max-w-[320px] shadow-2xl animate-fade-in transition-transform">
             <div className="absolute top-4 right-4 z-50">
-              <button onClick={() => setMobileMenuOpen(false)} className="p-2 bg-black/20 hover:bg-black/40 rounded-full text-white transition-colors">
+              <button onClick={() => setMobileMenuOpen(false)} className="p-2 bg-black/20 hover:bg-black/40 rounded-full text-text-primary transition-colors">
                 <X size={20} />
               </button>
             </div>

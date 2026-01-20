@@ -39,7 +39,7 @@ export const BrandingForm: React.FC = () => {
       <div className={`p-4 rounded-full bg-bg-tertiary mb-3 transition-colors ${value ? 'text-green-500' : 'text-text-muted group-hover:text-accent-primary'}`}>
         <Icon size={24} />
       </div>
-      <h3 className="font-bold text-white mb-1">{title}</h3>
+      <h3 className="font-bold text-text-primary mb-1">{title}</h3>
       <p className="text-[10px] text-text-muted mb-4">{subtitle}</p>
 
       {value ? (
@@ -88,7 +88,7 @@ export const BrandingForm: React.FC = () => {
         {/* Left Column: Business Info & Colors */}
         <div className="md:col-span-4 space-y-6">
           <Card className="space-y-4">
-            <h3 className="font-bold text-white flex items-center gap-2">
+            <h3 className="font-bold text-text-primary flex items-center gap-2">
               Generales
             </h3>
             <Input
@@ -100,7 +100,7 @@ export const BrandingForm: React.FC = () => {
           </Card>
 
           <Card className="space-y-4">
-            <h3 className="font-bold text-white flex items-center gap-2">
+            <h3 className="font-bold text-text-primary flex items-center gap-2">
               <Palette size={18} className="text-accent-primary" /> Paleta de Colores
             </h3>
             <div className="space-y-4">
@@ -112,7 +112,7 @@ export const BrandingForm: React.FC = () => {
                   className="w-10 h-10 rounded-lg cursor-pointer bg-transparent border-0 p-0"
                 />
                 <div className="flex-1">
-                  <p className="text-xs font-bold text-white">Primario</p>
+                  <p className="text-xs font-bold text-text-primary">Primario</p>
                   <p className="text-[10px] text-text-muted uppercase font-mono">{branding.colors.primary}</p>
                 </div>
               </div>
@@ -124,7 +124,7 @@ export const BrandingForm: React.FC = () => {
                   className="w-10 h-10 rounded-lg cursor-pointer bg-transparent border-0 p-0"
                 />
                 <div className="flex-1">
-                  <p className="text-xs font-bold text-white">Secundario</p>
+                  <p className="text-xs font-bold text-text-primary">Secundario</p>
                   <p className="text-[10px] text-text-muted uppercase font-mono">{branding.colors.secondary}</p>
                 </div>
               </div>

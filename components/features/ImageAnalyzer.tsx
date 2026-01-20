@@ -99,7 +99,7 @@ export const ImageAnalyzer: React.FC = () => {
           </div>
         </div>
 
-        <h4 className="font-bold text-white text-lg mb-3 leading-snug">
+        <h4 className="font-bold text-text-primary text-lg mb-3 leading-snug">
           {analysis.angleDetected || 'Ángulo detectado'}
         </h4>
 
@@ -130,7 +130,7 @@ export const ImageAnalyzer: React.FC = () => {
       <div className="flex flex-col md:flex-row justify-between items-end gap-4 border-b border-border-default pb-6">
         <div>
           <Badge variant="accent" className="mb-2">Paso 2: Análisis</Badge>
-          <h2 className="text-3xl font-bold text-white flex items-center gap-2">
+          <h2 className="text-3xl font-bold text-text-primary flex items-center gap-2">
             <Eye className="text-accent-primary" /> Análisis Visual
           </h2>
           <p className="text-text-secondary mt-2 max-w-2xl">
@@ -168,7 +168,7 @@ export const ImageAnalyzer: React.FC = () => {
                   <UploadCloud size={32} className="text-text-muted group-hover:text-accent-primary transition-colors" />
                 )}
               </div>
-              <h3 className="font-bold text-lg text-white mb-1">
+              <h3 className="font-bold text-lg text-text-primary mb-1">
                 {isAnalyzing ? `Analizando ${processedCount}/${totalToProcess}...` : 'Sube tus Creativos'}
               </h3>
               <p className="text-sm text-text-muted">

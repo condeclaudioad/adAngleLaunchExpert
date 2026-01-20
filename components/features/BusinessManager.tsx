@@ -18,7 +18,7 @@ export const BusinessManager: React.FC = () => {
             <div className="flex flex-col md:flex-row justify-between items-end gap-6 bg-gradient-to-r from-bg-elevated to-bg-secondary p-8 rounded-3xl border border-border-default relative overflow-hidden group">
                 <div className="relative z-10">
                     <Badge variant="accent" className="mb-3">Beta Access</Badge>
-                    <h2 className="text-4xl font-bold text-white mb-2 tracking-tight">
+                    <h2 className="text-4xl font-bold text-text-primary mb-2 tracking-tight">
                         Hola, <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent-primary to-orange-500">{user?.name?.split(' ')[0]}</span> 👋
                     </h2>
                     <p className="text-text-secondary max-w-xl text-lg">
@@ -43,7 +43,7 @@ export const BusinessManager: React.FC = () => {
                     </div>
                     <div>
                         <p className="text-sm font-medium text-text-muted">Proyectos Activos</p>
-                        <p className="text-3xl font-bold text-white mt-1">{businesses.length}</p>
+                        <p className="text-3xl font-bold text-text-primary mt-1">{businesses.length}</p>
                     </div>
                 </Card>
 
@@ -53,7 +53,7 @@ export const BusinessManager: React.FC = () => {
                     </div>
                     <div>
                         <p className="text-sm font-medium text-text-muted">Creativos Generados</p>
-                        <p className="text-3xl font-bold text-white mt-1">{totalImages}</p>
+                        <p className="text-3xl font-bold text-text-primary mt-1">{totalImages}</p>
                     </div>
                 </Card>
 
@@ -71,7 +71,7 @@ export const BusinessManager: React.FC = () => {
             {/* Projects Grid */}
             <div>
                 <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                    <h3 className="text-xl font-bold text-text-primary flex items-center gap-2">
                         <Rocket size={20} className="text-accent-primary" /> Mis Proyectos
                     </h3>
                 </div>
@@ -84,7 +84,7 @@ export const BusinessManager: React.FC = () => {
                         <div className="w-20 h-20 rounded-full bg-bg-tertiary flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
                             <Plus size={32} className="text-text-muted group-hover:text-accent-primary" />
                         </div>
-                        <h4 className="text-xl font-bold text-white mb-2">Crear Primer Proyecto</h4>
+                        <h4 className="text-xl font-bold text-text-primary mb-2">Crear Primer Proyecto</h4>
                         <p className="text-text-muted max-w-sm mx-auto">
                             Configura tu marca, analiza tus productos y genera ángulos de venta únicos.
                         </p>
@@ -125,7 +125,7 @@ export const BusinessManager: React.FC = () => {
 
                                 {/* Content */}
                                 <div className="p-6 pt-8 flex-1 flex flex-col">
-                                    <h3 className="text-lg font-bold text-white mb-2 group-hover:text-accent-primary transition-colors truncate">
+                                    <h3 className="text-lg font-bold text-text-primary mb-2 group-hover:text-accent-primary transition-colors truncate">
                                         {biz.name}
                                     </h3>
                                     <p className="text-sm text-text-muted line-clamp-2 mb-4 flex-1">
