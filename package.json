@@ -11,7 +11,6 @@
   "dependencies": {
     "@google/genai": "^1.37.0",
     "@supabase/supabase-js": "^2.39.0",
-    "@tailwindcss/postcss": "^4.1.18",
     "canvas-confetti": "^1.9.4",
     "file-saver": "^2.0.5",
     "jszip": "^3.10.1",
@@ -29,7 +28,7 @@
     "@vitejs/plugin-react": "^5.0.0",
     "autoprefixer": "^10.4.23",
     "postcss": "^8.5.6",
-    "tailwindcss": "^4.1.18",
+    "tailwindcss": "^3.4.1",
     "typescript": "~5.8.2",
     "vite": "^6.2.0"
   }
