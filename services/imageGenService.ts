@@ -201,24 +201,24 @@ const buildMasterPrompt = (
 Create a HYPER-REALISTIC, HIGH-END ADVERTISING IMAGE for Facebook/Instagram Ads.
 ${variationInstruction ? `VARIATION INSTRUCTION: ${variationInstruction}` : ''}
 
-## 1. VISUAL CONCEPT:
+## 1. TEXT RENDER INSTRUCTION (HIGHEST PRIORITY):
+- HEADLINE: "${cleanHook}"
+- The text must be visible, spelled PRECISELY as written above. 
+- Use a bold, modern, sans-serif font.
+- Ensure high contrast between text and background.
+- NO typos, NO gibberish. 
+
+## 2. VISUAL CONCEPT:
 ${angleVisuals}
 
-## 2. BRANDING ASSETS (CRITICAL):
+## 3. BRANDING ASSETS:
 ${brandingInstructions}
 - COLOR PALETTE: Dominant ${primaryColor}, Accent ${secondaryColor}
-- STYLE: Photorealistic 8k, Commercial Photography, Cinematic Lighting
-
-## 3. TEXT OVERLAY:
-Render this headline text clearly on the image:
->>> "${cleanHook}" <<<
+- STYLE: Photorealistic 8k, Commercial Photography, Cinematic Lighting, Sharp Focus.
 
 RULES:
-- Text must be legible, bold, and modern sans-serif
-- NO spelling errors
-- Product '${productName}' should look premium
 - Aspect ratio: ${aspectRatio}
-
+- Product '${productName}' should look premium.
 `;
 };
 
