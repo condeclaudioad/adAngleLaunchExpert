@@ -79,16 +79,7 @@ export const Sidebar: React.FC<{ mobile?: boolean; onClose?: () => void }> = ({ 
                     })}
                 </nav>
 
-                {/* Upgrade Card (Visual only) */}
-                <div className="bg-gradient-to-br from-purple-900/20 to-indigo-900/20 border border-purple-500/20 rounded-2xl p-4 mt-auto">
-                    <div className="flex items-center justify-between mb-2">
-                        <Badge variant="pro" size="sm">PRO</Badge>
-                    </div>
-                    <p className="text-xs text-purple-200 mb-3">Desbloquea generación ilimitada y modelos premium.</p>
-                    <Button size="sm" variant="secondary" fullWidth className="bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border-purple-500/30">
-                        Mejorar Plan
-                    </Button>
-                </div>
+
             </div>
 
             {/* Footer */}
