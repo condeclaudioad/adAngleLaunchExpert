@@ -7,7 +7,7 @@ import {
   getVisualAnalyses, getExistingAngles,
   deleteAnalysisFromDb, deleteAngleFromDb
 } from '../services/dbService';
-import { onAuthStateChange, checkIsVip, signOut, signInWithEmail } from '../services/supabaseClient';
+import { onAuthStateChange, checkIsVip, signOut, signInWithEmail, signUpWithEmail } from '../services/supabaseClient';
 import { VIP_EMAILS } from '../constants';
 import { AppError, errorHandler } from '../services/errorHandler';
 
@@ -21,6 +21,7 @@ interface AdContextType {
 
   user: User | null;
   login: (email: string, password: string) => Promise<void>;
+  register: (email: string, password: string, name: string) => Promise<void>;
   logout: () => void;
 
   // API Key Management (User Provided)
@@ -260,6 +261,10 @@ export const AdProvider: React.FC<{ children: React.ReactNode }> = ({ children }
   // Supabase implementation
   const login = async (email: string, password: string): Promise<void> => {
     await signInWithEmail(email, password);
+  };
+
+  const register = async (email: string, password: string, name: string): Promise<void> => {
+    await signUpWithEmail(email, password, name);
   };
 
   const logout = async () => {

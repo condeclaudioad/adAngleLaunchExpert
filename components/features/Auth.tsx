@@ -6,32 +6,32 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Badge } from '../ui/Badge';
 
-// Rocket/Launch Icon
-const LogoIcon = () => (
-    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-accent-primary">
-        <path d="M12 2.5C12 2.5 5.5 8 5.5 14.5C5.5 18.0899 8.41015 21 12 21C15.5899 21 18.5 18.0899 18.5 14.5C18.5 8 12 2.5 12 2.5Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M12 14.5V21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M9.5 17.5H14.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M16 11.5L12 14.5L8 11.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-);
-
 export const Login: React.FC = () => {
-    const { login } = useAdContext();
+    const { login, register } = useAdContext();
+    const [isLogin, setIsLogin] = useState(true);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    // Form State
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [name, setName] = useState('');
 
-    const handleLogin = async (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
         setError(null);
         try {
-            await login(email, password);
+            if (isLogin) {
+                await login(email, password);
+            } else {
+                await register(email, password, name);
+                alert("Cuenta creada con éxito. Por favor inicia sesión.");
+                setIsLogin(true); // Switch to login after success
+            }
         } catch (err: any) {
             console.error(err);
-            setError(err.message || 'Error al iniciar sesión. Verifica tus credenciales.');
+            setError(err.message || (isLogin ? 'Error al iniciar sesión' : 'Error al registrarse'));
         } finally {
             setLoading(false);
         }
@@ -49,8 +49,8 @@ export const Login: React.FC = () => {
                     <CardContent className="flex flex-col items-center pt-8 pb-8 space-y-6">
                         {/* Logo & Branding */}
                         <div className="flex flex-col items-center gap-4 text-center">
-                            <div className="p-4 rounded-2xl bg-accent-primary/10 border border-accent-primary/20 shadow-[0_0_20px_rgba(255,107,53,0.3)]">
-                                <LogoIcon />
+                            <div className="p-4 rounded-2xl bg-white/5 border border-white/10 shadow-[0_0_20px_rgba(255,107,53,0.1)]">
+                                <img src="/logo.png" alt="Launch Expert Logo" className="w-12 h-auto" />
                             </div>
                             <div>
                                 <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-b from-white to-white/70">
@@ -62,14 +62,16 @@ export const Login: React.FC = () => {
 
                         {/* Title Section */}
                         <div className="text-center space-y-2">
-                            <h2 className="text-xl font-medium text-text-primary">Bienvenido</h2>
+                            <h2 className="text-xl font-medium text-text-primary">
+                                {isLogin ? 'Bienvenido' : 'Crear Cuenta'}
+                            </h2>
                             <p className="text-sm text-text-secondary">
-                                Ingresa tus credenciales para acceder
+                                {isLogin ? 'Ingresa tus credenciales para acceder' : 'Únete a Launch Expert'}
                             </p>
                         </div>
 
-                        {/* Login Form */}
-                        <form onSubmit={handleLogin} className="w-full space-y-4 pt-2">
+                        {/* Form */}
+                        <form onSubmit={handleSubmit} className="w-full space-y-4 pt-2">
                             {error && (
                                 <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm text-center">
                                     {error}
@@ -77,6 +79,19 @@ export const Login: React.FC = () => {
                             )}
 
                             <div className="space-y-4">
+                                {!isLogin && (
+                                    <div className="space-y-1 animate-fade-in">
+                                        <label className="text-xs text-text-muted ml-1">Nombre</label>
+                                        <Input
+                                            type="text"
+                                            placeholder="Tu nombre"
+                                            value={name}
+                                            onChange={(e) => setName(e.target.value)}
+                                            required={!isLogin}
+                                            className="bg-bg-tertiary/50 border-white/10 focus:border-accent-primary/50"
+                                        />
+                                    </div>
+                                )}
                                 <div className="space-y-1">
                                     <label className="text-xs text-text-muted ml-1">Email</label>
                                     <Input
@@ -109,8 +124,18 @@ export const Login: React.FC = () => {
                                 disabled={loading}
                                 className="mt-2"
                             >
-                                {loading ? 'Autenticando...' : 'Iniciar Sesión'}
+                                {loading ? 'Procesando...' : (isLogin ? 'Iniciar Sesión' : 'Registrarse')}
                             </Button>
+
+                            <div className="pt-2 text-center">
+                                <button
+                                    type="button"
+                                    onClick={() => { setIsLogin(!isLogin); setError(null); }}
+                                    className="text-sm text-text-muted hover:text-accent-primary transition-colors underline decoration-dotted"
+                                >
+                                    {isLogin ? '¿No tienes cuenta? Regístrate' : '¿Ya tienes cuenta? Inicia Sesión'}
+                                </button>
+                            </div>
 
                         </form>
                     </CardContent>
