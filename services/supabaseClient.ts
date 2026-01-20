@@ -24,9 +24,7 @@ export const getSupabase = (): SupabaseClient => {
 // AUTENTICACIÓN
 // ═══════════════════════════════════════════════════════════
 
-// ═══════════════════════════════════════════════════════════
-// AUTENTICACIÓN
-// ═══════════════════════════════════════════════════════════
+
 
 export const signInWithGoogle = async (): Promise<void> => {
     const { error } = await getSupabase().auth.signInWithOAuth({
