@@ -100,13 +100,18 @@ export const KnowledgeForm: React.FC = () => {
             }));
 
             // 4. Save to Business
-            updateBusiness(currentBusiness!.id, {
-                knowledgeBase: {
-                    generalContext: combinedText, // Save raw context too
-                    files: files.map(f => f.name),
-                    structuredAnalysis: result
-                }
-            });
+            if (currentBusiness?.id) {
+                updateBusiness(currentBusiness.id, {
+                    knowledgeBase: {
+                        generalContext: combinedText, // Save raw context too
+                        files: files.map(f => f.name),
+                        structuredAnalysis: result
+                    }
+                });
+            } else {
+                console.error("No active business to save analysis");
+                alert("Atención: No hay un negocio activo seleccionado. Se mostrarán los resultados pero no se guardarán.");
+            }
 
         } catch (error: any) {
             console.error(error);
@@ -117,9 +122,13 @@ export const KnowledgeForm: React.FC = () => {
     };
 
     const handleSave = () => {
-        updateBusiness(currentBusiness!.id, {
+        if (!currentBusiness?.id) {
+            alert("Error: No se encontró el negocio para guardar. Intenta recargar la página.");
+            return;
+        }
+        updateBusiness(currentBusiness.id, {
             knowledgeBase: {
-                ...currentBusiness!.knowledgeBase,
+                ...currentBusiness.knowledgeBase,
                 structuredAnalysis: analysis
             }
         });
@@ -127,7 +136,11 @@ export const KnowledgeForm: React.FC = () => {
     };
 
     const handleChange = (field: keyof KnowledgeBase['structuredAnalysis'], value: string) => {
-        setAnalysis(prev => ({ ...prev!, [field]: value }));
+        setAnalysis(prev => prev ? ({ ...prev, [field]: value }) : {
+            productName: '', avatar: '', currentSituation: '', desireSituation: '',
+            mechanismOfProblem: '', uniqueMechanism: '', bigPromise: '', offer: '',
+            [field]: value // Override with new value
+        });
     };
 
     return (
