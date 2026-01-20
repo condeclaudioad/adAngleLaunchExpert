@@ -130,7 +130,21 @@ export const removeVipUser = async (email: string): Promise<void> => {
     if (error) throw error;
 };
 
+// ═══════════════════════════════════════════════════════════
+// ADMIN AUTHENTICATION
+// ═══════════════════════════════════════════════════════════
 
+export const checkAdminPassword = async (password: string): Promise<boolean> => {
+    const { data, error } = await getSupabase().rpc('check_admin_password', {
+        check_password: password
+    });
+
+    if (error) {
+        console.error('Admin password check error:', error);
+        return false;
+    }
+    return !!data;
+};
 
 // ═══════════════════════════════════════════════════════════
 // USER PROFILE
