@@ -4,43 +4,37 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 const API_KEY = "AIzaSyBj-QTlOWo1iurG5CArOX9DOFQDDdRsAhc";
 
 async function listModels() {
-    console.log("Listing models for API Key...");
+    const genAI = new GoogleGenerativeAI(API_KEY);
+    console.log("Fetching available models...");
     try {
-        // Note: The Node SDK might not expose listModels directly easily on the instance, 
-        // but let's try a direct fetch using the key if SDK fails, or standard SDK method if available.
-        // Actually the SDK doesn't always make listModels easy on the generic client.
-        // Let's try `gemini-pro` as a fallback test first.
+        // Note: getGenerativeModel doesn't list, checking direct fetch or heuristics if list not available in node SDK easily without full client.
+        // Actually the SDK doesn't expose listModels easily in the simplified client?
+        // We can try to just test a few candidates.
 
-        const genAI = new GoogleGenerativeAI(API_KEY);
-        // Fallback test
-        console.log("Testing fallback model 'gemini-pro'...");
-        const model = genAI.getGenerativeModel({ model: "gemini-pro" });
-        const result = await model.generateContent("Test");
-        console.log("Gemini-Pro Success:", result.response.text());
+        const candidates = [
+            "gemini-2.0-flash",
+            "gemini-1.5-flash",
+            "gemini-1.5-flash-8b",
+            "gemini-1.5-pro",
+            "gemini-2.0-flash-exp"
+        ];
+
+        for (const m of candidates) {
+            process.stdout.write(`Testing ${m}... `);
+            try {
+                const model = genAI.getGenerativeModel({ model: m });
+                const result = await model.generateContent("Hi");
+                console.log("✅ OK");
+            } catch (e) {
+                if (e.message.includes('404')) console.log("❌ 404 Not Found");
+                else if (e.message.includes('429')) console.log("⚠️ 429 Quota");
+                else console.log(`❌ Error: ${e.message.split('\n')[0]}`);
+            }
+        }
 
     } catch (error) {
-        console.error("Gemini-Pro Failed:", error.message);
+        console.error("Fatal:", error);
     }
 }
 
-// Alternative: Generic fetch to list models
-async function fetchModels() {
-    try {
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${API_KEY}`);
-        const data = await response.json();
-        if (data.models) {
-            console.log("\nAvailable Models:");
-            data.models.forEach(m => {
-                if (m.supportedGenerationMethods && m.supportedGenerationMethods.includes("generateContent")) {
-                    console.log(`- ${m.name}`);
-                }
-            });
-        } else {
-            console.log("No models found or error:", data);
-        }
-    } catch (e) {
-        console.error("Fetch Error:", e);
-    }
-}
-
-fetchModels();
+listModels();

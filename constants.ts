@@ -5,15 +5,15 @@
 // ═══════════════════════════════════════════════════════════
 
 // Gemini para análisis de texto e imágenes
-export const MODEL_ANALYSIS = 'gemini-2.0-flash';
-export const MODEL_TEXT = 'gemini-2.0-flash';
+export const MODEL_ANALYSIS = 'gemini-2.0-flash-exp';
+export const MODEL_TEXT = 'gemini-2.0-flash-exp';
 
 // Gemini para generación de imágenes (MASTER creatives)
 // Usamos Imagen 3 que es dedicado para generación
 // export const MODEL_IMAGE_GEMINI = 'imagen-3.0-generate-001';
 // export const MODEL_IMAGE_GEMINI = 'imagen-3.0-generate-002'; // Imagen 3 Latest (Jan 2025) - 404 Error
 // export const MODEL_IMAGE_GEMINI = 'imagen-3.0-generate-001'; 
-export const MODEL_IMAGE_GEMINI = 'gemini-3-pro-image-preview'; // Validated in user account
+export const MODEL_IMAGE_GEMINI = 'gemini-2.0-flash-exp'; // Validated in user account
 
 // Grok para variaciones (xAI) - CURRENTLY DISABLED (API Unavailable) -> Fallback to Gemini
 export const MODEL_IMAGE_GROK = 'grok-2-image';
