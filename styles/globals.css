@@ -3,49 +3,69 @@
 @tailwind utilities;
 
 :root {
-  /* LIGHT MODE (Default) */
-  /* Backgrounds (RGB) */
-  --bg-primary: 255 255 255;
-  /* #ffffff */
-  --bg-secondary: 249 250 251;
-  /* #f9fafb */
-  --bg-tertiary: 243 244 246;
-  /* #f3f4f6 */
-  --bg-elevated: 255 255 255;
-  /* #ffffff */
+  /* Backgrounds */
+  --bg-primary: #0a0a0a;
+  /* Fondo principal negro profundo */
+  --bg-secondary: #111111;
+  /* Fondo de cards */
+  --bg-tertiary: #1a1a1a;
+  /* Fondo de inputs/hover */
+  --bg-elevated: #0f0f0f;
+  /* Sidebar */
 
-  /* Accent Colors (RGB) */
-  --accent-primary: 255 107 53;
-  /* #FF6B35 */
-  --accent-secondary: 255 140 90;
-  /* #FF8C5A */
+  /* Accent Colors */
+  --accent-primary: #FF6B35;
+  /* Naranja principal (botones, CTAs) */
+  --accent-secondary: #FF8C5A;
+  /* Naranja claro (hover states) */
   --accent-gradient-start: #FF6B35;
   --accent-gradient-end: #FF4500;
   --accent-glow: rgba(255, 107, 53, 0.4);
 
-  /* Text (RGB) */
-  --text-primary: 17 24 39;
-  /* #111827 */
-  --text-secondary: 75 85 99;
-  /* #4b5563 */
-  --text-muted: 156 163 175;
-  /* #9ca3af */
+  /* Text */
+  --text-primary: #FFFFFF;
+  /* Títulos, texto importante */
+  --text-secondary: #A1A1A1;
+  /* Texto descriptivo */
+  --text-muted: #666666;
+  /* Texto deshabilitado */
 
-  /* Borders (RGBA - Preserving default opacity) */
-  --border-subtle: rgba(0, 0, 0, 0.05);
-  --border-default: rgba(0, 0, 0, 0.1);
-  --border-hover: rgba(0, 0, 0, 0.2);
-  --border-accent: 255 107 53;
-  /* Accent border usually wants full control so RGB is fine, but checking config mapping: I set it to RGB / alpha in config. So this must be RGB. */
+  /* Borders */
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-default: rgba(255, 255, 255, 0.1);
+  --border-hover: rgba(255, 255, 255, 0.15);
+  --border-accent: rgba(255, 107, 53, 0.3);
 
   /* Effects */
-  --glow-orange: 0 0 40px rgba(255, 107, 53, 0.2);
-  --glow-soft: 0 0 20px rgba(255, 107, 53, 0.1);
+  --glow-orange: 0 0 60px rgba(255, 107, 53, 0.3);
+  --glow-soft: 0 0 40px rgba(255, 107, 53, 0.15);
 
-  /* Glassmorphism (Light) */
-  --glass-bg: rgba(255, 255, 255, 0.8);
-  --glass-border: rgba(0, 0, 0, 0.05);
+  /* Glassmorphism */
+  --glass-bg: rgba(17, 17, 17, 0.8);
+  --glass-border: rgba(255, 255, 255, 0.08);
   --glass-blur: blur(20px);
+
+  /* Spacing */
+  --space-1: 0.25rem;
+  /* 4px */
+  --space-2: 0.5rem;
+  /* 8px */
+  --space-3: 0.75rem;
+  /* 12px */
+  --space-4: 1rem;
+  /* 16px */
+  --space-5: 1.25rem;
+  /* 20px */
+  --space-6: 1.5rem;
+  /* 24px */
+  --space-8: 2rem;
+  /* 32px */
+  --space-10: 2.5rem;
+  /* 40px */
+  --space-12: 3rem;
+  /* 48px */
+  --space-16: 4rem;
+  /* 64px */
 
   /* Radius */
   --radius-sm: 6px;
@@ -56,99 +76,92 @@
   --radius-full: 9999px;
 }
 
-.dark {
-  /* DARK MODE Overrides */
-  /* Backgrounds (RGB) */
-  --bg-primary: 10 10 10;
-  /* #0a0a0a */
-  --bg-secondary: 17 17 17;
-  /* #111111 */
-  --bg-tertiary: 26 26 26;
-  /* #1a1a1a */
-  --bg-elevated: 15 15 15;
-  /* #0f0f0f */
-
-  /* Text (RGB) */
-  --text-primary: 255 255 255;
-  /* #FFFFFF */
-  --text-secondary: 161 161 161;
-  /* #A1A1A1 */
-  --text-muted: 102 102 102;
-  /* #666666 */
-
-  /* Borders (RGBA) */
-  --border-subtle: rgba(255, 255, 255, 0.06);
-  --border-default: rgba(255, 255, 255, 0.1);
-  --border-hover: rgba(255, 255, 255, 0.15);
-  --border-accent: 255 107 53;
-
-  /* Effects */
-  --glow-orange: 0 0 60px rgba(255, 107, 53, 0.3);
-  --glow-soft: 0 0 40px rgba(255, 107, 53, 0.15);
-
-  /* Glassmorphism (Dark) */
-  --glass-bg: rgba(17, 17, 17, 0.8);
-  --glass-border: rgba(255, 255, 255, 0.08);
-}
-
 body {
-  background-color: rgb(var(--bg-primary));
-  color: rgb(var(--text-primary));
-  font-family: 'Inter', sans-serif;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   overflow-x: hidden;
-  transition: background-color 0.3s ease, color 0.3s ease;
+  -webkit-font-smoothing: antialiased;
 }
 
 /* Custom Scrolls */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: rgb(var(--bg-primary));
+  background: var(--bg-primary);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgb(var(--bg-tertiary));
-  border-radius: 4px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-full);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgb(var(--border-hover) / 0.5);
-  /* Use RGB text color or similar for hover logic */
-  /* wait, border-hover is now rgba. Opacity modifier on rgba string is invalid in standard css.
-     But tailwind utilities usually don't apply opacity to arbitrary values if relying on var() mapping.
-     It's acceptable to just use the var as is. */
-  background: var(--border-hover);
+  background: var(--text-muted);
 }
 
 /* Animations */
 @keyframes fadeIn {
   from {
     opacity: 0;
+    transform: translateY(10px);
   }
 
   to {
     opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes glow-pulse {
+
+  0%,
+  100% {
+    box-shadow: 0 0 20px var(--accent-glow);
+  }
+
+  50% {
+    box-shadow: 0 0 40px var(--accent-glow);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
   }
 }
 
 .animate-fade-in {
-  animation: fadeIn 0.4s ease-out;
+  animation: fadeIn 0.4s ease-out forwards;
 }
 
+.animate-glow-pulse {
+  animation: glow-pulse 2s ease-in-out infinite;
+}
+
+.skeleton {
+  background: linear-gradient(90deg,
+      var(--bg-secondary) 25%,
+      var(--bg-tertiary) 50%,
+      var(--bg-secondary) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Component Classes */
 .glass-card {
   background: var(--glass-bg);
   backdrop-filter: var(--glass-blur);
   border: 1px solid var(--glass-border);
+  border-radius: var(--radius-xl);
   box-shadow:
     0 0 0 1px var(--border-subtle),
-    0 20px 50px rgba(0, 0, 0, 0.1);
-}
-
-.dark .glass-card {
-  box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.05),
     0 20px 50px rgba(0, 0, 0, 0.5);
 }
 
@@ -157,4 +170,31 @@ body {
       rgba(255, 107, 53, 0.3) 0%,
       rgba(255, 69, 0, 0.1) 40%,
       transparent 70%);
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  color: var(--text-secondary);
+  transition: all 0.2s ease;
+}
+
+.nav-item:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.nav-item.active {
+  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+  color: white;
+  box-shadow: 0 4px 15px var(--accent-glow);
+}
+
+.text-gradient {
+  background: linear-gradient(to right, var(--accent-primary), var(--accent-secondary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }

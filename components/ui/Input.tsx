@@ -1,116 +1,164 @@
 import React from 'react';
 
-// --- Input ---
+// --- INPUT ---
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
-  icon?: React.ReactNode;
   error?: string;
+  icon?: React.ReactNode;
   helperText?: string;
+  fullWidth?: boolean;
 }
 
-export const Input: React.FC<InputProps> = ({ label, icon, error, helperText, className = '', ...props }) => {
+export const Input: React.FC<InputProps> = ({
+  label,
+  error,
+  icon,
+  helperText,
+  className = '',
+  fullWidth = true,
+  ...props
+}) => {
+  const wrapperClass = fullWidth ? 'w-full' : 'inline-block';
+
   return (
-    <div className="flex flex-col gap-1.5 w-full">
-      {label && <label className="text-xs font-semibold text-text-secondary uppercase tracking-wider pl-1">{label}</label>}
-      <div className="relative">
+    <div className={`${wrapperClass} flex flex-col gap-1.5`}>
+      {label && (
+        <label className="text-xs font-medium text-text-secondary ml-1">
+          {label}
+        </label>
+      )}
+
+      <div className="relative group">
         {icon && (
-          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted">
+          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted group-focus-within:text-accent-primary transition-colors">
             {icon}
           </div>
         )}
+
         <input
           className={`
-            w-full bg-bg-tertiary border rounded-xl px-4 py-3 text-text-primary placeholder-text-muted/50 
-            transition-all duration-200
-            focus:outline-none focus:ring-2 focus:ring-accent-primary/50 focus:border-accent-primary
+            w-full bg-bg-tertiary border border-border-default rounded-xl px-4 py-2.5
+            text-text-primary placeholder:text-text-muted/50
+            focus:outline-none focus:border-accent-primary/50 focus:ring-1 focus:ring-accent-primary/50
             disabled:opacity-50 disabled:cursor-not-allowed
-            ${error ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : 'border-border-default focus:border-accent-primary'}
-            ${icon ? 'pl-10' : ''} 
+            transition-all duration-200
+            ${icon ? 'pl-10' : ''}
+            ${error ? 'border-red-500/50 focus:border-red-500 focus:ring-red-500/50' : ''}
             ${className}
           `}
           {...props}
         />
       </div>
-      {error && <p className="text-xs text-red-500 pl-1 mt-0.5">{error}</p>}
-      {helperText && !error && <p className="text-xs text-text-muted pl-1 mt-0.5">{helperText}</p>}
+
+      {(error || helperText) && (
+        <p className={`text-xs ml-1 ${error ? 'text-red-500' : 'text-text-muted'}`}>
+          {error || helperText}
+        </p>
+      )}
     </div>
   );
 };
 
-// --- TextArea ---
+// --- TEXTAREA ---
 interface TextAreaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
   label?: string;
   error?: string;
   helperText?: string;
-  showCount?: boolean;
 }
 
-export const TextArea: React.FC<TextAreaProps> = ({ label, error, helperText, showCount, className = '', ...props }) => {
+export const TextArea: React.FC<TextAreaProps> = ({
+  label,
+  error,
+  helperText,
+  className = '',
+  rows = 4,
+  ...props
+}) => {
   return (
-    <div className="flex flex-col gap-1.5 w-full">
-      {label && <label className="text-xs font-semibold text-text-secondary uppercase tracking-wider pl-1">{label}</label>}
+    <div className="w-full flex flex-col gap-1.5">
+      {label && (
+        <label className="text-xs font-medium text-text-secondary ml-1">
+          {label}
+        </label>
+      )}
+
       <textarea
+        rows={rows}
         className={`
-          w-full bg-bg-tertiary border rounded-xl px-4 py-3 text-text-primary placeholder-text-muted/50 
-          transition-all duration-200 min-h-[120px] resize-y
-          focus:outline-none focus:ring-2 focus:ring-accent-primary/50 focus:border-accent-primary
+          w-full bg-bg-tertiary border border-border-default rounded-xl px-4 py-3
+          text-text-primary placeholder:text-text-muted/50
+          focus:outline-none focus:border-accent-primary/50 focus:ring-1 focus:ring-accent-primary/50
           disabled:opacity-50 disabled:cursor-not-allowed
-             ${error ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : 'border-border-default focus:border-accent-primary'}
+          resize-y
+          transition-all duration-200
+          ${error ? 'border-red-500/50 focus:border-red-500' : ''}
           ${className}
         `}
         {...props}
       />
-      {/* Footers */}
-      <div className="flex justify-between items-start px-1 mt-0.5">
-        <div className="flex-1">
-          {error && <p className="text-xs text-red-500">{error}</p>}
-          {helperText && !error && <p className="text-xs text-text-muted">{helperText}</p>}
-        </div>
-        {showCount && props.maxLength && typeof props.value === 'string' && (
-          <span className="text-xs text-text-muted ml-2">
-            {props.value.length} / {props.maxLength}
-          </span>
-        )}
-      </div>
+
+      {(error || helperText) && (
+        <p className={`text-xs ml-1 ${error ? 'text-red-500' : 'text-text-muted'}`}>
+          {error || helperText}
+        </p>
+      )}
     </div>
   );
 };
 
-// --- Select ---
+// --- SELECT ---
 interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   label?: string;
-  options: { value: string; label: string }[];
   error?: string;
+  options: { value: string; label: string }[];
 }
 
-export const Select: React.FC<SelectProps> = ({ label, options, error, className = '', ...props }) => {
+export const Select: React.FC<SelectProps> = ({
+  label,
+  error,
+  options,
+  className = '',
+  ...props
+}) => {
   return (
-    <div className="flex flex-col gap-1.5 w-full">
-      {label && <label className="text-xs font-semibold text-text-secondary uppercase tracking-wider pl-1">{label}</label>}
+    <div className="w-full flex flex-col gap-1.5">
+      {label && (
+        <label className="text-xs font-medium text-text-secondary ml-1">
+          {label}
+        </label>
+      )}
+
       <div className="relative">
         <select
           className={`
-            w-full bg-bg-tertiary border rounded-xl px-4 py-3 text-text-primary appearance-none
-            transition-all duration-200
-            focus:outline-none focus:ring-2 focus:ring-accent-primary/50 focus:border-accent-primary
+            w-full bg-bg-tertiary border border-border-default rounded-xl px-4 py-2.5
+            text-text-primary appearance-none cursor-pointer
+            focus:outline-none focus:border-accent-primary/50 focus:ring-1 focus:ring-accent-primary/50
             disabled:opacity-50 disabled:cursor-not-allowed
-             ${error ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : 'border-border-default focus:border-accent-primary'}
+            transition-all duration-200
+            ${error ? 'border-red-500/50' : ''}
             ${className}
           `}
           {...props}
         >
-          {options.map(opt => (
-            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          {options.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
           ))}
         </select>
-        {/* Chewron */}
+
+        {/* Chevron Icon */}
         <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-text-muted">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
           </svg>
         </div>
       </div>
-      {error && <p className="text-xs text-red-500 pl-1 mt-0.5">{error}</p>}
+
+      {error && (
+        <p className="text-xs text-red-500 ml-1">{error}</p>
+      )}
     </div>
   );
-}
+};

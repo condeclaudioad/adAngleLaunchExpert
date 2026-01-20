@@ -1,64 +1,172 @@
 import React, { useState } from 'react';
 import { useAdContext } from '../store/AdContext';
-import { Sidebar } from './Sidebar';
-import { Menu, X } from 'lucide-react';
-import { ErrorToast } from './ui/ErrorToast';
+import { AppStep } from '../types';
+import { Badge } from './ui/Badge';
+import { Button } from './ui/Button';
+
+// Icons
+const LogoIcon = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="#FF6B35" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M2 17L12 22L22 17" stroke="#FF6B35" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M2 12L12 17L22 12" stroke="#FF6B35" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+const MenuIcon = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M3 12h18M3 6h18M3 18h18" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+const CloseIcon = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M18 6L6 18M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+// Navigation Items with Icons mapped to steps
+const NAV_ITEMS = [
+  { step: AppStep.BUSINESS, label: 'Dashboard', icon: 'grid' },
+  { step: AppStep.ONBOARDING, label: 'Base de Conocimiento', icon: 'book' },
+  { step: AppStep.BRANDING, label: 'Branding', icon: 'palette' },
+  { step: AppStep.ANALYSIS, label: 'Análisis Visual', icon: 'eye' },
+  { step: AppStep.ANGLES, label: 'Ángulos de Venta', icon: 'zap' },
+  { step: AppStep.GENERATION, label: 'Fábrica Creativa', icon: 'image' },
+  { step: AppStep.EXPORT, label: 'Exportar', icon: 'cloud' },
+];
 
 export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { lastError, dismissError } = useAdContext();
+  const { step, setStep, currentBusiness } = useAdContext();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  const handleNavClick = (newStep: AppStep) => {
+    setStep(newStep);
+    setMobileMenuOpen(false);
+  };
+
   return (
-    <div className="min-h-screen flex bg-bg-primary text-text-primary selection:bg-accent-primary/30 relative overflow-x-hidden transition-colors duration-300 font-sans">
-
+    <div className="min-h-screen bg-bg-primary text-text-primary flex relative overflow-hidden">
       {/* Background Ambience */}
-      <div className="fixed inset-0 pointer-events-none z-0">
-        <div className="absolute top-[-10%] right-[-5%] w-[600px] h-[600px] bg-accent-primary/10 rounded-full blur-[100px] animate-pulse opacity-50" />
-        <div className="absolute bottom-[-10%] left-[-5%] w-[500px] h-[500px] bg-purple-500/5 rounded-full blur-[100px] opacity-30" />
-      </div>
-
-      <ErrorToast error={lastError} onDismiss={dismissError} />
-
-      {/* Desktop Sidebar */}
-      <div className="hidden md:block fixed inset-y-0 left-0 z-50 h-full">
-        <Sidebar />
+      <div className="fixed top-0 left-0 w-full h-full pointer-events-none overflow-hidden z-0">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-accent-primary/5 rounded-full blur-[120px]" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[30%] h-[30%] bg-accent-primary/5 rounded-full blur-[100px]" />
       </div>
 
       {/* Mobile Header */}
-      <div className="md:hidden fixed top-0 w-full z-40 bg-bg-elevated/80 backdrop-blur-lg border-b border-border-default px-4 py-3 flex items-center justify-between shadow-lg">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-accent-primary flex items-center justify-center text-white font-bold shadow-glow-orange">
-            LE
-          </div>
-          <h1 className="font-bold text-lg text-accent-primary">Launch Expert</h1>
+      <div className="md:hidden fixed top-0 left-0 right-0 z-50 h-16 bg-bg-secondary/80 backdrop-blur-md border-b border-border-default flex items-center justify-between px-4">
+        <div className="flex items-center gap-3">
+          <LogoIcon />
+          <span className="font-bold text-lg">Launch Expert</span>
         </div>
-        <button onClick={() => setMobileMenuOpen(true)} className="p-2 text-text-primary hover:bg-bg-tertiary rounded-lg">
-          <Menu />
+        <button onClick={() => setMobileMenuOpen(true)} className="p-2 text-text-primary">
+          <MenuIcon />
         </button>
       </div>
 
-      {/* Mobile Drawer Overlay */}
-      {mobileMenuOpen && (
-        <div className="fixed inset-0 z-50 md:hidden">
-          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm transition-opacity" onClick={() => setMobileMenuOpen(false)} />
-          <div className="absolute top-0 right-0 h-full w-[85%] max-w-[320px] shadow-2xl animate-fade-in transition-transform">
-            <div className="absolute top-4 right-4 z-50">
-              <button onClick={() => setMobileMenuOpen(false)} className="p-2 bg-black/20 hover:bg-black/40 rounded-full text-text-primary transition-colors">
-                <X size={20} />
-              </button>
+      {/* SIDEBAR (Desktop) */}
+      <aside className="hidden md:flex flex-col w-72 h-screen fixed top-0 left-0 z-40 bg-glass-bg backdrop-blur-xl border-r border-border-default overflow-y-auto">
+        {/* Header */}
+        <div className="p-6">
+          <div className="flex items-center gap-3 mb-1">
+            <LogoIcon />
+            <h1 className="font-bold text-xl tracking-tight text-white">Launch Expert</h1>
+          </div>
+          <div className="pl-9 flex items-center gap-2">
+            <Badge variant="vip" size="sm">VIP Access</Badge>
+          </div>
+        </div>
+
+        {/* Action Project Card */}
+        {currentBusiness && (
+          <div className="px-4 mb-6">
+            <div className="bg-bg-tertiary/50 border border-border-default rounded-xl p-4">
+              <div className="text-xs text-text-muted uppercase font-bold mb-2">Proyecto Activo</div>
+              <div className="font-medium text-white truncate">{currentBusiness.name}</div>
+              <div className="text-xs text-text-secondary mt-1 truncate">
+                {currentBusiness.knowledgeBase?.structuredAnalysis?.productName || 'Sin producto'}
+              </div>
             </div>
-            <Sidebar mobile onClose={() => setMobileMenuOpen(false)} />
+          </div>
+        )}
+
+        {/* Navigation */}
+        <nav className="flex-1 px-4 space-y-1">
+          {NAV_ITEMS.map((item) => (
+            <button
+              key={item.step}
+              onClick={() => handleNavClick(item.step)}
+              className={`w-full text-left nav-item ${step === item.step ? 'active' : ''}`}
+            >
+              {/* Simple Icon Placeholders */}
+              {item.icon === 'grid' && <span className="text-lg">❖</span>}
+              {item.icon === 'book' && <span className="text-lg">📖</span>}
+              {item.icon === 'palette' && <span className="text-lg">🎨</span>}
+              {item.icon === 'eye' && <span className="text-lg">👁️</span>}
+              {item.icon === 'zap' && <span className="text-lg">⚡</span>}
+              {item.icon === 'image' && <span className="text-lg">🖼️</span>}
+              {item.icon === 'cloud' && <span className="text-lg">☁️</span>}
+              <span className="font-medium text-sm">{item.label}</span>
+            </button>
+          ))}
+        </nav>
+
+        {/* Footer */}
+        <div className="p-4 border-t border-border-default mt-auto">
+          <div className="flex items-center gap-3 p-2 rounded-xl hover:bg-bg-tertiary transition-colors cursor-pointer">
+            <div className="w-8 h-8 rounded-full bg-accent-gradient flex items-center justify-center text-white font-bold text-xs">
+              AD
+            </div>
+            <div>
+              <div className="text-sm font-medium text-white">Admin User</div>
+              <div className="text-xs text-text-muted">Pro Plan</div>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      {/* MOBILE DRAWER */}
+      {mobileMenuOpen && (
+        <div className="md:hidden fixed inset-0 z-50 flex">
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setMobileMenuOpen(false)} />
+          <div className="relative w-4/5 max-w-xs bg-bg-secondary h-full shadow-2xl flex flex-col p-4 animate-fade-in">
+            <div className="flex justify-between items-center mb-6">
+              <div className="flex items-center gap-2">
+                <LogoIcon />
+                <span className="font-bold">Menu</span>
+              </div>
+              <button onClick={() => setMobileMenuOpen(false)}><CloseIcon /></button>
+            </div>
+
+            <nav className="space-y-2">
+              {NAV_ITEMS.map((item) => (
+                <button
+                  key={item.step}
+                  onClick={() => handleNavClick(item.step)}
+                  className={`w-full p-3 rounded-xl flex items-center gap-3 ${step === item.step ? 'bg-accent-primary text-white' : 'text-text-secondary hover:bg-bg-tertiary'}`}
+                >
+                  {/* Simple Icon Placeholders */}
+                  {item.icon === 'grid' && <span>❖</span>}
+                  {item.icon === 'book' && <span>📖</span>}
+                  {item.icon === 'palette' && <span>🎨</span>}
+                  {item.icon === 'eye' && <span>👁️</span>}
+                  {item.icon === 'zap' && <span>⚡</span>}
+                  {item.icon === 'image' && <span>🖼️</span>}
+                  {item.icon === 'cloud' && <span>☁️</span>}
+                  <span className="font-medium">{item.label}</span>
+                </button>
+              ))}
+            </nav>
           </div>
         </div>
       )}
 
-      {/* Main Content */}
-      <main className="flex-1 md:ml-[280px] min-h-screen relative z-10 p-4 md:p-8 pt-20 md:pt-8 transition-all duration-300">
-        <div className="max-w-[1400px] mx-auto animate-fade-in">
+      {/* MAIN CONTENT */}
+      <main className="flex-1 md:ml-72 min-h-screen relative z-10 pt-16 md:pt-0">
+        <div className="container mx-auto p-4 md:p-8 lg:p-12 max-w-7xl animate-fade-in">
           {children}
         </div>
       </main>
-
     </div>
   );
 };

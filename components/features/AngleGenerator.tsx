@@ -1,180 +1,160 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import { useAdContext } from '../../store/AdContext';
+import { AppStep, Angle } from '../../types';
+import { Card, CardContent } from '../ui/Card';
 import { Button } from '../ui/Button';
-import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
-import { AppStep } from '../../types';
-import { generateAngles } from '../../services/geminiService';
-import { Zap, Sparkles, Check, Trash2, ArrowRight } from 'lucide-react';
+import { geminiService } from '../../services/geminiService';
+
+// Icons
+const RefreshIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M23 4v6h-6M1 20v-6h6" strokeLinecap="round" strokeLinejoin="round" /><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15" strokeLinecap="round" strokeLinejoin="round" /></svg>;
+const CheckIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M20 6L9 17l-5-5" strokeLinecap="round" strokeLinejoin="round" /></svg>;
 
 export const AngleGenerator: React.FC = () => {
-  const { knowledgeBase, imageAnalysis, angles, setAngles, setStep, deleteAngle } = useAdContext();
-  const [loading, setLoading] = useState(false);
-  const bottomRef = useRef<HTMLDivElement>(null);
-
-  // Scroll to bottom when new angles are added
-  useEffect(() => {
-    if (angles.length > 0 && !loading) {
-      bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, [angles.length, loading]);
+  const { currentBusiness, updateBusiness, setStep } = useAdContext();
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [angles, setAngles] = useState<Angle[]>(currentBusiness?.generatedAngles || []);
 
   const handleGenerate = async () => {
-    setLoading(true);
+    setIsGenerating(true);
     try {
-      // Pass 'angles' as history to avoid duplicates
-      const newAngles = await generateAngles(knowledgeBase, imageAnalysis, angles);
+      // Mock generation for UI demo
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      const mockAngles: Angle[] = [
+        { id: '1', name: 'El Villano Oculto', hook: "Lo que tu agencia no te dice...", description: "Enfocado en la desconfianza del mercado.", emotion: "Miedo", visuals: "Una persona rompiendo un contrato, fondo oscuro.", selected: false },
+        { id: '2', name: 'La Nueva Oportunidad', hook: "La nueva era del e-commerce ha llegado.", description: "Presentar el producto como una novedad absoluta.", emotion: "Curiosidad", visuals: "Un cohete despegando, colores vibrantes.", selected: false },
+        { id: '3', name: 'Prueba Social', hook: "Más de 10,000 estudiantes no pueden estar equivocados.", description: "Basado en la autoridad de la masa.", emotion: "Confianza", visuals: "Collage de testimonios sonrientes.", selected: false },
+        { id: '4', name: 'Urgencia Escasa', hook: "Solo quedan 24h para cerrar el acceso.", description: "Miedo a perderse la oportunidad (FOMO).", emotion: "Urgencia", visuals: "Un reloj de arena casi vacío.", selected: false },
+        { id: '5', name: 'Beneficio Directo', hook: "Duplica tus ventas en 30 días.", description: "Promesa clara y directa.", emotion: "Codicia", visuals: "Gráfico de ventas subiendo exponencialmente.", selected: false },
+        { id: '6', name: 'Historia de Origen', hook: "Estaba arruinado hasta que descubrí esto...", description: "Storytelling personal y vulnerable.", emotion: "Empatía", visuals: "Foto personal en blanco y negro vs color.", selected: false },
+      ];
 
-      if (!newAngles || newAngles.length === 0) {
-        throw new Error("No se generaron ángulos. Intenta de nuevo.");
-      }
-
-      // APPEND new angles instead of replacing
-      setAngles([...angles, ...newAngles]);
-    } catch (e: any) {
-      console.error(e);
-      alert(e.message || "Error generando ángulos. Intenta de nuevo.");
+      setAngles(mockAngles);
+      updateBusiness(currentBusiness!.id, { generatedAngles: mockAngles });
+    } catch (error) {
+      console.error(error);
     } finally {
-      setLoading(false);
+      setIsGenerating(false);
     }
   };
 
   const toggleAngle = (id: string) => {
-    setAngles(angles.map(a => a.id === id ? { ...a, selected: !a.selected } : a));
+    const updated = angles.map(a => a.id === id ? { ...a, selected: !a.selected } : a);
+    setAngles(updated);
+    updateBusiness(currentBusiness!.id, { generatedAngles: updated });
   };
 
-  const handleDeleteAngle = (e: React.MouseEvent, id: string) => {
-    e.stopPropagation();
-    if (confirm("¿Estás seguro de borrar este ángulo? Esto no se puede deshacer.")) {
-      deleteAngle(id);
-    }
+  const toggleAll = () => {
+    const allSelected = angles.every(a => a.selected);
+    const updated = angles.map(a => ({ ...a, selected: !allSelected }));
+    setAngles(updated);
+    updateBusiness(currentBusiness!.id, { generatedAngles: updated });
   };
 
-  const clearAll = () => {
-    if (confirm("¿Borrar todos los ángulos?")) setAngles([]);
+  const handleNext = () => {
+    setStep(AppStep.GENERATION);
   };
 
   const getEmotionVariant = (emotion: string) => {
-    const e = emotion.toLowerCase();
-    if (e.includes('miedo') || e.includes('temor') || e.includes('dolor')) return 'fear';
-    if (e.includes('codicia') || e.includes('ganancia') || e.includes('ambic')) return 'greed';
-    if (e.includes('urgencia') || e.includes('escasez')) return 'urgency';
-    if (e.includes('curiosidad') || e.includes('secreto') || e.includes('descubr')) return 'curiosity';
-    if (e.includes('esperanza') || e.includes('sueño') || e.includes('logr')) return 'hope';
-    if (e.includes('exclusiv') || e.includes('vip') || e.includes('status')) return 'vip';
-    return 'accent';
+    const map: Record<string, 'danger' | 'warning' | 'success' | 'accent' | 'vip'> = {
+      'Miedo': 'danger',
+      'Urgencia': 'warning',
+      'Codicia': 'success',
+      'Curiosidad': 'accent',
+      'Confianza': 'vip'
+    };
+    return map[emotion] || 'default';
   };
 
-  const selectedCount = angles.filter(a => a.selected).length;
-
   return (
-    <div className="max-w-7xl mx-auto space-y-8 pb-20 animate-fade-in">
+    <div className="space-y-8 pb-20">
       {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-end gap-4 border-b border-border-default pb-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <Badge variant="accent" className="mb-2">Paso 3: Ángulos</Badge>
-          <h2 className="text-3xl font-bold text-text-primary flex items-center gap-2">
-            <Zap className="text-accent-primary" /> Matriz de Ángulos
-          </h2>
-          <p className="text-text-secondary mt-2 max-w-2xl">
-            Selecciona los ángulos que resuenen con tu audiencia.
+          <h2 className="text-3xl font-bold mb-2">Ángulos de Venta</h2>
+          <p className="text-text-secondary">
+            Selecciona los ángulos que mejor resuenen con tu estrategia.
           </p>
         </div>
-
-        <div className="flex items-center gap-3">
-          {angles.length > 0 && (
-            <>
-              <Button variant="ghost" onClick={clearAll} className="text-red-400 hover:text-red-300 gap-2">
-                <Trash2 size={16} /> Limpiar
-              </Button>
-              <Button
-                onClick={() => setStep(AppStep.GENERATION)}
-                disabled={selectedCount === 0}
-                className="shadow-glow-orange gap-2"
-              >
-                Generar {selectedCount} Creativos <ArrowRight size={18} />
-              </Button>
-            </>
-          )}
+        <div className="flex gap-2">
+          <Button variant="secondary" onClick={handleGenerate} loading={isGenerating} icon={<RefreshIcon />}>
+            {angles.length > 0 ? 'Regenerar' : 'Generar Ángulos'}
+          </Button>
         </div>
       </div>
 
-      {angles.length === 0 ? (
-        <Card className="flex flex-col items-center justify-center py-24 border-dashed border-2 border-border-default bg-bg-elevated/20">
-          <div className="w-24 h-24 bg-accent-primary/10 rounded-full flex items-center justify-center mb-6 shadow-glow-orange">
-            <Sparkles size={48} className="text-accent-primary" />
-          </div>
-          <h3 className="text-2xl font-bold text-text-primary mb-2">Lluvia de Ideas IA</h3>
-          <p className="text-text-muted mb-8 max-w-md text-center">
-            Analizaremos la psicología de tu cliente y generaremos ganchos irresistibles.
-          </p>
-          <Button onClick={handleGenerate} isLoading={loading} size="lg" className="px-8">
-            <Zap className="mr-2" size={20} /> Generar Ángulos
-          </Button>
-        </Card>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {/* Refresh/Add More Card */}
-          <Card
-            className="flex flex-col items-center justify-center border-dashed border-2 border-accent-primary/30 bg-accent-primary/5 hover:bg-accent-primary/10 transition-colors cursor-pointer group min-h-[350px]"
-            onClick={handleGenerate}
-          >
-            <div className="w-16 h-16 bg-accent-primary/20 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
-              {loading ? (
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent-primary" />
-              ) : (
-                <Sparkles size={32} className="text-accent-primary" />
-              )}
+      {/* Content */}
+      {angles.length > 0 ? (
+        <>
+          <div className="flex items-center justify-between">
+            <div className="text-sm text-text-muted">
+              <span className="text-white font-bold">{angles.filter(a => a.selected).length}</span> seleccionados
             </div>
-            <p className="font-bold text-accent-primary text-lg">{loading ? 'Cocinando...' : 'Generar Más'}</p>
-            <p className="text-xs text-text-muted mt-2 text-center px-6">
-              Explorar nuevos enfoques psicológicos.
-            </p>
-          </Card>
+            <Button variant="ghost" size="sm" onClick={toggleAll}>
+              {angles.every(a => a.selected) ? 'Deseleccionar Todos' : 'Seleccionar Todos'}
+            </Button>
+          </div>
 
-          {angles.map((angle) => {
-            const emotionVariant = getEmotionVariant(angle.emotion);
-            return (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {angles.map((angle) => (
               <Card
                 key={angle.id}
-                // @ts-ignore
-                variant={angle.selected ? 'accent' : 'interactive'}
+                variant={angle.selected ? 'accent' : 'default'}
+                className={`
+                                    relative cursor-pointer transition-all duration-300
+                                    ${angle.selected ? 'ring-2 ring-accent-primary shadow-glow-soft scale-[1.02]' : 'hover:border-border-hover'}
+                                `}
                 onClick={() => toggleAngle(angle.id)}
-                className={`flex flex-col h-full relative group transition-all duration-300 min-h-[350px] !p-5
-                    ${angle.selected ? 'ring-2 ring-accent-primary bg-accent-primary/10 shadow-glow-soft' : 'opacity-90 hover:opacity-100'}
-                  `}
               >
-                <div className="absolute top-4 right-4 z-20 flex gap-2">
-                  <button
-                    onClick={(e) => handleDeleteAngle(e, angle.id)}
-                    className="w-8 h-8 rounded-full bg-black/40 hover:bg-red-500/80 text-white/70 hover:text-white flex items-center justify-center transition-all duration-200 backdrop-blur-sm"
-                    title="Eliminar Ángulo"
-                  >
-                    <Trash2 size={14} />
-                  </button>
-                  <div className={`w-8 h-8 rounded-full border flex items-center justify-center transition-all duration-300 ${angle.selected ? 'bg-accent-primary border-accent-primary scale-110' : 'border-text-muted bg-transparent'}`}>
-                    {angle.selected && <Check size={14} className="text-white" />}
+                {/* Selection Check */}
+                <div className={`
+                                    absolute top-4 right-4 w-6 h-6 rounded-full border flex items-center justify-center transition-colors
+                                    ${angle.selected ? 'bg-accent-primary border-accent-primary text-white' : 'border-text-muted text-transparent'}
+                                `}>
+                  <CheckIcon />
+                </div>
+
+                <CardContent className="pt-8">
+                  <Badge variant={getEmotionVariant(angle.emotion)} className="mb-4">
+                    {angle.emotion}
+                  </Badge>
+
+                  <h3 className="text-lg font-bold mb-2">{angle.name}</h3>
+                  <p className="text-sm text-text-secondary mb-4 min-h-[40px]">
+                    {angle.description}
+                  </p>
+
+                  {/* Hook */}
+                  <div className="bg-bg-tertiary/50 border border-border-default rounded-xl p-3 mb-3">
+                    <label className="text-[10px] uppercase font-bold text-accent-primary tracking-wider">Hook</label>
+                    <p className="text-sm font-medium italic text-white mt-1">"{angle.hook}"</p>
                   </div>
-                </div>
 
-                <div className="mb-4">
-                  {/* @ts-ignore */}
-                  <Badge variant={emotionVariant}>{angle.emotion}</Badge>
-                </div>
-
-                <h3 className="text-lg font-bold text-text-primary mb-3 pr-8 leading-tight">{angle.name}</h3>
-                <p className="text-sm text-text-secondary mb-6 flex-grow leading-relaxed">{angle.description}</p>
-
-                <div className="space-y-3 mt-auto relative z-10">
-                  <div className={`p-4 rounded-xl border transition-colors ${angle.selected ? 'bg-accent-primary/20 border-accent-primary/20' : 'bg-bg-tertiary border-border-default'}`}>
-                    <span className="text-[10px] text-accent-primary font-bold uppercase block mb-1 tracking-wider">Hook</span>
-                    <p className="text-sm font-bold text-text-primary italic">"{angle.hook}"</p>
+                  {/* Visual Prompt Preview */}
+                  <div>
+                    <label className="text-[10px] uppercase font-bold text-text-muted tracking-wider">Visual</label>
+                    <p className="text-xs text-text-muted mt-1 line-clamp-2">{angle.visuals}</p>
                   </div>
-                </div>
+                </CardContent>
               </Card>
-            );
-          })}
-          <div ref={bottomRef} className="w-full h-1" />
+            ))}
+          </div>
+
+          <div className="flex justify-end pt-8">
+            <Button onClick={handleNext} disabled={!angles.some(a => a.selected)} size="lg">
+              Ir a Fábrica Creativa →
+            </Button>
+          </div>
+        </>
+      ) : (
+        <div className="text-center py-20 border-2 border-dashed border-border-default rounded-3xl">
+          <div className="max-w-md mx-auto">
+            <h3 className="text-xl font-medium mb-2">Aún no hay ángulos</h3>
+            <p className="text-text-muted mb-6">Genera una lista de ángulos basada en tu análisis de base de conocimiento.</p>
+            <Button onClick={handleGenerate} loading={isGenerating} size="lg">
+              Generar Ángulos Ahora
+            </Button>
+          </div>
         </div>
       )}
     </div>

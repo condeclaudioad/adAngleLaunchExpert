@@ -10,20 +10,29 @@ export const Card: React.FC<CardProps> = ({
   variant = 'default',
   noPadding = false,
   className = '',
+  onClick,
   ...props
 }) => {
-  const baseStyles = "rounded-2xl transition-all duration-300 relative overflow-hidden";
+  const baseStyles = 'rounded-2xl border transition-all duration-200 overflow-hidden';
 
   const variants = {
-    default: "bg-bg-secondary border border-border-default",
-    glass: "glass-card", // Defined in globals.css
-    accent: "bg-accent-primary/5 border border-accent-primary/20",
-    interactive: "bg-bg-secondary border border-border-default hover:border-accent-primary/50 hover:shadow-glow-soft hover:-translate-y-1 cursor-pointer group"
+    default: 'bg-bg-secondary border-border-default',
+    glass: 'glass-card', // defined in globals.css
+    accent: 'bg-gradient-to-br from-accent-primary/5 to-transparent border-accent-primary/20',
+    interactive: 'bg-bg-secondary border-border-default hover:-translate-y-1 hover:shadow-glow-soft hover:border-border-hover cursor-pointer'
   };
+
+  const paddingClass = noPadding ? '' : 'p-5';
 
   return (
     <div
-      className={`${baseStyles} ${variants[variant]} ${noPadding ? '' : 'p-6'} ${className}`}
+      className={`
+        ${baseStyles}
+        ${variants[variant]}
+        ${paddingClass}
+        ${className}
+      `}
+      onClick={onClick}
       {...props}
     >
       {children}
@@ -32,13 +41,21 @@ export const Card: React.FC<CardProps> = ({
 };
 
 export const CardHeader: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({ className = '', ...props }) => (
-  <div className={`p-6 pb-2 ${className}`} {...props} />
+  <div className={`p-5 pb-0 ${className}`} {...props} />
+);
+
+export const CardTitle: React.FC<React.HTMLAttributes<HTMLHeadingElement>> = ({ className = '', ...props }) => (
+  <h3 className={`text-lg font-semibold text-text-primary ${className}`} {...props} />
+);
+
+export const CardDescription: React.FC<React.HTMLAttributes<HTMLParagraphElement>> = ({ className = '', ...props }) => (
+  <p className={`text-sm text-text-secondary mt-1 ${className}`} {...props} />
 );
 
 export const CardContent: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({ className = '', ...props }) => (
-  <div className={`p-6 pt-2 pb-6 ${className}`} {...props} />
+  <div className={`p-5 ${className}`} {...props} />
 );
 
 export const CardFooter: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({ className = '', ...props }) => (
-  <div className={`p-6 pt-0 flex items-center gap-4 ${className}`} {...props} />
+  <div className={`p-5 pt-0 flex items-center gap-3 ${className}`} {...props} />
 );
