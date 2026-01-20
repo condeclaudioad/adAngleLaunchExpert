@@ -38,6 +38,7 @@ interface AdContextType {
   businesses: Business[];
   currentBusiness: Business | null;
   createNewBusiness: () => void;
+  startNewBusiness: (name: string) => Promise<void>;
   saveCurrentBusiness: (name: string) => Promise<void>;
   updateBusinessPartial: (data: Partial<Business>) => Promise<void>;
   selectBusiness: (id: string) => void;
@@ -380,6 +381,29 @@ export const AdProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     setStep(AppStep.ONBOARDING);
   };
 
+  const startNewBusiness = async (name: string) => {
+    try {
+      if (!user?.email) throw new Error("No hay usuario autenticado.");
+      createNewBusiness(); // Reset state
+
+      const newBus: Business = {
+        id: `biz-${Date.now()}`,
+        name: name,
+        createdAt: Date.now(),
+        knowledgeBase: defaultKB,
+        branding: defaultBranding,
+        ownerEmail: user.email
+      };
+
+      await saveBusinessToDb(newBus);
+      setBusinesses(prev => [...prev, newBus]);
+      setCurrentBusiness(newBus);
+      setStep(AppStep.ONBOARDING);
+    } catch (e) {
+      reportError(e);
+    }
+  };
+
   const saveCurrentBusiness = async (name: string) => {
     try {
       if (!user?.email) throw new Error("No hay usuario autenticado.");
@@ -541,10 +565,10 @@ export const AdProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     <AdContext.Provider value={{
       theme, toggleTheme,
       step, setStep,
-      user, login, logout,
+      user, login, register, logout,
       googleApiKey, setGoogleApiKey,
       adminAddEmail, adminRemoveEmail, customAllowedEmails,
-      businesses, currentBusiness, createNewBusiness, saveCurrentBusiness, updateBusinessPartial, selectBusiness, deleteBusiness,
+      businesses, currentBusiness, createNewBusiness, startNewBusiness, saveCurrentBusiness, updateBusinessPartial, selectBusiness, deleteBusiness,
       knowledgeBase, setKnowledgeBase,
       branding, setBranding,
       imageAnalysis, addImageAnalysis, deleteVisualAnalysis,

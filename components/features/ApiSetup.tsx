@@ -29,7 +29,7 @@ export const ApiSetup: React.FC = () => {
         try {
             const ai = new GoogleGenAI({ apiKey: googleKeyInput.trim() });
             const response = await ai.models.generateContent({
-                model: 'gemini-2.0-flash',
+                model: 'gemini-1.5-flash',
                 contents: 'Responde solo con la palabra: OK',
             });
 
@@ -47,7 +47,7 @@ export const ApiSetup: React.FC = () => {
             } else if (e.message?.includes('403') || e.message?.includes('permission')) {
                 errorMsg = 'Error 403: Sin permisos. Habilita Gemini API en Google Console.';
             } else if (e.message?.includes('429') || e.message?.includes('quota')) {
-                errorMsg = 'Error 429: Cuota excedida. Has superado el límite gratuito por hoy.';
+                errorMsg = 'Error 429: Límite de solicitudes o cuota excedida. Intenta nuevamente.';
             } else if (e.message?.includes('fetch')) {
                 errorMsg = 'Error de Red: No se pudo conectar con Google.';
             }

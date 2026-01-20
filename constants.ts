@@ -5,8 +5,8 @@
 // ═══════════════════════════════════════════════════════════
 
 // Gemini para análisis de texto e imágenes
-export const MODEL_ANALYSIS = 'gemini-2.5-flash';
-export const MODEL_TEXT = 'gemini-2.5-flash';
+export const MODEL_ANALYSIS = 'gemini-1.5-flash';
+export const MODEL_TEXT = 'gemini-1.5-flash';
 
 // Gemini para generación de imágenes (MASTER creatives)
 // Usamos Imagen 3 que es dedicado para generación

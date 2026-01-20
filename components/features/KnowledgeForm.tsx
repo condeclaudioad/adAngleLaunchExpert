@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { useAdContext } from '../../store/AdContext';
 import { AppStep, KnowledgeBase } from '../../types';
 import { useDropzone } from 'react-dropzone';
-import { geminiService } from '../../services/geminiService';
+import { extractTextFromFile, refineContext } from '../../services/geminiService';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { Input, TextArea } from '../ui/Input';
@@ -14,6 +14,21 @@ const FileIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="non
 const BrainIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2a10 10 0 1010 10 9.991 9.991 0 00-9-10zm0 18a8 8 0 118-8 8.009 8.009 0 01-8 8z" className="opacity-25" /><path d="M12 12m-3 0a3 3 0 106 0a3 3 0 10-6 0" /></svg>;
 const CheckCircleIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-green-500"><path d="M22 11.08V12a10 10 0 11-5.93-9.14" strokeLinecap="round" strokeLinejoin="round" /><path d="M22 4L12 14.01l-3-3" strokeLinecap="round" strokeLinejoin="round" /></svg>;
 const AlertTriangleIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-red-500"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0zM12 9v4M12 17h.01" strokeLinecap="round" strokeLinejoin="round" /></svg>;
+
+// Helper to convert file to base64
+const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => {
+            const result = reader.result as string;
+            // Remove data:mime/type;base64, prefix
+            const base64 = result.split(',')[1];
+            resolve(base64);
+        };
+        reader.onerror = error => reject(error);
+    });
+};
 
 export const KnowledgeForm: React.FC = () => {
     const { currentBusiness, updateBusiness, setStep, apiKey } = useAdContext();
@@ -42,7 +57,9 @@ export const KnowledgeForm: React.FC = () => {
             'application/pdf': ['.pdf'],
             'text/plain': ['.txt', '.md'],
             'image/jpeg': ['.jpg', '.jpeg'],
-            'image/png': ['.png']
+            'image/png': ['.png'],
+            'application/msword': ['.doc'],
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx']
         }
     });
 
@@ -52,25 +69,47 @@ export const KnowledgeForm: React.FC = () => {
             return;
         }
 
+        if (files.length === 0) {
+            alert('Sube al menos un archivo para analizar.');
+            return;
+        }
+
         setIsProcessing(true);
         try {
-            // Mock analysis for UI demo, in real app this calls geminiService using the files
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            // 1. Extract text from all files
+            let combinedText = "";
+            for (const file of files) {
+                const base64 = await fileToBase64(file);
+                // Simple mime mapping or pass file.type
+                const text = await extractTextFromFile(base64, file.type);
+                combinedText += `\n--- FILE: ${file.name} ---\n${text}`;
+            }
 
-            // Just saving mock data or keeping what user typed
-            const newAnalysis = { ...analysis };
-            if (!newAnalysis.productName) newAnalysis.productName = "Producto Detectado (Demo)";
+            if (!combinedText.trim()) {
+                throw new Error("No se pudo extraer texto de los archivos.");
+            }
 
-            setAnalysis(newAnalysis);
+            // 2. Analyze with Gemini
+            const result = await refineContext(combinedText);
+
+            // 3. Update State
+            setAnalysis(prev => ({
+                ...prev,
+                ...result
+            }));
+
+            // 4. Save to Business
             updateBusiness(currentBusiness!.id, {
                 knowledgeBase: {
-                    files: files.map(f => f.name), // In real app, upload result
-                    structuredAnalysis: newAnalysis
+                    generalContext: combinedText, // Save raw context too
+                    files: files.map(f => f.name),
+                    structuredAnalysis: result
                 }
             });
-        } catch (error) {
+
+        } catch (error: any) {
             console.error(error);
-            alert('Error al analizar archivos');
+            alert(`Error al analizar archivos: ${error.message}`);
         } finally {
             setIsProcessing(false);
         }
@@ -121,7 +160,7 @@ export const KnowledgeForm: React.FC = () => {
                             {isDragActive ? 'Suelta los archivos aquí' : 'Arrastra archivos aquí'}
                         </h3>
                         <p className="text-sm text-text-muted">
-                            Soporta PDF, TXT, MD, JPG, PNG
+                            Soporta PDF, DOCX, TXT, MD, JPG, PNG
                         </p>
                     </div>
                     <Button variant="secondary" size="sm" className="mt-2">
