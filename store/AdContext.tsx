@@ -234,9 +234,16 @@ export const AdProvider: React.FC<{ children: React.ReactNode }> = ({ children }
 
         // 4. Navigate (if on Login page)
         if (step === AppStep.LOGIN) {
-          const hasKey = localStorage.getItem('le_api_key') || process.env.VITE_GOOGLE_CLIENT_ID || undefined;
-          // Note: Simplified logic. For MVP we send them to Business Dashboard if authorized.
-          setStep(AppStep.BUSINESS);
+          // Check if user has API keys configured
+          const hasGoogleKey = metaKeys?.google || localStorage.getItem('le_api_key');
+
+          if (!hasGoogleKey) {
+            // No API keys - go to onboarding
+            setStep(AppStep.API_SETUP);
+          } else {
+            // Has keys - go to business dashboard
+            setStep(AppStep.BUSINESS);
+          }
         }
       } else {
         console.log("Supabase Auth Change: Logged Out");
