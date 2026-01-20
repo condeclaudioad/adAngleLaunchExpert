@@ -12,7 +12,8 @@ export const MODEL_TEXT = 'gemini-2.0-flash';
 // Usamos Imagen 3 que es dedicado para generación
 // export const MODEL_IMAGE_GEMINI = 'imagen-3.0-generate-001';
 // export const MODEL_IMAGE_GEMINI = 'imagen-3.0-generate-002'; // Imagen 3 Latest (Jan 2025) - 404 Error
-export const MODEL_IMAGE_GEMINI = 'imagen-3.0-generate-001'; // Stable Imagen 3
+// export const MODEL_IMAGE_GEMINI = 'imagen-3.0-generate-001'; 
+export const MODEL_IMAGE_GEMINI = 'gemini-3-pro-image-preview'; // Validated: Nano Banana Pro
 
 // Grok para variaciones (xAI) - NUEVO
 export const MODEL_IMAGE_GROK = 'grok-2-image';
