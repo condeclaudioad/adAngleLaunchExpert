@@ -12,7 +12,7 @@ const CheckIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="no
 
 export const AngleGenerator: React.FC = () => {
   /* Destructure needed data from context */
-  const { currentBusiness, updateBusiness, setStep, apiKey, knowledgeBase, imageAnalysis, angles: storedAngles } = useAdContext();
+  const { currentBusiness, updateBusiness, setStep, googleApiKey: apiKey, knowledgeBase, imageAnalysis, angles: storedAngles } = useAdContext();
   const [isGenerating, setIsGenerating] = useState(false);
   const [angles, setAngles] = useState<Angle[]>(currentBusiness?.generatedAngles || []);
 

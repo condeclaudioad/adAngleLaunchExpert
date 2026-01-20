@@ -31,7 +31,7 @@ const fileToBase64 = (file: File): Promise<string> => {
 };
 
 export const KnowledgeForm: React.FC = () => {
-    const { currentBusiness, updateBusiness, setStep, apiKey } = useAdContext();
+    const { currentBusiness, updateBusiness, setStep, googleApiKey: apiKey } = useAdContext();
     const [isProcessing, setIsProcessing] = useState(false);
     const [files, setFiles] = useState<File[]>([]);
     const [analysis, setAnalysis] = useState<KnowledgeBase['structuredAnalysis']>(

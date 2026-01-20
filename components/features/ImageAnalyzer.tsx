@@ -8,7 +8,7 @@ import { analyzeImage } from '../../services/geminiService';
 import { UploadCloud, Eye, ArrowRight, Loader2, ImageIcon, ScanLine, X, Trash2 } from 'lucide-react';
 
 export const ImageAnalyzer: React.FC = () => {
-  const { addImageAnalysis, imageAnalysis, setStep, deleteVisualAnalysis, apiKey } = useAdContext();
+  const { addImageAnalysis, imageAnalysis, setStep, deleteVisualAnalysis, googleApiKey: apiKey } = useAdContext();
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [processedCount, setProcessedCount] = useState(0);
   const [totalToProcess, setTotalToProcess] = useState(0);
