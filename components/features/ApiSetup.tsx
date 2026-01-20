@@ -100,7 +100,7 @@ export const ApiSetup: React.FC = () => {
 
             if (response?.text) {
                 setGoogleValidation({ status: 'success', message: '¡Conexión exitosa! Gemini está listo.' });
-                setGoogleApiKey(googleKeyInput.trim());
+                // Key will be saved when user clicks Continue
             } else {
                 throw new Error('Respuesta vacía');
             }
@@ -147,7 +147,7 @@ export const ApiSetup: React.FC = () => {
                 const data = await response.json();
                 if (data.choices && data.choices.length > 0) {
                     setGrokValidation({ status: 'success', message: '¡Conexión exitosa! Grok está listo.' });
-                    setGrokApiKey(grokKeyInput.trim());
+                    // Key will be saved when user clicks Continue
                 } else {
                     throw new Error('Respuesta inesperada');
                 }
@@ -185,7 +185,13 @@ export const ApiSetup: React.FC = () => {
         setIsSaving(true);
 
         try {
-            // Save to Supabase user metadata
+            // Save to local context first (for immediate use)
+            setGoogleApiKey(googleKeyInput.trim());
+            if (grokKeyInput.trim()) {
+                setGrokApiKey(grokKeyInput.trim());
+            }
+
+            // Save to Supabase user metadata (for persistence across devices)
             await saveApiKeys({
                 google: googleKeyInput.trim(),
                 grok: grokKeyInput.trim() || undefined
@@ -396,7 +402,17 @@ export const ApiSetup: React.FC = () => {
                 </div>
 
                 {/* Footer */}
-                <div className="text-center space-y-2">
+                <div className="text-center space-y-3">
+                    {/* Back to Dashboard button - only show if user already has API configured */}
+                    {googleApiKey && (
+                        <button
+                            onClick={() => setStep(AppStep.BUSINESS)}
+                            className="text-sm text-textMuted hover:text-white underline transition-colors"
+                        >
+                            ← Volver al Dashboard
+                        </button>
+                    )}
+
                     <p className="text-[11px] text-textMuted">
                         🔒 Tus claves se guardan encriptadas en tu cuenta. Nunca las compartimos con terceros.
                     </p>
