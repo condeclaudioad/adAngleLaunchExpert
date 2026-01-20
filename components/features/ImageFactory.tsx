@@ -115,7 +115,7 @@ export const ImageFactory: React.FC = () => {
                     const imgId = existing?.id || `img-${timestamp}-${angle.id}`;
                     if (!existing) {
                         await addGeneratedImage({
-                            id: imgId, angleId: angle.id, url: '', prompt: `Nano Banana: ${angle.hook}`,
+                            id: imgId, angleId: angle.id, url: '', prompt: `Gemini 3: ${angle.hook}`,
                             type: 'main', status: 'generating', approvalStatus: 'waiting', modelUsed: 'gemini-3-pro-image'
                         });
                     } else { updateImageStatus(imgId, 'generating'); }
@@ -123,7 +123,7 @@ export const ImageFactory: React.FC = () => {
                     try {
                         const url = await generateImageService(
                             'gemini-3-pro-image',
-                            `Nano Banana: VISUAL: ${angle.visuals}. HOOK: ${angle.hook}.`,
+                            `GEMINI 3 PRO: VISUAL: ${angle.visuals}. HOOK: ${angle.hook}.`,
                             aspectRatio,
                             keys,
                             branding,
@@ -131,9 +131,10 @@ export const ImageFactory: React.FC = () => {
                             imageAnalysis
                         );
                         if (isMounted.current && !stopSignal.current) updateImageStatus(imgId, 'completed', url);
-                    } catch (e) {
+                    } catch (e: any) {
                         console.error("GENERATION ERROR:", e);
-                        if (isMounted.current) updateImageStatus(imgId, 'failed');
+                        const errorMsg = e.message || "Error desconocido";
+                        if (isMounted.current) updateImageStatus(imgId, 'failed', undefined, errorMsg);
                     }
                 });
             }
@@ -187,9 +188,10 @@ export const ImageFactory: React.FC = () => {
                         variationPrompt
                     );
                     if (isMounted.current && !stopSignal.current) updateImageStatus(newId, 'completed', url);
-                } catch (e) {
+                } catch (e: any) {
                     console.error("VARIATION ERROR:", e);
-                    if (isMounted.current) updateImageStatus(newId, 'failed');
+                    const errorMsg = e.message || "Error desconocido";
+                    if (isMounted.current) updateImageStatus(newId, 'failed', undefined, errorMsg);
                 }
             });
         });
@@ -201,7 +203,7 @@ export const ImageFactory: React.FC = () => {
     const openEditModal = (e: React.MouseEvent, img: GeneratedImage) => {
         e.stopPropagation();
         setImageToEdit(img);
-        const cleanPrompt = img.prompt.replace(/Nano Banana:|EDIT:|VARIATION:/g, '').trim();
+        const cleanPrompt = img.prompt.replace(/Gemini 3:|EDIT:|VARIATION:/g, '').trim();
         setEditInstruction(`Corrige el texto a: "${cleanPrompt}"`);
         setIsEditing(true);
     };
@@ -263,8 +265,13 @@ export const ImageFactory: React.FC = () => {
                             </span>
                         </div>
                     ) : img.status === 'failed' ? (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-red-900/10 z-10">
-                            <span className="text-red-500 text-xs font-bold mb-2">Error al generar</span>
+                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-red-900/20 z-10 p-2 text-center">
+                            <span className="text-red-500 text-xs font-bold mb-1">Error al generar</span>
+                            {img.errorMessage && (
+                                <span className="text-[10px] text-red-400 mb-2 max-h-16 overflow-y-auto px-1 leading-tight">
+                                    {img.errorMessage.length > 50 ? img.errorMessage.substring(0, 50) + '...' : img.errorMessage}
+                                </span>
+                            )}
                             <Button variant="danger" className="!py-1 !px-2 !text-[10px]" onClick={(e) => { e.stopPropagation(); deleteImage(img.id); }}>
                                 Eliminar
                             </Button>
@@ -407,7 +414,7 @@ export const ImageFactory: React.FC = () => {
                     onClick={() => setActiveTab('approvals')}
                     className={`pb-3 text-sm font-bold border-b-2 transition-colors ${activeTab === 'approvals' ? 'border-primary text-primary' : 'border-transparent text-textMuted hover:text-white'}`}
                 >
-                    Generación Inicial (Nano Banana)
+                    Generación Inicial (Gemini 3 Pro)
                 </button>
                 <button
                     onClick={() => setActiveTab('variations')}

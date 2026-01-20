@@ -55,7 +55,7 @@ interface AdContextType {
 
   generatedImages: GeneratedImage[];
   addGeneratedImage: (img: GeneratedImage) => void;
-  updateImageStatus: (id: string, status: GeneratedImage['status'], url?: string) => void;
+  updateImageStatus: (id: string, status: GeneratedImage['status'], url?: string, errorMessage?: string) => void;
   updateImageType: (id: string, type: 'main' | 'variation') => void;
 
   setApprovalStatus: (id: string, status: ApprovalStatus) => void;
@@ -448,10 +448,10 @@ export const AdProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     }
   };
 
-  const updateImageStatus = async (id: string, status: GeneratedImage['status'], url?: string) => {
+  const updateImageStatus = async (id: string, status: GeneratedImage['status'], url?: string, errorMessage?: string) => {
     setGeneratedImages(prev => {
       const newImages = prev.map(img =>
-        img.id === id ? { ...img, status, url: url || img.url } : img
+        img.id === id ? { ...img, status, url: url || img.url, errorMessage: errorMessage || img.errorMessage } : img
       );
       const updatedImg = newImages.find(i => i.id === id);
       if (updatedImg) {

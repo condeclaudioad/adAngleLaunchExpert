@@ -75,6 +75,7 @@ export interface GeneratedImage {
   provider?: ImageProvider;  // NUEVO
   variationIndex?: number;   // NUEVO: 1-9 para variaciones
   variationCategory?: 'safe' | 'medium' | 'aggressive'; // NUEVO
+  errorMessage?: string; // NUEVO: Para guardar el error
 }
 
 // ═══════════════════════════════════════════════════════════
