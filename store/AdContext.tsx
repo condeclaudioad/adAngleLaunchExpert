@@ -232,7 +232,7 @@ export const AdProvider: React.FC<{ children: React.ReactNode }> = ({ children }
           if (metaKeys.google) setGoogleApiKey(metaKeys.google);
         }
 
-        // 4. Navigate (if on Login page)
+        // 4. Navigate (only if on Login page - don't interrupt API_SETUP or other flows)
         if (step === AppStep.LOGIN) {
           // Check if user has API keys configured
           const hasGoogleKey = metaKeys?.google || localStorage.getItem('le_api_key');
@@ -245,6 +245,7 @@ export const AdProvider: React.FC<{ children: React.ReactNode }> = ({ children }
             setStep(AppStep.BUSINESS);
           }
         }
+        // If user is in API_SETUP, don't redirect - let them finish configuring
       } else {
         console.log("Supabase Auth Change: Logged Out");
         setUser(null);

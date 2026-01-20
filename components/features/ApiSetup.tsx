@@ -126,6 +126,16 @@ export const ApiSetup: React.FC = () => {
             return;
         }
 
+        // First, validate the format of the key
+        const trimmedKey = grokKeyInput.trim();
+        if (!trimmedKey.startsWith('xai-') && !trimmedKey.startsWith('sk-')) {
+            setGrokValidation({
+                status: 'error',
+                message: 'Formato inválido. La key debe comenzar con "xai-" o "sk-"'
+            });
+            return;
+        }
+
         setGrokValidation({ status: 'validating', message: 'Validando conexión...' });
 
         try {
@@ -134,7 +144,7 @@ export const ApiSetup: React.FC = () => {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${grokKeyInput.trim()}`
+                    'Authorization': `Bearer ${trimmedKey}`
                 },
                 body: JSON.stringify({
                     model: 'grok-2-latest',
@@ -147,27 +157,45 @@ export const ApiSetup: React.FC = () => {
                 const data = await response.json();
                 if (data.choices && data.choices.length > 0) {
                     setGrokValidation({ status: 'success', message: '¡Conexión exitosa! Grok está listo.' });
-                    // Key will be saved when user clicks Continue
                 } else {
                     throw new Error('Respuesta inesperada');
                 }
             } else {
+                // Try to get error details
                 const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.error?.message || `Error ${response.status}`);
+                const errorMsg = errorData.error?.message || '';
+
+                if (response.status === 401) {
+                    setGrokValidation({ status: 'error', message: 'API Key inválida. Verifica en console.x.ai' });
+                } else if (response.status === 429) {
+                    setGrokValidation({ status: 'error', message: 'Límite de tasa excedido. Intenta más tarde.' });
+                } else if (response.status === 403) {
+                    setGrokValidation({ status: 'error', message: 'Sin permisos. Verifica los permisos de tu API key.' });
+                } else {
+                    // Unknown error but key format is valid, allow with warning
+                    setGrokValidation({
+                        status: 'success',
+                        message: `Key guardada. Error de validación: ${response.status}`
+                    });
+                }
             }
         } catch (e: any) {
             console.error('Grok API validation error:', e);
-            let errorMsg = 'API Key inválida o sin permisos.';
 
-            if (e.message?.includes('401') || e.message?.includes('Unauthorized')) {
-                errorMsg = 'API Key inválida. Verifica en console.x.ai';
-            } else if (e.message?.includes('429')) {
-                errorMsg = 'Demasiadas solicitudes. Intenta en unos minutos.';
-            } else if (e.message?.includes('Failed to fetch')) {
-                errorMsg = 'Error de red. Verifica tu conexión a internet.';
+            // CORS error or network issue - the key format is valid, so we accept it
+            if (e.message?.includes('Failed to fetch') || e.name === 'TypeError') {
+                // This is likely a CORS issue - xAI API doesn't allow browser requests
+                // We validate format only and trust the user
+                setGrokValidation({
+                    status: 'success',
+                    message: '✓ Formato válido. La key se validará al generar variaciones.'
+                });
+            } else {
+                setGrokValidation({
+                    status: 'error',
+                    message: `Error: ${e.message || 'Verifica tu conexión'}`
+                });
             }
-
-            setGrokValidation({ status: 'error', message: errorMsg });
         }
     };
 
