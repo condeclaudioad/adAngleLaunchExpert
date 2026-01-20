@@ -54,6 +54,19 @@ export const getVisualAnalyses = async (): Promise<ImageAnalysis[]> => {
         console.error('Exception fetching analyses:', e);
         return [];
     }
+}
+
+
+export const deleteAnalysisFromDb = async (id: string) => {
+    try {
+        const { error } = await getSupabase()
+            .from('visual_analyses')
+            .delete()
+            .match({ id });
+        if (error) console.error('Error deleting analysis:', error);
+    } catch (e) {
+        console.error('Exception deleting analysis:', e);
+    }
 };
 
 // ——————————————— ANGLES ———————————————
@@ -108,6 +121,19 @@ export const getExistingAngles = async (): Promise<Angle[]> => {
     } catch (e) {
         console.error('Exception fetching angles:', e);
         return [];
+    }
+}
+
+
+export const deleteAngleFromDb = async (id: string) => {
+    try {
+        const { error } = await getSupabase()
+            .from('generated_angles')
+            .delete()
+            .match({ id });
+        if (error) console.error('Error deleting angle:', error);
+    } catch (e) {
+        console.error('Exception deleting angle:', e);
     }
 };
 

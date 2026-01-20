@@ -4,7 +4,8 @@ import { KnowledgeBase, ImageAnalysis, Angle, GeneratedImage, AppStep, ApprovalS
 import {
   saveImageToDb, getImagesFromDb, deleteImageFromDb,
   saveBusinessToDb, getBusinessesFromDb, deleteBusinessFromDb,
-  getVisualAnalyses, getExistingAngles
+  getVisualAnalyses, getExistingAngles,
+  deleteAnalysisFromDb, deleteAngleFromDb
 } from '../services/dbService';
 import { onAuthStateChange, checkIsVip, signOut } from '../services/supabaseClient';
 import { VIP_EMAILS } from '../constants';
@@ -49,9 +50,11 @@ interface AdContextType {
 
   imageAnalysis: ImageAnalysis[];
   addImageAnalysis: (analysis: ImageAnalysis) => void;
+  deleteVisualAnalysis: (id: string) => void;
 
   angles: Angle[];
   setAngles: (angles: Angle[]) => void;
+  deleteAngle: (id: string) => void;
 
   generatedImages: GeneratedImage[];
   addGeneratedImage: (img: GeneratedImage) => void;
@@ -446,6 +449,10 @@ export const AdProvider: React.FC<{ children: React.ReactNode }> = ({ children }
   };
 
   const addImageAnalysis = (analysis: ImageAnalysis) => setImageAnalysis(prev => [...prev, analysis]);
+  const deleteVisualAnalysis = async (id: string) => {
+    setImageAnalysis(prev => prev.filter(p => p.id !== id));
+    await deleteAnalysisFromDb(id);
+  };
 
   const addGeneratedImage = async (img: GeneratedImage) => {
     setGeneratedImages(prev => [...prev, img]);
@@ -512,6 +519,11 @@ export const AdProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     }
   };
 
+  const deleteAngle = async (id: string) => {
+    setAngles(prev => prev.filter(a => a.id !== id));
+    await deleteAngleFromDb(id);
+  };
+
   const resetApp = async () => {
     if (confirm("¿Borrar todo y reiniciar de fábrica?")) {
       logout();
@@ -532,8 +544,8 @@ export const AdProvider: React.FC<{ children: React.ReactNode }> = ({ children }
       businesses, currentBusiness, createNewBusiness, saveCurrentBusiness, updateBusinessPartial, selectBusiness, deleteBusiness,
       knowledgeBase, setKnowledgeBase,
       branding, setBranding,
-      imageAnalysis, addImageAnalysis,
-      angles, setAngles,
+      imageAnalysis, addImageAnalysis, deleteVisualAnalysis,
+      angles, setAngles, deleteAngle,
       generatedImages, addGeneratedImage, updateImageStatus, updateImageType,
       setApprovalStatus, updateImageFeedback, deleteImage,
       resetApp,

@@ -8,7 +8,7 @@ import { generateImageService, editGeneratedImage } from '../../services/imageGe
 import { AppStep, GeneratedImage, Angle } from '../../types';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
-import { Download, Edit2, Check, X, Wand2, Play, AlertTriangle, ZoomIn, Loader2, Sparkles, Image as ImageIcon } from 'lucide-react';
+import { Download, Edit2, Check, X, Wand2, Play, AlertTriangle, ZoomIn, Loader2, Sparkles, Image as ImageIcon, Trash2, Info } from 'lucide-react';
 
 const VARIATION_TYPES = [
     "Close-up shot with intense emotion",
@@ -147,6 +147,25 @@ export const ImageFactory: React.FC = () => {
                         if (isMounted.current) updateImageStatus(imgId, 'failed', undefined, errorMsg);
                     }
                 });
+            } else if (existing && existing.status === 'failed') {
+                // RETRY LOGIC for explicitly failed masters
+                tasks.push(async () => {
+                    if (stopSignal.current) return;
+                    const keys = { google: googleApiKey || undefined };
+                    const imgId = existing.id;
+                    updateImageStatus(imgId, 'generating');
+                    try {
+                        const url = await generateImageService(
+                            `GEMINI 3 PRO: VISUAL: ${angle.visuals}. HOOK: ${angle.hook}.`,
+                            aspectRatio, keys, branding, knowledgeBase, imageAnalysis
+                        );
+                        if (isMounted.current && !stopSignal.current) updateImageStatus(imgId, 'completed', url);
+                    } catch (e: any) {
+                        console.error("GENERATION ERROR:", e);
+                        const errorMsg = e.message || "Error desconocido";
+                        if (isMounted.current) updateImageStatus(imgId, 'failed', undefined, errorMsg);
+                    }
+                });
             }
         }
         tasks.length > 0 ? processQueue(tasks) : setIsProcessing(false);
@@ -223,12 +242,19 @@ export const ImageFactory: React.FC = () => {
                             <span className="text-[10px] text-text-muted font-medium">Generando...</span>
                         </div>
                     ) : img.status === 'failed' ? (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-red-900/10 text-red-400 text-xs text-center p-2">
+                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-red-900/10 text-red-400 text-xs text-center p-2 backdrop-blur-[2px]">
                             <AlertTriangle size={24} className="mb-2" />
-                            <span className="mb-2">Error de Generación</span>
-                            <Button variant="danger" size="sm" className="!text-[10px] !py-0.5" onClick={(e) => { e.stopPropagation(); deleteImage(img.id); }}>
-                                Eliminar
-                            </Button>
+                            <span className="mb-2 font-bold block">Fallo en Generación</span>
+                            <span className="text-[10px] mb-3 opacity-80 line-clamp-2">{img.errorMessage}</span>
+                            <div className="flex gap-2">
+                                <Button variant="secondary" size="sm" className="!text-[10px] !py-0.5 border-red-500/30 text-red-400 hover:bg-red-500/20" onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (confirm('¿Eliminar imagen fallida?')) deleteImage(img.id);
+                                }}>
+                                    <X size={12} className="mr-1" /> Borrar
+                                </Button>
+                                {/* Retry logic is handled by parent re-triggering generate for masters, or manual re-try for variations not implemented yet simply */}
+                            </div>
                         </div>
                     ) : (
                         <>
@@ -257,10 +283,16 @@ export const ImageFactory: React.FC = () => {
                                     <Check size={14} /> Aprobar
                                 </button>
                                 <button
-                                    onClick={(e) => { e.stopPropagation(); deleteImage(img.id); }}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (confirm("¿Estás seguro de eliminar esta imagen permanentemente?")) {
+                                            deleteImage(img.id);
+                                        }
+                                    }}
                                     className="px-3 flex items-center justify-center bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white text-xs font-bold py-1.5 rounded-lg transition-all"
+                                    title="Eliminar Imagen"
                                 >
-                                    <X size={14} />
+                                    <Trash2 size={14} />
                                 </button>
                             </>
                         )}

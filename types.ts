@@ -35,6 +35,7 @@ export interface Business {
 }
 
 export interface ImageAnalysis {
+  id: string;
   angleDetected: string;
   visualElements: string[];
   copy: string;

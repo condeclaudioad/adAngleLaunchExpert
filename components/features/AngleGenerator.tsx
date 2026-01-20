@@ -8,7 +8,7 @@ import { generateAngles } from '../../services/geminiService';
 import { Zap, Sparkles, Check, Trash2, ArrowRight } from 'lucide-react';
 
 export const AngleGenerator: React.FC = () => {
-  const { knowledgeBase, imageAnalysis, angles, setAngles, setStep } = useAdContext();
+  const { knowledgeBase, imageAnalysis, angles, setAngles, setStep, deleteAngle } = useAdContext();
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -41,6 +41,13 @@ export const AngleGenerator: React.FC = () => {
 
   const toggleAngle = (id: string) => {
     setAngles(angles.map(a => a.id === id ? { ...a, selected: !a.selected } : a));
+  };
+
+  const handleDeleteAngle = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    if (confirm("¿Estás seguro de borrar este ángulo? Esto no se puede deshacer.")) {
+      deleteAngle(id);
+    }
   };
 
   const clearAll = () => {
@@ -137,8 +144,15 @@ export const AngleGenerator: React.FC = () => {
                     ${angle.selected ? 'ring-2 ring-accent-primary bg-accent-primary/10 shadow-glow-soft' : 'opacity-90 hover:opacity-100'}
                   `}
               >
-                <div className="absolute top-4 right-4 z-20">
-                  <div className={`w-6 h-6 rounded-full border flex items-center justify-center transition-all duration-300 ${angle.selected ? 'bg-accent-primary border-accent-primary scale-110' : 'border-text-muted bg-transparent'}`}>
+                <div className="absolute top-4 right-4 z-20 flex gap-2">
+                  <button
+                    onClick={(e) => handleDeleteAngle(e, angle.id)}
+                    className="w-8 h-8 rounded-full bg-black/40 hover:bg-red-500/80 text-white/70 hover:text-white flex items-center justify-center transition-all duration-200 backdrop-blur-sm"
+                    title="Eliminar Ángulo"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                  <div className={`w-8 h-8 rounded-full border flex items-center justify-center transition-all duration-300 ${angle.selected ? 'bg-accent-primary border-accent-primary scale-110' : 'border-text-muted bg-transparent'}`}>
                     {angle.selected && <Check size={14} className="text-white" />}
                   </div>
                 </div>

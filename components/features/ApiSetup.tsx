@@ -6,7 +6,8 @@ import { Card } from '../ui/Card';
 import { AppStep } from '../../types';
 import { GoogleGenAI } from '@google/genai';
 import { saveApiKeys } from '../../services/supabaseClient';
-import { Key, CheckCircle2, AlertCircle, ExternalLink, ShieldCheck, ArrowRight, Loader2 } from 'lucide-react';
+import { Key, CheckCircle2, AlertCircle, ExternalLink, ShieldCheck, ArrowRight, Loader2, Info } from 'lucide-react';
+import { Tooltip } from 'react-tooltip';
 
 export const ApiSetup: React.FC = () => {
     const { setGoogleApiKey, googleApiKey, setStep, user } = useAdContext();
@@ -39,10 +40,17 @@ export const ApiSetup: React.FC = () => {
             }
         } catch (e: any) {
             console.error('Google API validation error:', e);
-            let errorMsg = 'API Key inválida o sin permisos.';
-            if (e.message?.includes('API_KEY_INVALID')) errorMsg = 'La API Key es inválida.';
-            else if (e.message?.includes('quota')) errorMsg = 'Cuota de API excedida.';
-            else if (e.message?.includes('permission')) errorMsg = 'Sin permisos para Gemini.';
+            let errorMsg = 'Error desconocido. Revisa tu conexión.';
+
+            if (e.message?.includes('API_KEY_INVALID')) {
+                errorMsg = 'Error 400: API Key inválida. Verifica que copiaste todo el texto.';
+            } else if (e.message?.includes('403') || e.message?.includes('permission')) {
+                errorMsg = 'Error 403: Sin permisos. Habilita Gemini API en Google Console.';
+            } else if (e.message?.includes('429') || e.message?.includes('quota')) {
+                errorMsg = 'Error 429: Cuota excedida. Has superado el límite gratuito por hoy.';
+            } else if (e.message?.includes('fetch')) {
+                errorMsg = 'Error de Red: No se pudo conectar con Google.';
+            }
 
             setGoogleValidation({ status: 'error', message: errorMsg });
         }
@@ -100,7 +108,16 @@ export const ApiSetup: React.FC = () => {
                             <ShieldCheck className="text-white" />
                         </div>
                         <div className="flex-1">
-                            <h2 className="text-lg font-bold text-white">Google Gemini API</h2>
+                            <div className="flex items-center gap-1">
+                                <h2 className="text-lg font-bold text-white">Google Gemini API</h2>
+                                <Info
+                                    size={14}
+                                    className="text-text-muted cursor-help"
+                                    data-tooltip-id="gemini-info"
+                                    data-tooltip-content="Requerido para generar ideas, analizar imágenes y crear creativos."
+                                />
+                                <Tooltip id="gemini-info" />
+                            </div>
                             <p className="text-xs text-text-muted">Motor: Gemini 2.0 Flash + Imagen 3</p>
                         </div>
                         {googleValidation.status === 'success' && (
@@ -135,8 +152,8 @@ export const ApiSetup: React.FC = () => {
                         {/* Status Message */}
                         {googleValidation.status !== 'idle' && (
                             <div className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium border ${googleValidation.status === 'validating' ? 'bg-blue-500/10 border-blue-500/20 text-blue-400' :
-                                    googleValidation.status === 'success' ? 'bg-green-500/10 border-green-500/20 text-green-400' :
-                                        'bg-red-500/10 border-red-500/20 text-red-400'
+                                googleValidation.status === 'success' ? 'bg-green-500/10 border-green-500/20 text-green-400' :
+                                    'bg-red-500/10 border-red-500/20 text-red-400'
                                 }`}>
                                 {googleValidation.status === 'validating' && <Loader2 size={12} className="animate-spin" />}
                                 {googleValidation.status === 'success' && <CheckCircle2 size={12} />}

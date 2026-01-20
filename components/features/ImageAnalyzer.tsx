@@ -5,10 +5,10 @@ import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 import { AppStep, ImageAnalysis } from '../../types';
 import { analyzeImage } from '../../services/geminiService';
-import { UploadCloud, Eye, ArrowRight, Loader2, ImageIcon, ScanLine, X } from 'lucide-react';
+import { UploadCloud, Eye, ArrowRight, Loader2, ImageIcon, ScanLine, X, Trash2 } from 'lucide-react';
 
 export const ImageAnalyzer: React.FC = () => {
-  const { addImageAnalysis, imageAnalysis, setStep } = useAdContext();
+  const { addImageAnalysis, imageAnalysis, setStep, deleteVisualAnalysis } = useAdContext();
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [processedCount, setProcessedCount] = useState(0);
   const [totalToProcess, setTotalToProcess] = useState(0);
@@ -85,7 +85,18 @@ export const ImageAnalyzer: React.FC = () => {
           <Badge variant="accent" className="flex items-center gap-1">
             <ScanLine size={12} /> DETECTADO
           </Badge>
-          <span className="text-xs text-text-muted font-mono bg-bg-tertiary px-2 py-1 rounded">#{idx + 1}</span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-text-muted font-mono bg-bg-tertiary px-2 py-1 rounded">#{idx + 1}</span>
+            <button
+              onClick={() => {
+                if (confirm('¿Eliminar este análisis?')) deleteVisualAnalysis(analysis.id);
+              }}
+              className="text-text-muted hover:text-red-400 transition-colors p-1"
+              title="Eliminar Análisis"
+            >
+              <Trash2 size={16} />
+            </button>
+          </div>
         </div>
 
         <h4 className="font-bold text-white text-lg mb-3 leading-snug">
