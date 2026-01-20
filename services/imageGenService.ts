@@ -3,6 +3,7 @@
 import { GoogleGenAI } from "@google/genai";
 import { Branding, KnowledgeBase, ImageAnalysis } from '../types';
 import { MODEL_IMAGE_GEMINI } from '../constants';
+import { generateGrokImage } from './grokService';
 
 // ═══════════════════════════════════════════════════════════
 // ROBUST RETRY LOGIC
@@ -79,13 +80,7 @@ TECHNICAL REQUIREMENTS:
 
             const response = await ai.models.generateContent({
                 model: MODEL_IMAGE_GEMINI,
-                contents: { parts },
-                config: {
-                    // Gemini 2.0 Flash Exp configuration
-                    generationConfig: {
-                        responseModalities: ["TEXT", "IMAGE"],
-                    }
-                }
+                contents: { parts }
             });
 
             // Extract image from response
@@ -146,11 +141,6 @@ RULES:
                         { inlineData: { data: cleanBase64, mimeType: 'image/png' } },
                         { text: prompt }
                     ]
-                },
-                config: {
-                    generationConfig: {
-                        responseModalities: ["TEXT", "IMAGE"],
-                    }
                 }
             });
 
@@ -284,5 +274,33 @@ export const generateImageService = async (
         variationType
     );
 
-    return generateWithGemini(finalPrompt, keys.google, aspectRatio, references);
+    // PROCEED TO GENERATION
+
+    // 1. IF VARIATION -> USE GROK (User Request)
+    if (variationType && keys.grok) {
+        console.log("🎨 Using GROK for Variation");
+        // For variations, we need a reference image preferably. 
+        // If this is a variation of a Master, we would pass the master image.
+        // But here we are generating from scratch + variation logic.
+        // We will generate a base text prompt and ask Grok.
+
+        // Note: Grok generates better from scratch too if prompt is good.
+        return generateGrokImage(finalPrompt, keys.grok);
+    }
+
+    // 2. IF MASTER -> USE GEMINI (Imagen 3)
+    if (keys.google) {
+        console.log("🎨 Using GEMINI (Imagen 3) for Master");
+        try {
+            return await generateWithGemini(finalPrompt, keys.google, aspectRatio, references);
+        } catch (e) {
+            console.error("Gemini Image Gen Failed, trying Grok fallback if available", e);
+            if (keys.grok) {
+                return generateGrokImage(finalPrompt, keys.grok);
+            }
+            throw e;
+        }
+    }
+
+    throw new Error("No available API keys for image generation");
 };

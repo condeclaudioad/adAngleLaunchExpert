@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { useAdContext } from '../../store/AdContext';
 import { Button } from '../ui/Button';
-import { AppStep } from '../../types';
+import { AppStep, ImageAnalysis } from '../../types';
 import { analyzeImage } from '../../services/geminiService';
 
 export const ImageAnalyzer: React.FC = () => {
@@ -48,6 +48,7 @@ export const ImageAnalyzer: React.FC = () => {
 
           // Compress to JPEG 0.8 quality
           const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+          // dataUrl format is "data:image/jpeg;base64,..."
           const base64 = dataUrl.split(',')[1];
           resolve(base64);
         };
@@ -72,6 +73,7 @@ export const ImageAnalyzer: React.FC = () => {
       try {
         console.log(`Processing file: ${file.name}`);
         const base64Data = await readFileAsBase64(file);
+
         // Force jpeg mime type as our resizer converts everything to jpeg
         const result = await analyzeImage(base64Data, 'image/jpeg');
 
@@ -105,6 +107,35 @@ export const ImageAnalyzer: React.FC = () => {
       }, 2000);
       e.target.value = '';
     }
+  };
+
+  // Safe render function
+  const renderAnalysis = (analysis: ImageAnalysis, idx: number) => {
+    if (!analysis) return null;
+    return (
+      <div key={idx} className="bg-surface p-5 rounded-xl border border-borderColor space-y-3 animate-fade-in">
+        <div className="flex justify-between items-start">
+          <span className="text-xs font-bold bg-primary/20 text-primary px-2 py-1 rounded">DETECTADO</span>
+          <span className="text-xs text-textMuted">#{idx + 1}</span>
+        </div>
+        <h4 className="font-semibold text-textMain">{analysis.angleDetected || 'Ángulo detectado'}</h4>
+        <div className="text-sm space-y-2">
+          <p className="text-textMuted"><strong className="text-textMain">Composición:</strong> {analysis.composition || 'N/A'}</p>
+          <p className="text-textMuted"><strong className="text-textMain">Copy:</strong> {analysis.copy || 'N/A'}</p>
+        </div>
+        <div className="flex flex-wrap gap-2 pt-2">
+          {Array.isArray(analysis.emotions) && analysis.emotions.map((e, i) => (
+            <span key={i} className="text-xs bg-surfaceHighlight px-2 py-1 rounded text-textMuted">{e}</span>
+          ))}
+          {Array.isArray(analysis.colors) && analysis.colors.map((c, i) => (
+            <span key={`c-${i}`} className="text-xs border border-borderColor px-2 py-1 rounded text-textMuted flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-current" style={{ color: c }}></span>
+              {c}
+            </span>
+          ))}
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -155,30 +186,7 @@ export const ImageAnalyzer: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {imageAnalysis.map((analysis, idx) => (
-          <div key={idx} className="bg-surface p-5 rounded-xl border border-borderColor space-y-3 animate-fade-in">
-            <div className="flex justify-between items-start">
-              <span className="text-xs font-bold bg-primary/20 text-primary px-2 py-1 rounded">DETECTADO</span>
-              <span className="text-xs text-textMuted">#{idx + 1}</span>
-            </div>
-            <h4 className="font-semibold text-textMain">{analysis.angleDetected}</h4>
-            <div className="text-sm space-y-2">
-              <p className="text-textMuted"><strong className="text-textMain">Composición:</strong> {analysis.composition}</p>
-              <p className="text-textMuted"><strong className="text-textMain">Copy:</strong> {analysis.copy}</p>
-            </div>
-            <div className="flex flex-wrap gap-2 pt-2">
-              {analysis.emotions.map((e, i) => (
-                <span key={i} className="text-xs bg-surfaceHighlight px-2 py-1 rounded text-textMuted">{e}</span>
-              ))}
-              {analysis.colors.map((c, i) => (
-                <span key={`c-${i}`} className="text-xs border border-borderColor px-2 py-1 rounded text-textMuted flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-current" style={{ color: c }}></span>
-                  {c}
-                </span>
-              ))}
-            </div>
-          </div>
-        ))}
+        {imageAnalysis.map((analysis, idx) => renderAnalysis(analysis, idx))}
       </div>
     </div>
   );

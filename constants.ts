@@ -9,7 +9,8 @@ export const MODEL_ANALYSIS = 'gemini-2.0-flash';
 export const MODEL_TEXT = 'gemini-2.0-flash';
 
 // Gemini para generación de imágenes (MASTER creatives)
-export const MODEL_IMAGE_GEMINI = 'gemini-2.0-flash-exp';
+// Usamos Imagen 3 que es dedicado para generación
+export const MODEL_IMAGE_GEMINI = 'imagen-3.0-generate-001';
 
 // Grok para variaciones (xAI) - NUEVO
 export const MODEL_IMAGE_GROK = 'grok-2-image';
@@ -74,7 +75,7 @@ export const VARIATION_CONFIG = {
   },
   allowedChanges: [
     'background_gradient',
-    'background_texture', 
+    'background_texture',
     'lighting_adjustment',
     'expression_shift',
     'accent_color_shift',
