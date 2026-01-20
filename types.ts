@@ -36,12 +36,15 @@ export interface Business {
 
 export interface ImageAnalysis {
   id: string;
+  imageId?: string; // Optional for backward compatibility
+  role?: string;    // 'inspiration' | 'competitor'
   angleDetected: string;
   visualElements: string[];
   copy: string;
   colors: string[];
   composition: string;
   emotions: string[];
+  timestamp?: number;
 }
 
 export interface Angle {

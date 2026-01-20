@@ -80,8 +80,8 @@ export const KnowledgeForm: React.FC = () => {
             let combinedText = "";
             for (const file of files) {
                 const base64 = await fileToBase64(file);
-                // Simple mime mapping or pass file.type
-                const text = await extractTextFromFile(base64, file.type);
+                // Pass apiKey explicitly
+                const text = await extractTextFromFile(base64, file.type, apiKey || undefined);
                 combinedText += `\n--- FILE: ${file.name} ---\n${text}`;
             }
 
@@ -90,7 +90,8 @@ export const KnowledgeForm: React.FC = () => {
             }
 
             // 2. Analyze with Gemini
-            const result = await refineContext(combinedText);
+            // Pass apiKey explicitly
+            const result = await refineContext(combinedText, apiKey || undefined);
 
             // 3. Update State
             setAnalysis(prev => ({

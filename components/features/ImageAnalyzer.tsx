@@ -8,7 +8,7 @@ import { analyzeImage } from '../../services/geminiService';
 import { UploadCloud, Eye, ArrowRight, Loader2, ImageIcon, ScanLine, X, Trash2 } from 'lucide-react';
 
 export const ImageAnalyzer: React.FC = () => {
-  const { addImageAnalysis, imageAnalysis, setStep, deleteVisualAnalysis } = useAdContext();
+  const { addImageAnalysis, imageAnalysis, setStep, deleteVisualAnalysis, apiKey } = useAdContext();
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [processedCount, setProcessedCount] = useState(0);
   const [totalToProcess, setTotalToProcess] = useState(0);
@@ -45,6 +45,11 @@ export const ImageAnalyzer: React.FC = () => {
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!apiKey) {
+      alert("Configura tu API Key primero en Ajustes.");
+      return;
+    }
+
     const files: File[] = Array.from(e.target.files || []);
     if (files.length === 0) return;
 
@@ -55,7 +60,7 @@ export const ImageAnalyzer: React.FC = () => {
     const processFile = async (file: File) => {
       try {
         const base64Data = await readFileAsBase64(file);
-        const result = await analyzeImage(base64Data, 'image/jpeg');
+        const result = await analyzeImage(base64Data, 'image/jpeg', apiKey);
         if (result && result.angleDetected) {
           addImageAnalysis(result);
         }

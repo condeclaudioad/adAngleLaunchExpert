@@ -4,39 +4,52 @@ import { AppStep, Angle } from '../../types';
 import { Card, CardContent } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
-import { geminiService } from '../../services/geminiService';
+import { generateAngles } from '../../services/geminiService';
 
 // Icons
 const RefreshIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M23 4v6h-6M1 20v-6h6" strokeLinecap="round" strokeLinejoin="round" /><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15" strokeLinecap="round" strokeLinejoin="round" /></svg>;
 const CheckIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M20 6L9 17l-5-5" strokeLinecap="round" strokeLinejoin="round" /></svg>;
 
 export const AngleGenerator: React.FC = () => {
-  const { currentBusiness, updateBusiness, setStep } = useAdContext();
+  /* Destructure needed data from context */
+  const { currentBusiness, updateBusiness, setStep, apiKey, knowledgeBase, imageAnalysis, angles: storedAngles } = useAdContext();
   const [isGenerating, setIsGenerating] = useState(false);
   const [angles, setAngles] = useState<Angle[]>(currentBusiness?.generatedAngles || []);
 
   const handleGenerate = async () => {
+    if (!apiKey) {
+      alert("Falta la API Key. Ve a Ajustes.");
+      return;
+    }
+
     setIsGenerating(true);
     try {
-      // Mock generation for UI demo
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      const mockAngles: Angle[] = [
-        { id: '1', name: 'El Villano Oculto', hook: "Lo que tu agencia no te dice...", description: "Enfocado en la desconfianza del mercado.", emotion: "Miedo", visuals: "Una persona rompiendo un contrato, fondo oscuro.", selected: false },
-        { id: '2', name: 'La Nueva Oportunidad', hook: "La nueva era del e-commerce ha llegado.", description: "Presentar el producto como una novedad absoluta.", emotion: "Curiosidad", visuals: "Un cohete despegando, colores vibrantes.", selected: false },
-        { id: '3', name: 'Prueba Social', hook: "Más de 10,000 estudiantes no pueden estar equivocados.", description: "Basado en la autoridad de la masa.", emotion: "Confianza", visuals: "Collage de testimonios sonrientes.", selected: false },
-        { id: '4', name: 'Urgencia Escasa', hook: "Solo quedan 24h para cerrar el acceso.", description: "Miedo a perderse la oportunidad (FOMO).", emotion: "Urgencia", visuals: "Un reloj de arena casi vacío.", selected: false },
-        { id: '5', name: 'Beneficio Directo', hook: "Duplica tus ventas en 30 días.", description: "Promesa clara y directa.", emotion: "Codicia", visuals: "Gráfico de ventas subiendo exponencialmente.", selected: false },
-        { id: '6', name: 'Historia de Origen', hook: "Estaba arruinado hasta que descubrí esto...", description: "Storytelling personal y vulnerable.", emotion: "Empatía", visuals: "Foto personal en blanco y negro vs color.", selected: false },
-      ];
+      // Call Gemini Service
+      const newAngles = await generateAngles(
+        currentBusiness?.knowledgeBase || knowledgeBase,
+        currentBusiness?.imageAnalysis || imageAnalysis,
+        angles,
+        apiKey
+      );
 
-      setAngles(mockAngles);
-      updateBusiness(currentBusiness!.id, { generatedAngles: mockAngles });
-    } catch (error) {
+      if (!newAngles || newAngles.length === 0) {
+        throw new Error("No se generaron ángulos. Intenta de nuevo.");
+      }
+
+      const updatedAngles = [...angles, ...newAngles];
+      setAngles(updatedAngles);
+
+      // Update Context & DB
+      updateBusiness(currentBusiness!.id, { generatedAngles: updatedAngles });
+
+    } catch (error: any) {
       console.error(error);
+      alert(`Error generando ángulos: ${error.message}`);
     } finally {
       setIsGenerating(false);
     }
   };
+
 
   const toggleAngle = (id: string) => {
     const updated = angles.map(a => a.id === id ? { ...a, selected: !a.selected } : a);

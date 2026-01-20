@@ -7,8 +7,11 @@ import { withRetry } from "./retryService";
 import { saveAnalysisToDb, saveAngleToDb, getExistingAngles } from "./dbService";
 
 // Helper to get the key from storage or env
-const getAuthKey = () => {
-    return localStorage.getItem('le_api_key') || process.env.API_KEY || "";
+// Helper to get the key from storage or env, with optional override
+const getAuthKey = (overrideKey?: string) => {
+    const key = overrideKey || localStorage.getItem('le_api_key') || process.env.API_KEY || "";
+    if (!key) throw new Error("API Key no encontrada. Por favor configura tu API en los Ajustes.");
+    return key;
 };
 
 const cleanJSON = (text: string) => {
@@ -40,7 +43,7 @@ const FALLBACK_CONTEXT: StructuredContext = {
     bigPromise: "Resultados Garantizados"
 };
 
-export const extractTextFromFile = async (base64Data: string, mimeType: string): Promise<string> => {
+export const extractTextFromFile = async (base64Data: string, mimeType: string, apiKey?: string): Promise<string> => {
     // 1. Local Decoding (Instant)
     if (mimeType === 'text/plain' || mimeType === 'text/markdown' || mimeType === 'application/json' || mimeType === 'text/csv') {
         try {
@@ -68,7 +71,7 @@ export const extractTextFromFile = async (base64Data: string, mimeType: string):
 
     // 3. Gemini Flash for PDF/Images (Fast Transcription)
     return withRetry(async () => {
-        const ai = new GoogleGenAI({ apiKey: getAuthKey() });
+        const ai = new GoogleGenAI({ apiKey: getAuthKey(apiKey) });
 
         // TIMEOUT: Reduced to 60s for extraction to fail fast
         const timeoutPromise = new Promise<string>((_, reject) =>
@@ -93,12 +96,12 @@ export const extractTextFromFile = async (base64Data: string, mimeType: string):
     }, { maxRetries: 4, baseDelay: 3000, maxDelay: 10000 });
 };
 
-export const refineContext = async (rawText: string): Promise<StructuredContext> => {
+export const refineContext = async (rawText: string, apiKey?: string): Promise<StructuredContext> => {
 
     if (!rawText || rawText.length < 50) return FALLBACK_CONTEXT;
 
     const truncatedText = rawText.slice(0, 400000);
-    const ai = new GoogleGenAI({ apiKey: getAuthKey() });
+    const ai = new GoogleGenAI({ apiKey: getAuthKey(apiKey) });
 
     return withRetry(async () => {
         const timeoutPromise = new Promise<never>((_, reject) =>
@@ -131,8 +134,8 @@ export const refineContext = async (rawText: string): Promise<StructuredContext>
     }, { maxRetries: 4, baseDelay: 3000, maxDelay: 10000 });
 };
 
-export const analyzeImage = async (base64Image: string, mimeType: string): Promise<ImageAnalysis> => {
-    const ai = new GoogleGenAI({ apiKey: getAuthKey() });
+export const analyzeImage = async (base64Image: string, mimeType: string, apiKey?: string): Promise<ImageAnalysis> => {
+    const ai = new GoogleGenAI({ apiKey: getAuthKey(apiKey) });
 
     return withRetry(async () => {
         const timeoutPromise = new Promise<ImageAnalysis>((_, reject) =>
@@ -173,14 +176,19 @@ export const analyzeImage = async (base64Image: string, mimeType: string): Promi
             });
 
             // Fallback for image analysis
-            return safeJSONParse(response.text || "{}", {
+            const fallback: ImageAnalysis = {
+                id: `analysis-${Date.now()}`,
+                imageId: 'unknown',
+                role: 'inspiration',
                 angleDetected: "Desconocido",
                 visualElements: [],
                 copy: "",
                 colors: [],
                 composition: "",
-                emotions: []
-            });
+                emotions: [],
+                timestamp: Date.now()
+            };
+            return safeJSONParse(response.text || "{}", fallback);
         })();
 
         const result = await Promise.race([genPromise, timeoutPromise]);
@@ -195,9 +203,10 @@ export const analyzeImage = async (base64Image: string, mimeType: string): Promi
 export const generateAngles = async (
     kb: KnowledgeBase,
     analysisContext: ImageAnalysis[],
-    existingAngles: Angle[] = []
+    existingAngles: Angle[] = [],
+    apiKey?: string
 ): Promise<Angle[]> => {
-    const ai = new GoogleGenAI({ apiKey: getAuthKey() });
+    const ai = new GoogleGenAI({ apiKey: getAuthKey(apiKey) });
 
     const rawContextSnippet = kb.generalContext ? kb.generalContext.slice(0, 50000) : "Contexto genérico de marketing.";
 
