@@ -6,7 +6,50 @@ import { Button } from './ui/Button';
 
 // Icons
 const LogoIcon = () => (
-  <img src="/logo.png" alt="Launch Expert Logo" className="w-8 h-auto" />
+  <svg
+    width="32"
+    height="32"
+    viewBox="0 0 32 32"
+    fill="none"
+    className="text-accent-primary group-hover:-translate-y-1 transition-transform duration-300"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    {/* Rocket Body */}
+    <path
+      d="M16 2C16 2 8 8.4 8 16.4C8 20.8183 11.5817 24.4 16 24.4C20.4183 24.4 24 20.8183 24 16.4C24 8.4 16 2 16 2Z"
+      fill="white"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    {/* Wings */}
+    <path
+      d="M8 12L4 16L8 22"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M24 12L28 16L24 22"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    {/* Window */}
+    <circle cx="16" cy="14" r="3" fill="currentColor" fillOpacity="0.2" stroke="currentColor" strokeWidth="1.5" />
+    {/* Flame (Animated via CSS in global or just visible here) */}
+    <path
+      d="M16 24V29M13 26L16 29L19 26"
+      stroke="#FF6B35"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="origin-top animate-pulse"
+    />
+  </svg>
 );
 
 const MenuIcon = () => (
@@ -33,7 +76,7 @@ const NAV_ITEMS = [
 ];
 
 export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { step, setStep, currentBusiness } = useAdContext();
+  const { step, setStep, currentBusiness, logout, user } = useAdContext();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleNavClick = (newStep: AppStep) => {
@@ -108,15 +151,33 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
         </nav>
 
         {/* Footer */}
-        <div className="p-4 border-t border-border-default mt-auto">
-          <div className="flex items-center gap-3 p-2 rounded-xl hover:bg-bg-tertiary transition-colors cursor-pointer">
-            <div className="w-8 h-8 rounded-full bg-accent-gradient flex items-center justify-center text-white font-bold text-xs">
-              AD
+        <div className="p-4 border-t border-border-default mt-auto space-y-2">
+          <button
+            onClick={() => setStep(AppStep.API_SETUP)}
+            className="w-full flex items-center gap-3 p-2 rounded-xl hover:bg-bg-tertiary transition-colors text-text-secondary hover:text-white"
+          >
+            <div className="w-8 h-8 rounded-full bg-bg-elevated flex items-center justify-center">
+              <span className="text-lg">⚙️</span>
             </div>
-            <div>
-              <div className="text-sm font-medium text-white">Admin User</div>
+            <span className="text-sm font-medium">Configuración API</span>
+          </button>
+
+          <div className="flex items-center gap-3 p-2 rounded-xl hover:bg-bg-tertiary transition-colors cursor-pointer group">
+            <div className="w-8 h-8 rounded-full bg-accent-gradient flex items-center justify-center text-white font-bold text-xs group-hover:shadow-glow-orange transition-shadow">
+              {/* Initials of user, default to U */}
+              U
+            </div>
+            <div className="flex-1">
+              <div className="text-sm font-medium text-white line-clamp-1">Usuario</div>
               <div className="text-xs text-text-muted">Pro Plan</div>
             </div>
+            <button
+              onClick={() => { logout(); setStep(AppStep.LOGIN); }}
+              className="text-text-muted hover:text-danger-500 transition-colors p-1"
+              title="Cerrar Sesión"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+            </button>
           </div>
         </div>
       </aside>

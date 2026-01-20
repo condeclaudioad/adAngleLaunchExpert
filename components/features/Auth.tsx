@@ -7,7 +7,7 @@ import { Input } from '../ui/Input';
 import { Badge } from '../ui/Badge';
 
 export const Login: React.FC = () => {
-    const { login, register } = useAdContext();
+    const { login, register, setStep } = useAdContext();
     const [isLogin, setIsLogin] = useState(true);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -145,6 +145,15 @@ export const Login: React.FC = () => {
                     Protected by Launch Expert Security. <br />
                     <a href="#" className="hover:text-accent-primary transition-colors">Privacy Policy</a> • <a href="#" className="hover:text-accent-primary transition-colors">Terms of Service</a>
                 </p>
+
+                <div className="mt-4 text-center">
+                    <button
+                        onClick={() => setStep(AppStep.ADMIN)}
+                        className="text-[10px] text-text-muted/30 hover:text-text-muted transition-colors uppercase tracking-widest"
+                    >
+                        Admin Access
+                    </button>
+                </div>
             </div>
         </div>
     );
