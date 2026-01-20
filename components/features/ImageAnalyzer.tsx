@@ -32,26 +32,36 @@ export const ImageAnalyzer: React.FC = () => {
     setProcessedCount(0);
     setTotalToProcess(files.length);
 
+    // Create a copy of the promises array to track completion
+    const processFile = async (file: File) => {
+      try {
+        console.log(`Processing file: ${file.name}`);
+        const base64Data = await readFileAsBase64(file);
+        const result = await analyzeImage(base64Data, file.type);
+        console.log(`Success processing ${file.name}`);
+        addImageAnalysis(result);
+      } catch (err) {
+        console.error(`Error analyzing ${file.name}:`, err);
+        // Non-blocking error toast could be added here
+      } finally {
+        setProcessedCount(prev => prev + 1);
+      }
+    };
+
     try {
-      const promises = files.map(async (file) => {
-        try {
-          const base64Data = await readFileAsBase64(file);
-          const result = await analyzeImage(base64Data, file.type);
-          addImageAnalysis(result);
-          setProcessedCount(prev => prev + 1);
-        } catch (err) {
-          console.error(`Error analyzing ${file.name}:`, err);
-        }
-      });
-
-      await Promise.all(promises);
-
+      // Process sequentially to be safer with memory/API limits, or parallel with limit
+      // Currently parallel is fine for small batches (Gemini has decent rate limits)
+      await Promise.all(files.map(processFile));
     } catch (err) {
-      alert("Error general al procesar imágenes. Revisa la consola.");
+      console.error("Critical error in batch processing:", err);
+      alert("Hubo un error al procesar las imágenes. Por favor intenta de nuevo con menos archivos.");
     } finally {
       setIsAnalyzing(false);
-      setTotalToProcess(0);
-      setProcessedCount(0);
+      // Don't reset processed counts immediately so user sees "Done" state
+      setTimeout(() => {
+        setTotalToProcess(0);
+        setProcessedCount(0);
+      }, 2000);
       e.target.value = '';
     }
   };
@@ -71,11 +81,11 @@ export const ImageAnalyzer: React.FC = () => {
       </div>
 
       <div className={`bg-surface border-2 border-dashed rounded-2xl p-12 text-center transition-colors relative ${isAnalyzing ? 'border-primary/50 bg-primary/5' : 'border-borderColor hover:border-primary/50'}`}>
-        <input 
-          type="file" 
-          id="fileUpload" 
-          className="hidden" 
-          accept="image/*" 
+        <input
+          type="file"
+          id="fileUpload"
+          className="hidden"
+          accept="image/*"
           multiple
           onChange={handleFileUpload}
           disabled={isAnalyzing}
@@ -112,8 +122,8 @@ export const ImageAnalyzer: React.FC = () => {
             </div>
             <h4 className="font-semibold text-textMain">{analysis.angleDetected}</h4>
             <div className="text-sm space-y-2">
-               <p className="text-textMuted"><strong className="text-textMain">Composición:</strong> {analysis.composition}</p>
-               <p className="text-textMuted"><strong className="text-textMain">Copy:</strong> {analysis.copy}</p>
+              <p className="text-textMuted"><strong className="text-textMain">Composición:</strong> {analysis.composition}</p>
+              <p className="text-textMuted"><strong className="text-textMain">Copy:</strong> {analysis.copy}</p>
             </div>
             <div className="flex flex-wrap gap-2 pt-2">
               {analysis.emotions.map((e, i) => (
