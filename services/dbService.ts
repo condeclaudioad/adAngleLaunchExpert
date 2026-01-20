@@ -1,5 +1,7 @@
 import { getSupabase, getCurrentUser } from './supabaseClient';
-import { Angle, ImageAnalysis } from '../types';
+import { Angle, ImageAnalysis, Business, GeneratedImage } from '../types';
+
+// ——————————————— VISUAL ANALYSIS ———————————————
 
 export const saveAnalysisToDb = async (analysis: ImageAnalysis) => {
     try {
@@ -18,23 +20,49 @@ export const saveAnalysisToDb = async (analysis: ImageAnalysis) => {
                 emotions: analysis.emotions
             });
 
-        if (error) {
-            console.error('Error saving analysis to DB:', error);
-        } else {
-            console.log('✅ Analysis saved to DB');
-        }
+        if (error) console.error('Error saving analysis to DB:', error);
     } catch (e) {
         console.error('Exception saving analysis:', e);
     }
 };
+
+export const getVisualAnalyses = async (): Promise<ImageAnalysis[]> => {
+    try {
+        const user = await getCurrentUser();
+        if (!user) return [];
+
+        const { data, error } = await getSupabase()
+            .from('visual_analyses')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            console.error('Error fetching analyses:', error);
+            return [];
+        }
+
+        return data.map((d: any) => ({
+            id: d.id,
+            angleDetected: d.angle_detected,
+            visualElements: d.visual_elements || [],
+            copy: d.copy_text,
+            colors: d.colors || [],
+            composition: d.composition,
+            emotions: d.emotions || []
+        }));
+    } catch (e) {
+        console.error('Exception fetching analyses:', e);
+        return [];
+    }
+};
+
+// ——————————————— ANGLES ———————————————
 
 export const saveAngleToDb = async (angle: Angle) => {
     try {
         const user = await getCurrentUser();
         if (!user) return;
 
-        // generated_angles might generate duplicates if we just insert blindly, 
-        // but for now we just append history.
         const { error } = await getSupabase()
             .from('generated_angles')
             .insert({
@@ -46,9 +74,7 @@ export const saveAngleToDb = async (angle: Angle) => {
                 visuals: angle.visuals
             });
 
-        if (error) {
-            console.error('Error saving angle to DB:', error);
-        }
+        if (error) console.error('Error saving angle to DB:', error);
     } catch (e) {
         console.error('Exception saving angle:', e);
     }
@@ -63,7 +89,7 @@ export const getExistingAngles = async (): Promise<Angle[]> => {
             .from('generated_angles')
             .select('*')
             .order('created_at', { ascending: false })
-            .limit(100); // Get last 100 for context
+            .limit(100);
 
         if (error) {
             console.error('Error fetching angles from DB:', error);
@@ -71,7 +97,7 @@ export const getExistingAngles = async (): Promise<Angle[]> => {
         }
 
         return data.map((d: any) => ({
-            id: d.id, // DB UUID
+            id: d.id,
             name: d.name,
             description: d.description || "",
             hook: d.hook,
@@ -82,5 +108,140 @@ export const getExistingAngles = async (): Promise<Angle[]> => {
     } catch (e) {
         console.error('Exception fetching angles:', e);
         return [];
+    }
+};
+
+// ——————————————— BUSINESSES ———————————————
+
+export const saveBusinessToDb = async (business: Business) => {
+    try {
+        const user = await getCurrentUser();
+        if (!user) return;
+
+        // Upsert based on ID
+        const { error } = await getSupabase()
+            .from('businesses')
+            .upsert({
+                id: business.id, // Using the text ID generated on frontend
+                user_id: user.id,
+                name: business.name,
+                knowledge_base: business.knowledgeBase,
+                branding: business.branding
+            });
+
+        if (error) console.error('Error saving business:', error);
+    } catch (e) {
+        console.error('Exception saving business:', e);
+    }
+};
+
+export const getBusinessesFromDb = async (): Promise<Business[]> => {
+    try {
+        const user = await getCurrentUser();
+        if (!user) return [];
+
+        const { data, error } = await getSupabase()
+            .from('businesses')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            console.error('Error fetching businesses:', error);
+            return [];
+        }
+
+        return data.map((d: any) => ({
+            id: d.id,
+            name: d.name,
+            createdAt: new Date(d.created_at).getTime(),
+            knowledgeBase: d.knowledge_base,
+            branding: d.branding,
+            ownerEmail: user.email
+        }));
+    } catch (e) {
+        console.error('Exception fetching businesses:', e);
+        return [];
+    }
+};
+
+export const deleteBusinessFromDb = async (id: string) => {
+    try {
+        const { error } = await getSupabase()
+            .from('businesses')
+            .delete()
+            .match({ id });
+        if (error) console.error('Error deleting business:', error);
+    } catch (e) {
+        console.error('Exception deleting business:', e);
+    }
+};
+
+// ——————————————— IMAGES ———————————————
+
+export const saveImageToDb = async (img: GeneratedImage) => {
+    try {
+        const user = await getCurrentUser();
+        if (!user) return;
+
+        const { error } = await getSupabase()
+            .from('generated_images')
+            .upsert({
+                id: img.id,
+                user_id: user.id,
+                angle_id: img.angleId,
+                url: img.url, // Storing Base64 or URL
+                prompt: img.prompt,
+                type: img.type,
+                parent_id: img.parentId,
+                status: img.status,
+                approval_status: img.approvalStatus
+            });
+
+        if (error) console.error('Error saving image:', error);
+    } catch (e) {
+        console.error('Exception saving image:', e);
+    }
+};
+
+export const getImagesFromDb = async (): Promise<GeneratedImage[]> => {
+    try {
+        const user = await getCurrentUser();
+        if (!user) return [];
+
+        const { data, error } = await getSupabase()
+            .from('generated_images')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            console.error('Error fetching images:', error);
+            return [];
+        }
+
+        return data.map((d: any) => ({
+            id: d.id,
+            angleId: d.angle_id,
+            url: d.url,
+            prompt: d.prompt,
+            type: d.type as 'master' | 'variation',
+            parentId: d.parent_id,
+            status: d.status as any,
+            approvalStatus: d.approval_status as any
+        }));
+    } catch (e) {
+        console.error('Exception fetching images:', e);
+        return [];
+    }
+};
+
+export const deleteImageFromDb = async (id: string) => {
+    try {
+        const { error } = await getSupabase()
+            .from('generated_images')
+            .delete()
+            .match({ id });
+        if (error) console.error('Error deleting image:', error);
+    } catch (e) {
+        console.error('Exception deleting image:', e);
     }
 };

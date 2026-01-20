@@ -2,9 +2,10 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { KnowledgeBase, ImageAnalysis, Angle, GeneratedImage, AppStep, ApprovalStatus, Branding, Business, User } from '../types';
 import {
-  saveImageToDB, getAllImagesFromDB, deleteImageFromDB, clearDB,
-  saveBusinessToDB, getAllBusinessesFromDB, deleteBusinessFromDB
-} from '../services/storageService';
+  saveImageToDb, getImagesFromDb, deleteImageFromDb,
+  saveBusinessToDb, getBusinessesFromDb, deleteBusinessFromDb,
+  getVisualAnalyses, getExistingAngles
+} from '../services/dbService';
 import { onAuthStateChange, checkIsVip, signOut } from '../services/supabaseClient';
 import { VIP_EMAILS } from '../constants';
 import { AppError, errorHandler } from '../services/errorHandler';
@@ -301,15 +302,25 @@ export const AdProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     if (user) {
       const initData = async () => {
         try {
-          const allBusinesses = await getAllBusinessesFromDB();
+          const allBusinesses = await getBusinessesFromDb();
 
           const userBusinesses = allBusinesses.filter(b =>
             b.ownerEmail === user.email || !b.ownerEmail
           );
 
           setBusinesses(userBusinesses);
-          const dbImages = await getAllImagesFromDB();
+
+          // Load Images
+          const dbImages = await getImagesFromDb();
           setGeneratedImages(dbImages);
+
+          // Load Analysis History
+          const dbAnalyses = await getVisualAnalyses();
+          setImageAnalysis(dbAnalyses);
+
+          // Load Angles History
+          const dbAngles = await getExistingAngles();
+          setAngles(dbAngles);
 
           const lastBizId = localStorage.getItem('le_last_biz_id');
           if (lastBizId) {
@@ -376,7 +387,7 @@ export const AdProvider: React.FC<{ children: React.ReactNode }> = ({ children }
         ownerEmail: user.email // Claim ownership
       };
 
-      await saveBusinessToDB(newBus);
+      await saveBusinessToDb(newBus);
       setBusinesses(prev => {
         const exists = prev.findIndex(b => b.id === newBus.id);
         if (exists > -1) {
@@ -401,7 +412,7 @@ export const AdProvider: React.FC<{ children: React.ReactNode }> = ({ children }
         ownerEmail: user?.email || currentBusiness.ownerEmail
       };
 
-      await saveBusinessToDB(updatedBiz);
+      await saveBusinessToDb(updatedBiz);
 
       setCurrentBusiness(updatedBiz);
       setBusinesses(prev => prev.map(b => b.id === updatedBiz.id ? updatedBiz : b));
@@ -423,7 +434,7 @@ export const AdProvider: React.FC<{ children: React.ReactNode }> = ({ children }
   const deleteBusiness = async (id: string) => {
     if (!confirm("¿Borrar este negocio?")) return;
     try {
-      await deleteBusinessFromDB(id);
+      await deleteBusinessFromDb(id);
       setBusinesses(prev => prev.filter(b => b.id !== id));
       if (currentBusiness?.id === id) {
         createNewBusiness();
@@ -439,7 +450,7 @@ export const AdProvider: React.FC<{ children: React.ReactNode }> = ({ children }
   const addGeneratedImage = async (img: GeneratedImage) => {
     setGeneratedImages(prev => [...prev, img]);
     try {
-      await saveImageToDB(img);
+      await saveImageToDb(img);
     } catch (e) {
       // Silently fail on storage limit, but keep in memory
       console.warn("Could not save to DB", e);
@@ -453,7 +464,7 @@ export const AdProvider: React.FC<{ children: React.ReactNode }> = ({ children }
       );
       const updatedImg = newImages.find(i => i.id === id);
       if (updatedImg) {
-        saveImageToDB(updatedImg).catch(console.warn);
+        saveImageToDb(updatedImg).catch(console.warn);
       }
       return newImages;
     });
@@ -466,7 +477,7 @@ export const AdProvider: React.FC<{ children: React.ReactNode }> = ({ children }
       );
       const updatedImg = newImages.find(i => i.id === id);
       if (updatedImg) {
-        saveImageToDB(updatedImg).catch(console.warn);
+        saveImageToDb(updatedImg).catch(console.warn);
       }
       return newImages;
     });
@@ -478,7 +489,7 @@ export const AdProvider: React.FC<{ children: React.ReactNode }> = ({ children }
         img.id === id ? { ...img, approvalStatus: status } : img
       );
       const updatedImg = newImages.find(i => i.id === id);
-      if (updatedImg) saveImageToDB(updatedImg).catch(console.warn);
+      if (updatedImg) saveImageToDb(updatedImg).catch(console.warn);
       return newImages;
     });
   };
@@ -487,17 +498,17 @@ export const AdProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     setGeneratedImages(prev => {
       const newImages = prev.map(img => img.id === id ? { ...img, feedback } : img);
       const updatedImg = newImages.find(i => i.id === id);
-      if (updatedImg) saveImageToDB(updatedImg).catch(console.warn);
+      if (updatedImg) saveImageToDb(updatedImg).catch(console.warn);
       return newImages;
     });
   };
 
   const deleteImage = async (id: string) => {
     setGeneratedImages(prev => prev.filter(img => img.id !== id && img.parentId !== id));
-    await deleteImageFromDB(id);
+    await deleteImageFromDb(id);
     const variations = generatedImages.filter(i => i.parentId === id);
     for (const v of variations) {
-      await deleteImageFromDB(v.id);
+      await deleteImageFromDb(v.id);
     }
   };
 
@@ -505,7 +516,7 @@ export const AdProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     if (confirm("¿Borrar todo y reiniciar de fábrica?")) {
       logout();
       localStorage.clear();
-      await clearDB();
+      // await clearDB(); // Supabase no se borra así.
       safeLocalStorageSet('le_theme', theme);
       window.location.reload();
     }
