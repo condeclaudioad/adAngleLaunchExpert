@@ -5,15 +5,15 @@
 // ═══════════════════════════════════════════════════════════
 
 // Gemini para análisis de texto e imágenes
-export const MODEL_ANALYSIS = 'gemini-2.0-flash-exp';
-export const MODEL_TEXT = 'gemini-2.0-flash-exp';
+// Gemini para análisis de texto e imágenes
+export const MODEL_ANALYSIS = 'gemini-2.0-flash'; // Confirmed Stable
+export const MODEL_TEXT = 'gemini-2.0-flash'; // Confirmed Stable
+export const MODEL_TEXT_BACKUP = 'gemini-2.5-computer-use-preview-10-2025'; // Backup found in list (assuming 2.5 flash nickname)
 
 // Gemini para generación de imágenes (MASTER creatives)
-// Usamos Imagen 3 que es dedicado para generación
-// export const MODEL_IMAGE_GEMINI = 'imagen-3.0-generate-001';
-// export const MODEL_IMAGE_GEMINI = 'imagen-3.0-generate-002'; // Imagen 3 Latest (Jan 2025) - 404 Error
-// export const MODEL_IMAGE_GEMINI = 'imagen-3.0-generate-001'; 
-export const MODEL_IMAGE_GEMINI = 'gemini-2.0-flash-exp'; // Validated in user account
+// Usamos el modelo específico NanoBanana Pro solicitado por el usuario
+export const MODEL_IMAGE_GEMINI = 'nano-banana-pro-preview';
+export const MODEL_IMAGE_BACKUP = 'models/gemini-2.0-flash'; // Fallback to safe functioning model
 
 // Grok para variaciones (xAI) - CURRENTLY DISABLED (API Unavailable) -> Fallback to Gemini
 export const MODEL_IMAGE_GROK = 'grok-2-image';

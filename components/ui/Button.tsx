@@ -22,7 +22,7 @@ export const Button: React.FC<ButtonProps> = ({
   const baseStyles = 'inline-flex items-center justify-center font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[#0a0a0a] disabled:opacity-50 disabled:cursor-not-allowed';
 
   const variants = {
-    primary: 'bg-accent-gradient text-white hover:opacity-90 shadow-glow-soft hover:shadow-glow-orange border border-transparent',
+    primary: 'bg-accent-gradient text-white hover:opacity-90 shadow-glow-soft hover:shadow-glow-orange border border-white/10 hover:border-white/20',
     secondary: 'bg-bg-tertiary text-text-primary hover:bg-border-default border border-border-default hover:border-border-hover',
     outline: 'bg-transparent text-text-primary border border-border-default hover:border-text-muted hover:text-white',
     ghost: 'bg-transparent text-text-secondary hover:text-text-primary hover:bg-bg-tertiary',

@@ -38,122 +38,131 @@ export const Login: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen w-full flex items-center justify-center relative overflow-hidden bg-bg-primary">
-            {/* Background Effects */}
-            <div className="absolute inset-0 login-glow-effect bottom-0 h-[60%] pointer-events-none" />
-            <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+        <div className="min-h-screen flex items-center justify-center bg-bg-primary p-4 relative overflow-hidden">
+            {/* Ambient Background - Premium Glow */}
+            <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                <div className="absolute top-[-20%] right-[-10%] w-[800px] h-[800px] bg-accent-primary/10 rounded-full blur-[120px] animate-pulse" />
+                <div className="absolute bottom-[-20%] left-[-10%] w-[600px] h-[600px] bg-purple-500/5 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '1s' }} />
+                <div className="absolute top-[40%] left-[50%] translate-x-[-50%] w-[400px] h-[400px] bg-accent-secondary/5 rounded-full blur-[80px]" />
+            </div>
 
-            {/* Login Card */}
-            <div className="relative z-10 w-full max-w-md px-4">
-                <Card variant="glass" className="w-full backdrop-blur-2xl border-white/5">
-                    <CardContent className="flex flex-col items-center pt-8 pb-8 space-y-6">
-                        {/* Logo & Branding */}
-                        <div className="flex flex-col items-center gap-4 text-center">
-                            <div className="p-4 rounded-2xl bg-white/5 border border-white/10 shadow-[0_0_20px_rgba(255,107,53,0.1)]">
-                                <img src="/logo.png" alt="Launch Expert Logo" className="w-12 h-auto" />
-                            </div>
-                            <div>
-                                <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-b from-white to-white/70">
-                                    Launch Expert
-                                </h1>
-                                <Badge variant="vip" className="mt-2 text-xs">Access Portal</Badge>
-                            </div>
+            <div className="max-w-md w-full relative z-10 space-y-8 animate-fade-in">
+                {/* Header Section */}
+                <div className="text-center space-y-6">
+                    <div className="relative inline-block group">
+                        <div className="absolute inset-0 bg-accent-primary blur-2xl opacity-20 group-hover:opacity-40 transition-opacity duration-500 rounded-full" />
+                        <div className="w-20 h-20 bg-gradient-to-br from-bg-tertiary to-bg-secondary rounded-2xl flex items-center justify-center mx-auto shadow-2xl border border-white/5 relative z-10">
+                            <img src="/logo.png" alt="Logo" className="w-12 h-12 object-contain" />
                         </div>
+                    </div>
 
-                        {/* Title Section */}
-                        <div className="text-center space-y-2">
-                            <h2 className="text-xl font-medium text-text-primary">
-                                {isLogin ? 'Bienvenido' : 'Crear Cuenta'}
-                            </h2>
-                            <p className="text-sm text-text-secondary">
-                                {isLogin ? 'Ingresa tus credenciales para acceder' : 'Únete a Launch Expert'}
-                            </p>
-                        </div>
+                    <div className="space-y-2">
+                        <h1 className="text-4xl font-bold text-white tracking-tight">
+                            Launch Expert
+                        </h1>
+                        <p className="text-text-secondary text-sm font-medium tracking-wide uppercase opacity-80">
+                            Suite Creativa con IA
+                        </p>
+                    </div>
+                </div>
 
-                        {/* Form */}
-                        <form onSubmit={handleSubmit} className="w-full space-y-4 pt-2">
+                {/* Main Card */}
+                <div className="glass-card p-1 relative overflow-hidden group">
+                    <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+
+                    <div className="bg-bg-secondary/40 backdrop-blur-md rounded-[20px] p-8 border border-white/5 shadow-inner">
+                        <h2 className="text-xl font-semibold text-white mb-6 text-center">
+                            {isLogin ? 'Bienvenido de nuevo' : 'Crea tu cuenta'}
+                        </h2>
+
+                        <form onSubmit={handleSubmit} className="space-y-5">
                             {error && (
-                                <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm text-center">
+                                <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs text-center font-medium">
                                     {error}
                                 </div>
                             )}
 
-                            <div className="space-y-4">
-                                {!isLogin && (
-                                    <div className="space-y-1 animate-fade-in">
-                                        <label className="text-xs text-text-muted ml-1">Nombre</label>
-                                        <Input
-                                            type="text"
-                                            placeholder="Tu nombre"
-                                            value={name}
-                                            onChange={(e) => setName(e.target.value)}
-                                            required={!isLogin}
-                                            className="bg-bg-tertiary/50 border-white/10 focus:border-accent-primary/50"
-                                        />
-                                    </div>
-                                )}
-                                <div className="space-y-1">
-                                    <label className="text-xs text-text-muted ml-1">Email</label>
+                            {!isLogin && (
+                                <div className="space-y-1.5 animate-fade-in">
+                                    <label className="text-xs font-medium text-text-secondary ml-1 uppercase tracking-wider">Nombre</label>
                                     <Input
-                                        type="email"
-                                        placeholder="correo@ejemplo.com"
-                                        value={email}
-                                        onChange={(e) => setEmail(e.target.value)}
-                                        required
-                                        className="bg-bg-tertiary/50 border-white/10 focus:border-accent-primary/50"
+                                        type="text"
+                                        placeholder="Tu nombre completo"
+                                        value={name}
+                                        onChange={(e) => setName(e.target.value)}
+                                        required={!isLogin}
+                                        className="bg-bg-tertiary/50 border-white/5 focus:border-accent-primary/50 text-white placeholder:text-white/20 h-11"
                                     />
                                 </div>
-                                <div className="space-y-1">
-                                    <label className="text-xs text-text-muted ml-1">Contraseña</label>
-                                    <Input
-                                        type="password"
-                                        placeholder="••••••••"
-                                        value={password}
-                                        onChange={(e) => setPassword(e.target.value)}
-                                        required
-                                        className="bg-bg-tertiary/50 border-white/10 focus:border-accent-primary/50"
-                                    />
+                            )}
+
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-medium text-text-secondary ml-1 uppercase tracking-wider">Email</label>
+                                <Input
+                                    type="email"
+                                    placeholder="nombre@empresa.com"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    required
+                                    className="bg-bg-tertiary/50 border-white/5 focus:border-accent-primary/50 text-white placeholder:text-white/20 h-11"
+                                />
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <div className="flex justify-between items-center ml-1">
+                                    <label className="text-xs font-medium text-text-secondary uppercase tracking-wider">Contraseña</label>
                                 </div>
+                                <Input
+                                    type="password"
+                                    placeholder="••••••••••••"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    required
+                                    className="bg-bg-tertiary/50 border-white/5 focus:border-accent-primary/50 text-white placeholder:text-white/20 h-11"
+                                />
                             </div>
 
                             <Button
-                                type="submit"
-                                variant="primary"
                                 fullWidth
+                                type="submit"
+                                loading={loading}
                                 size="lg"
-                                disabled={loading}
-                                className="mt-2"
+                                className="mt-4 bg-gradient-to-r from-accent-primary to-accent-gradient-end hover:shadow-glow-orange transition-all duration-300 transform hover:-translate-y-0.5"
                             >
-                                {loading ? 'Procesando...' : (isLogin ? 'Iniciar Sesión' : 'Registrarse')}
+                                {isLogin ? 'Iniciar Sesión' : 'Registrarse'}
                             </Button>
-
-                            <div className="pt-2 text-center">
-                                <button
-                                    type="button"
-                                    onClick={() => { setIsLogin(!isLogin); setError(null); }}
-                                    className="text-sm text-text-muted hover:text-accent-primary transition-colors underline decoration-dotted"
-                                >
-                                    {isLogin ? '¿No tienes cuenta? Regístrate' : '¿Ya tienes cuenta? Inicia Sesión'}
-                                </button>
-                            </div>
-
                         </form>
-                    </CardContent>
-                </Card>
 
-                <p className="text-center mt-6 text-text-muted text-xs">
-                    Protected by Launch Expert Security. <br />
-                    <a href="#" className="hover:text-accent-primary transition-colors">Privacy Policy</a> • <a href="#" className="hover:text-accent-primary transition-colors">Terms of Service</a>
-                </p>
+                        <div className="mt-8 pt-6 border-t border-white/5 text-center flex flex-col gap-4">
+                            <button
+                                onClick={() => { setIsLogin(!isLogin); setError(null); }}
+                                className="text-sm text-text-secondary hover:text-white transition-colors group"
+                            >
+                                {isLogin ? (
+                                    <>
+                                        ¿No tienes cuenta? <span className="text-accent-primary group-hover:underline underline-offset-4">Regístrate gratis</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        ¿Ya tienes cuenta? <span className="text-accent-primary group-hover:underline underline-offset-4">Inicia sesión</span>
+                                    </>
+                                )}
+                            </button>
 
-                <div className="mt-4 text-center">
-                    <button
-                        onClick={() => setStep(AppStep.ADMIN)}
-                        className="text-[10px] text-text-muted/30 hover:text-text-muted transition-colors uppercase tracking-widest"
-                    >
-                        Admin Access
-                    </button>
+                            <button
+                                onClick={() => setStep(AppStep.ADMIN)}
+                                className="text-[10px] text-text-muted/30 hover:text-text-muted transition-colors uppercase tracking-widest"
+                            >
+                                Admin Access
+                            </button>
+                        </div>
+                    </div>
                 </div>
+
+                {/* Footer simple */}
+                <p className="text-center text-[10px] text-text-muted/40">
+                    &copy; {new Date().getFullYear()} Launch Expert AI. Security Protected.
+                </p>
             </div>
         </div>
     );

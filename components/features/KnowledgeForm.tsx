@@ -1,19 +1,23 @@
 import React, { useState, useCallback } from 'react';
 import { useAdContext } from '../../store/AdContext';
 import { AppStep, KnowledgeBase } from '../../types';
-import { useDropzone } from 'react-dropzone';
+import { useDropzone, DropzoneOptions } from 'react-dropzone';
 import { extractTextFromFile, refineContext } from '../../services/geminiService';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/Card';
+import { Card, CardTitle, CardDescription } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { Input, TextArea } from '../ui/Input';
 import { Badge } from '../ui/Badge';
-
-// Icons
-const UploadIcon = () => <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12" strokeLinecap="round" strokeLinejoin="round" /></svg>;
-const FileIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z" strokeLinecap="round" strokeLinejoin="round" /><path d="M13 2v7h7" strokeLinecap="round" strokeLinejoin="round" /></svg>;
-const BrainIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2a10 10 0 1010 10 9.991 9.991 0 00-9-10zm0 18a8 8 0 118-8 8.009 8.009 0 01-8 8z" className="opacity-25" /><path d="M12 12m-3 0a3 3 0 106 0a3 3 0 10-6 0" /></svg>;
-const CheckCircleIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-green-500"><path d="M22 11.08V12a10 10 0 11-5.93-9.14" strokeLinecap="round" strokeLinejoin="round" /><path d="M22 4L12 14.01l-3-3" strokeLinecap="round" strokeLinejoin="round" /></svg>;
-const AlertTriangleIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-red-500"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0zM12 9v4M12 17h.01" strokeLinecap="round" strokeLinejoin="round" /></svg>;
+import {
+    UploadCloud,
+    FileText,
+    BrainCircuit,
+    CheckCircle2,
+    AlertTriangle,
+    ArrowRight,
+    Sparkles,
+    Loader2,
+    Trash2
+} from 'lucide-react';
 
 // Helper to convert file to base64
 const fileToBase64 = (file: File): Promise<string> => {
@@ -31,19 +35,19 @@ const fileToBase64 = (file: File): Promise<string> => {
 };
 
 export const KnowledgeForm: React.FC = () => {
-    const { currentBusiness, updateBusiness, setStep, googleApiKey: apiKey } = useAdContext();
+    const { currentBusiness, updateBusinessPartial: updateBusiness, setStep, googleApiKey: apiKey } = useAdContext();
     const [isProcessing, setIsProcessing] = useState(false);
     const [files, setFiles] = useState<File[]>([]);
     const [analysis, setAnalysis] = useState<KnowledgeBase['structuredAnalysis']>(
         currentBusiness?.knowledgeBase?.structuredAnalysis || {
             productName: '',
             avatar: '',
-            currentSituation: '',
-            desireSituation: '',
+            // currentSituation: '', // Removed from types? Check types.ts definition, preserving for safety if needed internally
+            // desireSituation: '',
             mechanismOfProblem: '',
             uniqueMechanism: '',
             bigPromise: '',
-            offer: ''
+            // offer: ''
         }
     );
 
@@ -60,8 +64,9 @@ export const KnowledgeForm: React.FC = () => {
             'image/png': ['.png'],
             'application/msword': ['.doc'],
             'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx']
-        }
-    });
+        },
+        multiple: true
+    } as unknown as DropzoneOptions);
 
     const handleAnalyze = async () => {
         if (!apiKey) {
@@ -137,160 +142,224 @@ export const KnowledgeForm: React.FC = () => {
 
     const handleChange = (field: keyof KnowledgeBase['structuredAnalysis'], value: string) => {
         setAnalysis(prev => prev ? ({ ...prev, [field]: value }) : {
-            productName: '', avatar: '', currentSituation: '', desireSituation: '',
-            mechanismOfProblem: '', uniqueMechanism: '', bigPromise: '', offer: '',
+            productName: '', avatar: '', mechanismOfProblem: '', uniqueMechanism: '', bigPromise: '',
             [field]: value // Override with new value
         });
     };
 
-    return (
-        <div className="max-w-4xl mx-auto space-y-8 pb-20">
-            {/* Header */}
-            <div>
-                <h2 className="text-3xl font-bold mb-2">Base de Conocimiento</h2>
-                <p className="text-text-secondary">
-                    Sube documentos, landing pages o notas. La IA extraerá la estrategia ganadora.
-                </p>
-            </div>
-
-            {/* Upload Zone */}
-            <div
-                {...getRootProps()}
-                className={`
-                    border-2 border-dashed rounded-3xl p-10 text-center transition-all cursor-pointer group
-                    ${isDragActive
-                        ? 'border-accent-primary bg-accent-primary/5 scale-[1.01]'
-                        : 'border-border-default bg-bg-secondary hover:border-text-muted hover:bg-bg-elevated'
+    const handleReset = () => {
+        if (confirm('¿Estás seguro de borrar toda la base de conocimiento? Tendrás que subir los archivos de nuevo.')) {
+            if (currentBusiness?.id) {
+                updateBusiness(currentBusiness.id, {
+                    knowledgeBase: {
+                        generalContext: '',
+                        files: [],
+                        structuredAnalysis: undefined
                     }
-                `}
-            >
-                <input {...getInputProps()} />
-                <div className="flex flex-col items-center gap-4">
-                    <div className={`p-4 rounded-full bg-bg-tertiary text-text-muted group-hover:text-accent-primary group-hover:bg-accent-primary/10 transition-colors`}>
-                        <UploadIcon />
-                    </div>
-                    <div>
-                        <h3 className="text-lg font-medium mb-1">
-                            {isDragActive ? 'Suelta los archivos aquí' : 'Arrastra archivos aquí'}
-                        </h3>
-                        <p className="text-sm text-text-muted">
-                            Soporta PDF, DOCX, TXT, MD, JPG, PNG
-                        </p>
-                    </div>
-                    <Button variant="secondary" size="sm" className="mt-2">
-                        Seleccionar Archivos
-                    </Button>
-                </div>
-            </div>
+                });
+            }
+            setFiles([]);
+            setAnalysis({
+                productName: '',
+                avatar: '',
+                mechanismOfProblem: '',
+                uniqueMechanism: '',
+                bigPromise: ''
+            });
+        }
+    };
 
-            {/* File List */}
-            {files.length > 0 && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {files.map((file, idx) => (
-                        <div key={idx} className="flex items-center gap-3 p-3 bg-bg-secondary border border-border-default rounded-xl">
-                            <FileIcon />
-                            <span className="text-sm truncate flex-1">{file.name}</span>
-                            <span className="text-xs text-text-muted">{(file.size / 1024).toFixed(1)} KB</span>
-                        </div>
-                    ))}
-                </div>
-            )}
+    return (
+        <div className="max-w-5xl mx-auto space-y-12 pb-20">
+            {/* Header Section */}
+            <div className="text-center space-y-4 relative">
+                <Badge variant="outline" className="mb-2 border-accent-primary/20 text-accent-primary bg-accent-primary/5">
+                    <BrainCircuit className="w-3 h-3 mr-1" /> Fase 1: Extracción de Conocimiento
+                </Badge>
+                <h1 className="text-4xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white via-white to-white/60 tracking-tight">
+                    Alimenta tu <span className="text-accent-primary">Cerebro de IA</span>
+                </h1>
+                <p className="text-lg text-text-secondary max-w-2xl mx-auto leading-relaxed">
+                    Sube documentos legales, landing pages o notas de producto. Nuestra IA extraerá los
+                    <span className="text-white font-medium"> mecanismos únicos</span> y la <span className="text-white font-medium">psicología del avatar</span>.
+                </p>
 
-            {/* Analysis & Form */}
-            <div className="flex justify-center">
-                {files.length > 0 && (
-                    <Button
-                        onClick={handleAnalyze}
-                        loading={isProcessing}
-                        size="lg"
-                        className="min-w-[200px]"
-                    >
-                        {isProcessing ? 'Analizando con IA...' : 'Analizar Documentos'}
-                    </Button>
+                {analysis?.productName && (
+                    <div className="absolute top-0 right-0">
+                        <Button variant="ghost" onClick={handleReset} className="text-red-400 hover:bg-red-500/10 hover:text-red-300">
+                            <Trash2 size={16} className="mr-2" /> Borrar Conocimiento
+                        </Button>
+                    </div>
                 )}
             </div>
 
-            <Card className="border-t-4 border-t-accent-primary">
-                <CardHeader>
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 bg-accent-primary/10 rounded-lg text-accent-primary">
-                            <BrainIcon />
-                        </div>
-                        <div>
-                            <CardTitle>Análisis Estratégico</CardTitle>
-                            <CardDescription>Edita la información extraída si es necesario</CardDescription>
-                        </div>
-                        <Badge variant="accent" className="ml-auto">Editable</Badge>
-                    </div>
-                </CardHeader>
-                <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="col-span-full">
-                            <Input
-                                label="Producto / Servicio"
-                                value={analysis?.productName}
-                                onChange={(e) => handleChange('productName', e.target.value)}
-                                placeholder="Ej: Curso de Facebook Ads"
-                            />
-                        </div>
+            <div className="grid lg:grid-cols-2 gap-8 items-start">
 
-                        <div className="col-span-full">
-                            <TextArea
-                                label="Avatar (Voz del Cliente)"
-                                value={analysis?.avatar}
-                                onChange={(e) => handleChange('avatar', e.target.value)}
-                                placeholder="Descripción detallada del cliente ideal..."
-                                rows={3}
-                            />
-                        </div>
+                {/* Left Column: Upload */}
+                <div className="space-y-6">
+                    <Card className="h-full border-white/5 bg-bg-secondary/50 backdrop-blur-sm overflow-hidden relative group">
+                        <div className="absolute inset-0 bg-gradient-to-b from-accent-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
 
-                        {/* MUP Field - Red tinted */}
-                        <div className="p-4 rounded-xl bg-red-500/5 border border-red-500/10">
-                            <div className="flex items-center gap-2 mb-2 text-red-400">
-                                <AlertTriangleIcon />
-                                <span className="text-xs font-bold uppercase tracking-wider">MUP (Problema Raíz)</span>
+                        <div
+                            {...getRootProps()}
+                            className={`
+                                relative z-10 h-full min-h-[400px] flex flex-col items-center justify-center p-8 text-center border-2 border-dashed rounded-2xl transition-all duration-300
+                                ${isDragActive
+                                    ? 'border-accent-primary bg-accent-primary/5 scale-[0.98]'
+                                    : 'border-white/10 hover:border-accent-primary/40 hover:bg-bg-tertiary/50'
+                                }
+                            `}
+                        >
+                            <input {...getInputProps()} />
+
+                            <div className={`
+                                w-20 h-20 rounded-full flex items-center justify-center mb-6 transition-all duration-500
+                                ${isDragActive ? 'bg-accent-primary text-white scale-110 shadow-glow-orange' : 'bg-bg-tertiary text-text-muted group-hover:text-accent-primary group-hover:scale-110'}
+                            `}>
+                                <UploadCloud size={40} strokeWidth={1.5} />
                             </div>
-                            <TextArea
-                                value={analysis?.mechanismOfProblem}
-                                onChange={(e) => handleChange('mechanismOfProblem', e.target.value)}
-                                className="bg-bg-primary border-red-500/20 focus:border-red-500"
-                                placeholder="¿Por qué han fallado otros métodos?"
-                                rows={3}
-                            />
-                        </div>
 
-                        {/* UMS Field - Green tinted */}
-                        <div className="p-4 rounded-xl bg-green-500/5 border border-green-500/10">
-                            <div className="flex items-center gap-2 mb-2 text-green-400">
-                                <CheckCircleIcon />
-                                <span className="text-xs font-bold uppercase tracking-wider">UMS (Solución Única)</span>
+                            <h3 className="text-xl font-bold text-white mb-2">
+                                {isDragActive ? '¡Suéltalos ahora!' : 'Arrastra tus archivos aquí'}
+                            </h3>
+                            <p className="text-text-secondary mb-8 max-w-xs mx-auto">
+                                Soporta PDF, DOCX, TXT e Imágenes. <br />
+                                <span className="text-xs opacity-70">Máximo 10MB por archivo.</span>
+                            </p>
+
+                            <Button variant="secondary" className="group-hover:border-accent-primary/30 group-hover:text-white">
+                                <FileText className="mr-2 w-4 h-4" /> Seleccionar Archivos
+                            </Button>
+                        </div>
+                    </Card>
+
+                    {/* File List */}
+                    {files.length > 0 && (
+                        <div className="animate-fade-in space-y-3">
+                            <h4 className="text-sm font-semibold text-text-secondary uppercase tracking-wider pl-1">Archivos Listos para Análisis</h4>
+                            <div className="grid gap-3">
+                                {files.map((file, idx) => (
+                                    <div key={idx} className="flex items-center gap-4 p-4 bg-bg-secondary border border-white/5 rounded-xl hover:border-white/10 transition-colors group">
+                                        <div className="p-2 rounded-lg bg-blue-500/10 text-blue-400">
+                                            <FileText size={20} />
+                                        </div>
+                                        <div className="flex-1 min-w-0 max-w-[200px] sm:max-w-xs">
+                                            <p className="font-medium text-white truncate">{file.name}</p>
+                                            <p className="text-xs text-text-muted">{(file.size / 1024).toFixed(1)} KB</p>
+                                        </div>
+                                        <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-glow-emerald" />
+                                    </div>
+                                ))}
                             </div>
-                            <TextArea
-                                value={analysis?.uniqueMechanism}
-                                onChange={(e) => handleChange('uniqueMechanism', e.target.value)}
-                                className="bg-bg-primary border-green-500/20 focus:border-green-500"
-                                placeholder="¿Cuál es tu mecanismo único?"
-                                rows={3}
-                            />
-                        </div>
 
-                        <div className="col-span-full">
-                            <TextArea
-                                label="Gran Promesa"
-                                value={analysis?.bigPromise}
-                                onChange={(e) => handleChange('bigPromise', e.target.value)}
-                                rows={2}
-                            />
+                            <Button
+                                onClick={handleAnalyze}
+                                disabled={isProcessing}
+                                size="lg"
+                                className="w-full shadow-glow-orange bg-gradient-to-r from-accent-primary to-orange-600 hover:scale-[1.02] transition-transform h-14 text-lg"
+                            >
+                                {isProcessing ? (
+                                    <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Analizando Estrategia...</>
+                                ) : (
+                                    <><Sparkles className="mr-2 h-5 w-5" /> Analizar Documentos</>
+                                )}
+                            </Button>
                         </div>
-                    </div>
-                </CardContent>
-            </Card>
+                    )}
+                </div>
 
-            {/* Footer Actions */}
-            <div className="flex justify-end pt-4">
-                <Button onClick={handleSave} size="lg" disabled={!analysis?.productName}>
-                    Confirmar y Continuar →
-                </Button>
+                {/* Right Column: Analysis Results */}
+                <div className="relative">
+                    {/* Connection Line decoration (desktop only) */}
+                    <div className="hidden lg:block absolute top-[20%] -left-8 w-8 border-t-2 border-dashed border-white/10" />
+
+                    <Card className={`border-l-4 ${analysis?.productName ? 'border-l-emerald-500' : 'border-l-border-default'} transition-colors duration-500 bg-bg-secondary/80 backdrop-blur-md`}>
+                        <div className="p-6 md:p-8 space-y-8">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2.5 bg-purple-500/10 rounded-xl text-purple-400">
+                                        <BrainCircuit size={24} />
+                                    </div>
+                                    <div>
+                                        <CardTitle className="text-xl">ADN del Producto</CardTitle>
+                                        <CardDescription>Información estratégica extraída</CardDescription>
+                                    </div>
+                                </div>
+                                <Badge variant={analysis?.productName ? "success" : "outline"} className="capitalize">
+                                    {analysis?.productName ? 'Completado' : 'Pendiente'}
+                                </Badge>
+                            </div>
+
+                            <div className="space-y-6">
+                                <Input
+                                    label="Producto / Servicio"
+                                    value={analysis?.productName}
+                                    onChange={(e) => handleChange('productName', e.target.value)}
+                                    placeholder="Ej: Masterclass de E-commerce"
+                                    className="!bg-black text-text-primary border-white/5 focus:border-purple-500/50"
+                                />
+
+                                <TextArea
+                                    label="Avatar (Analisis Psicográfico)"
+                                    value={analysis?.avatar}
+                                    onChange={(e) => handleChange('avatar', e.target.value)}
+                                    placeholder="Descripción detallada de miedos y deseos..."
+                                    rows={4}
+                                    className="!bg-black text-text-primary border-white/5 focus:border-purple-500/50 text-sm leading-relaxed"
+                                />
+
+                                {/* MUP Section */}
+                                <div className="p-5 rounded-2xl bg-gradient-to-br from-red-500/5 to-red-500/0 border border-red-500/10 relative group hover:border-red-500/20 transition-colors">
+                                    <div className="flex items-center gap-2 mb-3 text-red-400">
+                                        <AlertTriangle size={18} />
+                                        <span className="text-xs font-bold uppercase tracking-wider">MUP (Problema Raíz)</span>
+                                    </div>
+                                    <TextArea
+                                        value={analysis?.mechanismOfProblem}
+                                        onChange={(e) => handleChange('mechanismOfProblem', e.target.value)}
+                                        className="!bg-black text-text-primary border-white/5 focus:border-red-500/30 text-sm"
+                                        placeholder="¿Por qué han fallado otros métodos?"
+                                        rows={3}
+                                    />
+                                </div>
+
+                                {/* UMS Section */}
+                                <div className="p-5 rounded-2xl bg-gradient-to-br from-emerald-500/5 to-emerald-500/0 border border-emerald-500/10 relative group hover:border-emerald-500/20 transition-colors">
+                                    <div className="flex items-center gap-2 mb-3 text-emerald-400">
+                                        <CheckCircle2 size={18} />
+                                        <span className="text-xs font-bold uppercase tracking-wider">UMS (Mecanismo Único)</span>
+                                    </div>
+                                    <TextArea
+                                        value={analysis?.uniqueMechanism}
+                                        onChange={(e) => handleChange('uniqueMechanism', e.target.value)}
+                                        className="!bg-black text-text-primary border-white/5 focus:border-emerald-500/30 text-sm"
+                                        placeholder="¿Cuál es tu ventaja injusta?"
+                                        rows={3}
+                                    />
+                                </div>
+
+                                <TextArea
+                                    label="Gran Promesa"
+                                    value={analysis?.bigPromise}
+                                    onChange={(e) => handleChange('bigPromise', e.target.value)}
+                                    rows={2}
+                                    className="!bg-black text-text-primary border-white/5 focus:border-accent-primary/50 font-medium"
+                                />
+                            </div>
+
+                            <div className="pt-4 border-t border-white/5 flex justify-end">
+                                <Button
+                                    onClick={handleSave}
+                                    size="lg"
+                                    disabled={!analysis?.productName}
+                                /* className="bg-white text-black hover:bg-gray-200 font-bold" */ // Using primary button style instead
+                                >
+                                    Confirmar Estrategia <ArrowRight className="ml-2 w-4 h-4" />
+                                </Button>
+                            </div>
+                        </div>
+                    </Card>
+                </div>
             </div>
         </div>
     );

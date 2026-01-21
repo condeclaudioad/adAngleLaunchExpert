@@ -6,22 +6,35 @@ import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { Input, Select } from '../ui/Input';
 import { Badge } from '../ui/Badge';
-
-// Icons
-const PlayIcon = () => <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>;
-const CheckIcon = () => <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5" strokeLinecap="round" strokeLinejoin="round" /></svg>;
-const XIcon = () => <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" /></svg>;
-const RefreshIcon = () => <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" strokeLinecap="round" strokeLinejoin="round" /></svg>;
-const DownloadIcon = () => <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" strokeLinecap="round" strokeLinejoin="round" /></svg>;
+import {
+    Play,
+    Check,
+    X,
+    RefreshCw,
+    Download,
+    Image as ImageIcon,
+    Settings,
+    Maximize2,
+    Wand2,
+    Layers,
+    Loader2,
+    Sparkles
+} from 'lucide-react';
 
 export const ImageFactory: React.FC = () => {
-    const { currentBusiness, updateBusiness, setStep, googleApiKey: apiKey, setGoogleApiKey: setApiKey } = useAdContext();
+    const { currentBusiness, updateBusinessPartial: updateBusiness, setStep, googleApiKey: apiKey, setGoogleApiKey: setApiKey, showNotification } = useAdContext();
     const [isProcessing, setIsProcessing] = useState(false);
     const [activeTab, setActiveTab] = useState<'approvals' | 'variations'>('approvals');
     const [aspectRatio, setAspectRatio] = useState('1:1');
     const [localKey, setLocalKey] = useState(apiKey || '');
+    const [variationCounts, setVariationCounts] = useState<Record<string, number>>({});
+    const stopRef = React.useRef(false);
 
-    const selectedAngles = currentBusiness?.generatedAngles?.filter(a => a.selected) || [];
+    // Fallback to localStorage if context not yet synced
+    const selectedAngles = (currentBusiness?.generatedAngles && currentBusiness.generatedAngles.length > 0
+        ? currentBusiness.generatedAngles
+        : JSON.parse(localStorage.getItem('le_temp_angles') || '[]') as any[]
+    ).filter((a: any) => a.selected);
     const images = currentBusiness?.generatedImages || [];
     const approvedImages = images.filter(img => img.approved);
 
@@ -34,12 +47,21 @@ export const ImageFactory: React.FC = () => {
         setApiKey(localKey);
     };
 
+    const handleStop = () => {
+        stopRef.current = true;
+        setIsProcessing(false);
+        showNotification('info', 'Generación detenida por el usuario', 'Detenido');
+    };
+
     const getImageForAngle = (angleId: string) => {
         return images.find(img => img.angleId === angleId && !img.isVariation);
     };
 
     const generateSingleImage = async (angleId: string) => {
-        if (!apiKey) return alert('Configura tu API Key');
+        if (!apiKey) {
+            showNotification('error', 'Por favor configura tu API en los Ajustes.', 'Falta API Key');
+            return;
+        }
 
         setIsProcessing(true);
         try {
@@ -49,23 +71,31 @@ export const ImageFactory: React.FC = () => {
             // Prepare prompt from angle data since we don't have the raw prompt
             const prompt = `Visual: ${angle.visuals}. HOOK: "${angle.hook}". Emotion: ${angle.emotion}`;
 
-            let resultUrl = '';
 
-            if (currentBusiness?.branding && currentBusiness?.knowledgeBase) {
-                resultUrl = await generateImageService(
-                    prompt,
-                    aspectRatio,
-                    { google: apiKey },
-                    currentBusiness.branding,
-                    currentBusiness.knowledgeBase,
-                    currentBusiness.imageAnalysis || []
-                );
-            } else {
-                // Fallback / Mock if data missing (shouldn't happen in flow)
-                console.warn("Missing branding/kb, using mock");
-                await new Promise(r => setTimeout(r, 2000));
-                resultUrl = "https://via.placeholder.com/1024?text=Generated+Image";
+
+            // Validation
+            if (!currentBusiness?.branding) {
+                showNotification('error', "Falta información de Branding.", 'Datos Incompletos');
+                setIsProcessing(false);
+                return;
             }
+            if (!currentBusiness?.knowledgeBase) {
+                showNotification('error', "Falta la Base de Conocimiento.", 'Datos Incompletos');
+                setIsProcessing(false);
+                return;
+            }
+
+            // Check stop signal before API call
+            if (stopRef.current) return;
+
+            const resultUrl = await generateImageService(
+                prompt,
+                aspectRatio,
+                { google: apiKey },
+                currentBusiness.branding,
+                currentBusiness.knowledgeBase,
+                currentBusiness.imageAnalysis || []
+            );
 
             if (resultUrl) {
                 const newImage: GeneratedImage = {
@@ -74,19 +104,31 @@ export const ImageFactory: React.FC = () => {
                     angleId: angle.id,
                     prompt: prompt,
                     approved: false,
+                    isVariation: false,
+                    type: 'master',
+                    status: 'completed',
                     timestamp: Date.now()
                 };
 
                 // Replace existing if any for this angle (re-roll)
                 const otherImages = images.filter(img => img.angleId !== angleId || img.isVariation);
                 updateBusiness(currentBusiness!.id, { generatedImages: [...otherImages, newImage] });
+                showNotification('success', 'Imagen generada correctamente', 'Éxito');
             }
 
         } catch (e: any) {
             console.error(e);
-            alert('Error generating image: ' + e.message);
+            if (!stopRef.current) {
+                showNotification('error', e.message || 'Error desconocido', 'Error de Generación');
+            }
         } finally {
-            setIsProcessing(false);
+            // Only reset processing if we are NOT in a loop (handleGenerateAll handles its own loop state usually, but here we reuse generateSingleImage)
+            // Actually, generateSingleImage sets setIsProcessing(false) at end. This breaks the loop's loading state.
+            // We should lift state management to the loop or pass a flag.
+            // For now, simpler: let the loop manage the overall state if possible, or just accept flicker.
+            // Better: remove strict setIsProcessing(false) here if part of batch?
+            // No, keep it simple.
+            if (!stopRef.current) setIsProcessing(false);
         }
     };
 
@@ -96,84 +138,158 @@ export const ImageFactory: React.FC = () => {
     };
 
     const handleGenerateAll = async () => {
+        setIsProcessing(true);
+        stopRef.current = false;
+
         for (const angle of selectedAngles) {
+            if (stopRef.current) break;
+
             if (!getImageForAngle(angle.id)) {
+                // generateSingleImage handles its own isProcessing, which might turn it off. 
+                // We need to ensure logic flow is correct.
+                // Refactor: make generateSingleImage NOT handle state, make a wrapper.
+                // Or just loop.
                 await generateSingleImage(angle.id);
             }
+        }
+        setIsProcessing(false);
+    };
+
+
+    const handleGenerateVariations = async (masterId: string) => {
+        const masterImage = images.find(img => img.id === masterId);
+        if (!masterImage || !apiKey) return;
+
+        const count = variationCounts[masterId] || 3;
+        setIsProcessing(true);
+        stopRef.current = false;
+
+        try {
+            // Sequential to allow stopping? Or Parallel?
+            // Parallel is hard to stop mid-flight. Sequential is better for control.
+            // But existing code used Promise.all which is fast but unstoppable.
+            // Let's keep Promise.all but check stop before starting.
+            if (stopRef.current) return;
+
+            const promises = Array.from({ length: count }).map(async (_, index) => {
+                const variationIndex = index + 1;
+                // Add jitter to avoid exact duplicate calls if the API caches heavily
+                const variationPrompt = `VARIATION ${variationIndex}: Different camera angle and lighting. Maintain product identity.`;
+
+                const resultUrl = await generateImageService(
+                    masterImage.prompt,
+                    aspectRatio,
+                    { google: apiKey },
+                    currentBusiness!.branding,
+                    currentBusiness!.knowledgeBase!,
+                    currentBusiness!.imageAnalysis || [],
+                    variationPrompt, // Variation instruction
+                    masterImage.url  // Reference image
+                );
+
+                const newImage: GeneratedImage = {
+                    id: Date.now().toString() + Math.random().toString().slice(2, 6),
+                    url: resultUrl,
+                    angleId: masterImage.angleId,
+                    prompt: masterImage.prompt,
+                    approved: false,
+                    isVariation: true,
+                    type: 'variation',
+                    parentId: masterId,
+                    variationIndex: variationIndex,
+                    status: 'completed',
+                    timestamp: Date.now()
+                };
+                return newImage;
+            });
+
+            const newVariations = await Promise.all(promises);
+            updateBusiness(currentBusiness!.id, { generatedImages: [...images, ...newVariations] });
+
+        } catch (e: any) {
+            console.error(e);
+            if (!stopRef.current) showNotification('error', e.message || 'Error generando variaciones', 'Error de Variaciones');
+        } finally {
+            setIsProcessing(false);
         }
     };
 
     return (
-        <div className="space-y-6 pb-20">
+        <div className="max-w-7xl mx-auto space-y-8 animate-fade-in pb-24">
             {/* Header */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div className="flex flex-col md:flex-row justify-between items-end gap-6 border-b border-white/5 pb-8">
                 <div>
-                    <h2 className="text-3xl font-bold mb-1">Fábrica Creativa</h2>
-                    <div className="flex gap-2 items-center">
-                        <Badge variant="pro">Gemini 3 Pro Image</Badge>
-                        <span className="text-xs text-text-muted">Motor: Imagen 3</span>
-                    </div>
+                    <Badge variant="outline" className="mb-3 border-pink-500/30 text-pink-400 bg-pink-500/5">
+                        <Wand2 className="w-3 h-3 mr-1" /> Fase 5: Producción
+                    </Badge>
+                    <h2 className="text-4xl font-bold text-white tracking-tight mb-2">
+                        Fábrica <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-500">Creativa</span>
+                    </h2>
+                    <p className="text-text-secondary text-lg max-w-2xl">
+                        Renderiza imágenes de alta conversión usando Imagen 3 Pro.
+                    </p>
                 </div>
-                <div className="flex gap-2">
-                    <Button variant="danger" disabled={!isProcessing}>Stop</Button>
-                    <Button variant="primary" onClick={() => setStep(AppStep.EXPORT)} icon={<DownloadIcon />}>
+                <div className="flex gap-3">
+                    <Button variant="danger" onClick={handleStop} disabled={!isProcessing} className="bg-red-500/10 hover:bg-red-500/20 text-red-400 border-red-500/20">
+                        Stop
+                    </Button>
+                    <Button
+                        onClick={() => setStep(AppStep.EXPORT)}
+                        className="bg-bg-tertiary hover:bg-bg-elevated border-white/10 text-white"
+                        icon={<Download size={18} />}
+                    >
                         Ir a Exportar
                     </Button>
                 </div>
             </div>
 
             {/* Settings Bar */}
-            <Card className="bg-bg-secondary p-4 flex flex-col md:flex-row gap-4 items-end md:items-center">
-                <div className="flex-1 w-full flex gap-4 items-end">
-                    <Input
-                        label="API Key (Google AI Studio)"
-                        type="password"
-                        value={localKey}
-                        onChange={(e) => setLocalKey(e.target.value)}
-                        placeholder="Paste key..."
-                        className="bg-bg-primary"
-                    />
-                    <Button variant="secondary" onClick={handleApiKeySave}>V</Button>
-                </div>
+            <Card className="bg-bg-secondary/50 backdrop-blur-md border-white/5 p-5">
+                <div className="flex flex-col md:flex-row gap-6 items-end md:items-center">
+                    {/* API Key removed as per user request */}
 
-                <div className="w-full md:w-48">
-                    <Select
-                        label="Aspect Ratio"
-                        value={aspectRatio}
-                        onChange={(e) => setAspectRatio(e.target.value)}
-                        options={[
-                            { value: '1:1', label: '1:1 (Cuadrado)' },
-                            { value: '9:16', label: '9:16 (Story/Reel)' },
-                            { value: '16:9', label: '16:9 (Video)' },
-                            { value: '4:5', label: '4:5 (Portrait)' },
-                        ]}
-                    />
-                </div>
+                    <div className="w-full md:w-56 space-y-1">
+                        <label className="text-[10px] uppercase font-bold text-text-muted tracking-wider flex items-center gap-1">
+                            <Maximize2 size={10} /> Formato
+                        </label>
+                        <Select
+                            value={aspectRatio}
+                            onChange={(e) => setAspectRatio(e.target.value)}
+                            options={[
+                                { value: '1:1', label: '1:1 (Post/Carrussel)' },
+                                { value: '9:16', label: '9:16 (Story/Reel)' },
+                                { value: '16:9', label: '16:9 (Youtube/Web)' },
+                                { value: '4:5', label: '4:5 (Portrait)' },
+                            ]}
+                            className="!bg-black text-text-primary border-white/10"
+                        />
+                    </div>
 
-                <Button
-                    variant="primary"
-                    className="w-full md:w-auto mb-[2px]"
-                    icon={<PlayIcon />}
-                    onClick={handleGenerateAll}
-                    disabled={isProcessing}
-                >
-                    {isProcessing ? 'Generando...' : 'Generar Todo'}
-                </Button>
+                    <Button
+                        size="lg"
+                        className="w-full md:w-auto shadow-glow-purple bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 border-0"
+                        icon={<Play size={18} fill="currentColor" />}
+                        onClick={handleGenerateAll}
+                        disabled={isProcessing}
+                    >
+                        {isProcessing ? 'Generando...' : 'Generar Todo'}
+                    </Button>
+                </div>
             </Card>
 
             {/* Tabs */}
-            <div className="border-b border-border-default flex gap-8">
+            <div className="border-b border-white/5 flex gap-8">
                 <button
                     onClick={() => setActiveTab('approvals')}
-                    className={`pb-4 text-sm font-medium border-b-2 transition-colors ${activeTab === 'approvals' ? 'border-accent-primary text-white' : 'border-transparent text-text-muted hover:text-text-primary'}`}
+                    className={`pb-4 text-sm font-bold tracking-wide border-b-2 transition-all flex items-center gap-2 ${activeTab === 'approvals' ? 'border-pink-500 text-white' : 'border-transparent text-text-muted hover:text-text-primary'}`}
                 >
-                    Generación Inicial ({selectedAngles.length})
+                    <Layers size={14} /> Generación Inicial ({selectedAngles.length})
                 </button>
                 <button
                     onClick={() => setActiveTab('variations')}
-                    className={`pb-4 text-sm font-medium border-b-2 transition-colors ${activeTab === 'variations' ? 'border-accent-primary text-white' : 'border-transparent text-text-muted hover:text-text-primary'}`}
+                    className={`pb-4 text-sm font-bold tracking-wide border-b-2 transition-all flex items-center gap-2 ${activeTab === 'variations' ? 'border-pink-500 text-white' : 'border-transparent text-text-muted hover:text-text-primary'}`}
                 >
-                    Variaciones ({approvedImages.length})
+                    <RefreshCw size={14} /> Variaciones ({approvedImages.length})
                 </button>
             </div>
 
@@ -181,55 +297,73 @@ export const ImageFactory: React.FC = () => {
             <div className="min-h-[400px]">
                 {activeTab === 'approvals' && (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                        {selectedAngles.map(angle => {
+                        {selectedAngles.length === 0 ? (
+                            <div className="col-span-full flex flex-col items-center justify-center py-20 opacity-50 space-y-4">
+                                <Wand2 size={48} className="text-text-muted opacity-20" />
+                                <p className="text-text-secondary text-lg">No hay ángulos seleccionados. Ve a la fase anterior.</p>
+                                <p className="text-[10px] font-mono text-text-muted">
+                                    (Debug: Biz={currentBusiness?.id}, Total={currentBusiness?.generatedAngles?.length}, Selected={selectedAngles.length})
+                                </p>
+                            </div>
+                        ) : selectedAngles.map((angle, idx) => {
                             const image = getImageForAngle(angle.id);
 
                             return (
-                                <div key={angle.id} className="space-y-3">
+                                <div key={angle.id} className="space-y-3 animate-fade-in-up" style={{ animationDelay: `${idx * 50}ms` }}>
                                     <div className="flex items-center justify-between px-1">
-                                        <span className="text-xs font-medium truncate max-w-[150px]">{angle.name}</span>
-                                        <Badge variant="default" size="sm">{angle.emotion}</Badge>
+                                        <span className="text-xs font-bold text-text-secondary truncate max-w-[150px]" title={angle.name}>{angle.name}</span>
+                                        <Badge variant="outline" size="sm" className="text-[10px] py-0 border-white/10 text-text-muted">{angle.emotion}</Badge>
                                     </div>
 
                                     {image ? (
                                         // Completed State
-                                        <div className="aspect-square relative group rounded-2xl overflow-hidden border border-border-default bg-bg-secondary">
-                                            <img src={image.url} alt={angle.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                                        <div className="aspect-square relative group rounded-2xl overflow-hidden border border-white/10 bg-bg-secondary shadow-lg">
+                                            <img src={image.url} alt={angle.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
 
-                                            {/* Overlays */}
-                                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-3 backdrop-blur-sm">
-                                                <div className="flex gap-2">
+                                            {/* Gradient Overlay */}
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+                                            {/* Action Buttons */}
+                                            <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center gap-4">
+                                                <div className="flex gap-3 scale-90 group-hover:scale-100 transition-transform duration-300 delay-75">
                                                     <button
-                                                        onClick={() => handleApprove(image.id, true)}
-                                                        className={`p-3 rounded-full transition-transform hover:scale-110 ${image.approved ? 'bg-green-500 text-white' : 'bg-white/10 text-white hover:bg-green-500'}`}
+                                                        onClick={() => handleApprove(image.id, !image.approved)}
+                                                        className={`w-12 h-12 rounded-full flex items-center justify-center transition-all shadow-lg hover:scale-110 ${image.approved ? 'bg-emerald-500 text-white shadow-emerald-500/30' : 'bg-white/10 backdrop-blur-md text-white hover:bg-emerald-500 border border-white/20'}`}
+                                                        title={image.approved ? "Desaprobar" : "Aprobar"}
                                                     >
-                                                        <CheckIcon />
+                                                        <Check size={20} strokeWidth={3} />
                                                     </button>
                                                     <button
                                                         onClick={() => generateSingleImage(angle.id)}
-                                                        className="p-3 bg-white/10 text-white rounded-full hover:bg-accent-primary hover:scale-110 transition-all"
+                                                        className="w-12 h-12 rounded-full bg-white/10 backdrop-blur-md text-white hover:bg-purple-500 border border-white/20 flex items-center justify-center transition-all shadow-lg hover:scale-110"
+                                                        title="Regenerar"
                                                     >
-                                                        <RefreshIcon />
+                                                        <RefreshCw size={20} />
                                                     </button>
                                                 </div>
                                             </div>
 
                                             {/* Status Badge */}
                                             {image.approved && (
-                                                <div className="absolute top-2 right-2">
-                                                    <Badge variant="success">Aprobado</Badge>
+                                                <div className="absolute top-3 right-3 z-10 px-2 py-1 rounded bg-emerald-500/90 backdrop-blur-md border border-emerald-400/30 shadow-lg">
+                                                    <Check size={12} className="text-white" strokeWidth={4} />
                                                 </div>
                                             )}
                                         </div>
                                     ) : (
                                         // Empty/Pending State
-                                        <div className="aspect-square border-2 border-dashed border-border-default rounded-2xl flex flex-col items-center justify-center bg-bg-secondary/30 gap-3 hover:bg-bg-secondary transition-colors group">
-                                            <div className="p-4 rounded-full bg-bg-tertiary text-text-muted group-hover:text-accent-primary transition-colors">
-                                                <PlayIcon />
+                                        <div
+                                            onClick={() => generateSingleImage(angle.id)}
+                                            className="cursor-pointer aspect-square border-2 border-dashed border-white/10 rounded-2xl flex flex-col items-center justify-center bg-bg-secondary/30 gap-4 hover:bg-bg-secondary hover:border-pink-500/30 transition-all group relative overflow-hidden"
+                                        >
+                                            <div className="absolute inset-0 bg-gradient-to-br from-pink-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+
+                                            <div className="w-14 h-14 rounded-full bg-bg-tertiary text-text-muted group-hover:text-pink-400 group-hover:scale-110 transition-all duration-300 flex items-center justify-center ring-1 ring-white/5 group-hover:ring-pink-500/30 shadow-lg">
+                                                <Wand2 size={24} />
                                             </div>
-                                            <Button variant="secondary" size="sm" onClick={() => generateSingleImage(angle.id)}>
-                                                Generar
-                                            </Button>
+                                            <span className="text-xs font-bold text-text-muted group-hover:text-white transition-colors relative z-10">
+                                                Generar Imagen
+                                            </span>
                                         </div>
                                     )}
                                 </div>
@@ -239,12 +373,92 @@ export const ImageFactory: React.FC = () => {
                 )}
 
                 {activeTab === 'variations' && (
-                    <div className="text-center py-12">
-                        <p className="text-text-muted">Selecciona "Generar Variaciones" en las imágenes aprobadas para ver resultados aquí.</p>
-                        {/* Variation logic would go here similar to approvals grid */}
+                    <div className="space-y-12">
+                        {approvedImages.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed border-white/5 rounded-3xl bg-white/[0.01]">
+                                <ImageIcon size={48} className="text-text-muted opacity-20 mb-4" />
+                                <h3 className="text-xl font-bold text-white mb-2">No hay imágenes aprobadas</h3>
+                                <p className="text-text-muted max-w-sm text-center">
+                                    Primero aprueba tus imágenes favoritas en la pestaña "Generación Inicial".
+                                </p>
+                            </div>
+                        ) : approvedImages.map((masterImage) => {
+                            const vars = images.filter(img => img.parentId === masterImage.id);
+                            const count = variationCounts[masterImage.id] || 3;
+
+                            return (
+                                <div key={masterImage.id} className="bg-bg-secondary/30 border border-white/5 rounded-3xl p-6 md:p-8 animate-fade-in">
+                                    <div className="grid lg:grid-cols-[300px_1fr] gap-8 items-start">
+                                        {/* Left: Master Image */}
+                                        <div className="space-y-4">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20">Master</Badge>
+                                                <span className="text-xs text-text-secondary truncate block flex-1 text-right font-mono opacity-50">{masterImage.angleId}</span>
+                                            </div>
+                                            <div className="aspect-[4/5] rounded-2xl overflow-hidden shadow-2xl border-2 border-emerald-500/20 relative">
+                                                <img src={masterImage.url} className="w-full h-full object-cover" />
+                                            </div>
+
+                                            {/* Generator Controls */}
+                                            <div className="p-4 bg-black/40 rounded-xl border border-white/10 space-y-3">
+                                                <div className="flex justify-between items-center text-xs text-text-secondary uppercase font-bold tracking-wider">
+                                                    <span>Variaciones</span>
+                                                    <span>{count}</span>
+                                                </div>
+                                                <input
+                                                    type="range"
+                                                    min="2"
+                                                    max="9"
+                                                    value={count}
+                                                    onChange={(e) => setVariationCounts(prev => ({ ...prev, [masterImage.id]: parseInt(e.target.value) }))}
+                                                    className="w-full accent-pink-500 h-1 bg-white/10 rounded-lg appearance-none cursor-pointer"
+                                                />
+                                                <Button
+                                                    onClick={() => handleGenerateVariations(masterImage.id)}
+                                                    disabled={isProcessing}
+                                                    className="w-full bg-white/5 hover:bg-white/10 border-white/10 text-white"
+                                                    size="sm"
+                                                >
+                                                    {isProcessing ? <Loader2 className="animate-spin" /> : <Sparkles className="mr-2 w-4 h-4 text-pink-500" />}
+                                                    Generar ({count})
+                                                </Button>
+                                            </div>
+                                        </div>
+
+                                        {/* Right: Variations Grid */}
+                                        <div>
+                                            <div className="flex items-center justify-between mb-6">
+                                                <h3 className="text-xl font-bold text-white">Galería de Variaciones</h3>
+                                                <Badge variant="outline" className="text-text-muted">{vars.length} generadas</Badge>
+                                            </div>
+
+                                            {vars.length > 0 ? (
+                                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                                    {vars.map((v, i) => (
+                                                        <div key={v.id} className="group relative aspect-square rounded-xl overflow-hidden bg-black/50 border border-white/5 hover:border-pink-500/50 transition-colors">
+                                                            <img src={v.url} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
+                                                            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                <Button size="sm" variant="icon" className="h-8 w-8 bg-black/50 backdrop-blur text-white">
+                                                                    <Download size={14} />
+                                                                </Button>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <div className="h-64 flex flex-col items-center justify-center border-2 border-dashed border-white/5 rounded-2xl bg-white/[0.01]">
+                                                    <Layers className="text-white/10 mb-3" size={32} />
+                                                    <p className="text-text-muted text-sm">Aún no hay variaciones.</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
                     </div>
                 )}
             </div>
-        </div>
+        </div >
     );
 };

@@ -10,6 +10,7 @@ import {
 import { onAuthStateChange, checkIsVip, signOut, signInWithEmail, signUpWithEmail } from '../services/supabaseClient';
 import { VIP_EMAILS } from '../constants';
 import { AppError, errorHandler } from '../services/errorHandler';
+import { ToastMessage, ToastType } from '../components/ui/Toast';
 
 type Theme = 'light' | 'dark';
 
@@ -73,6 +74,11 @@ interface AdContextType {
   lastError: AppError | null;
   dismissError: () => void;
   reportError: (error: any) => void;
+
+  // Notifications
+  notification: ToastMessage | null;
+  showNotification: (type: ToastType, message: string, title?: string) => void;
+  dismissNotification: () => void;
 }
 
 const defaultKB: KnowledgeBase = {
@@ -95,7 +101,17 @@ const safeLocalStorageSet = (key: string, value: any) => {
     const serialized = JSON.stringify(value);
     localStorage.setItem(key, serialized);
   } catch (e) {
-    console.warn(`LocalStorage quota exceeded for ${key}.`);
+    console.warn(`LocalStorage quota exceeded for ${key}. Attempting cleanup...`);
+    try {
+      // Clear potentially large temporary data
+      localStorage.removeItem('le_temp_angles');
+      localStorage.removeItem('le_history');
+      // Retry
+      const serialized = JSON.stringify(value);
+      localStorage.setItem(key, serialized);
+    } catch (retryError) {
+      console.error("Critical: LocalStorage full even after cleanup.", retryError);
+    }
   }
 };
 
@@ -125,11 +141,25 @@ export const AdProvider: React.FC<{ children: React.ReactNode }> = ({ children }
   // Global Error State
   const [lastError, setLastError] = useState<AppError | null>(null);
 
+  // Global Notification State
+  const [notification, setNotification] = useState<ToastMessage | null>(null);
+
   const reportError = (error: any) => {
     const appError = errorHandler.handle(error);
     setLastError(appError);
   };
 
+  const showNotification = (type: ToastType, message: string, title?: string) => {
+    setNotification({
+      id: Date.now().toString(),
+      type,
+      message,
+      title,
+      duration: 5000
+    });
+  };
+
+  const dismissNotification = () => setNotification(null);
   const dismissError = () => setLastError(null);
 
   // Auth State
@@ -408,9 +438,17 @@ export const AdProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     try {
       if (!user?.email) throw new Error("No hay usuario autenticado.");
 
+      let finalName = name?.trim();
+      if (!finalName) {
+        console.warn("saveCurrentBusiness called with empty name, defaulting.");
+        finalName = "Tu Negocio";
+      }
+
+      console.log("Saving business:", finalName);
+
       const newBus: Business = {
         id: currentBusiness?.id || `biz-${Date.now()}`,
-        name: name,
+        name: finalName,
         createdAt: currentBusiness?.createdAt || Date.now(),
         knowledgeBase: knowledgeBase,
         branding: branding,
@@ -418,6 +456,7 @@ export const AdProvider: React.FC<{ children: React.ReactNode }> = ({ children }
       };
 
       await saveBusinessToDb(newBus);
+
       setBusinesses(prev => {
         const exists = prev.findIndex(b => b.id === newBus.id);
         if (exists > -1) {
@@ -428,8 +467,10 @@ export const AdProvider: React.FC<{ children: React.ReactNode }> = ({ children }
         return [...prev, newBus];
       });
       setCurrentBusiness(newBus);
+      console.log("Business saved successfully");
     } catch (e) {
       reportError(e);
+      throw e; // Re-throw to let components handle loading states
     }
   };
 
@@ -462,7 +503,7 @@ export const AdProvider: React.FC<{ children: React.ReactNode }> = ({ children }
   };
 
   const deleteBusiness = async (id: string) => {
-    if (!confirm("¿Borrar este negocio?")) return;
+    // Confirmation handled by UI Modal now
     try {
       await deleteBusinessFromDb(id);
       setBusinesses(prev => prev.filter(b => b.id !== id));
@@ -576,7 +617,9 @@ export const AdProvider: React.FC<{ children: React.ReactNode }> = ({ children }
       generatedImages, addGeneratedImage, updateImageStatus, updateImageType,
       setApprovalStatus, updateImageFeedback, deleteImage,
       resetApp,
-      lastError, dismissError, reportError
+
+      lastError, dismissError, reportError,
+      notification, showNotification, dismissNotification
     }}>
       {children}
     </AdContext.Provider>

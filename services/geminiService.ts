@@ -2,12 +2,11 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import mammoth from "mammoth";
 import { Angle, KnowledgeBase, ImageAnalysis, StructuredContext } from "../types";
-import { MODEL_ANALYSIS, MODEL_TEXT, SYSTEM_PROMPT } from "../constants";
+import { MODEL_ANALYSIS, MODEL_TEXT, SYSTEM_PROMPT, MODEL_TEXT_BACKUP } from "../constants";
 import { withRetry } from "./retryService";
 import { saveAnalysisToDb, saveAngleToDb, getExistingAngles } from "./dbService";
 
 // Helper to get the key from storage or env
-// Helper to get the key from storage or env, with optional override
 const getAuthKey = (overrideKey?: string) => {
     const key = overrideKey || localStorage.getItem('le_api_key') || process.env.API_KEY || "";
     if (!key) throw new Error("API Key no encontrada. Por favor configura tu API en los Ajustes.");
@@ -43,6 +42,44 @@ const FALLBACK_CONTEXT: StructuredContext = {
     bigPromise: "Resultados Garantizados"
 };
 
+// SHARED GENERATION HELPER WITH FALLBACK
+const generateSafeContent = async (
+    apiKey: string,
+    primaryModel: string,
+    backupModel: string,
+    params: any
+) => {
+    const ai = new GoogleGenAI({ apiKey });
+
+    try {
+        // Try Primary
+        const response = await ai.models.generateContent({
+            model: primaryModel,
+            ...params
+        });
+        return response;
+    } catch (error: any) {
+        const isQuota = error.message?.includes('429') || error.message?.includes('quota');
+        const isOverloaded = error.message?.includes('503');
+
+        if (isQuota || isOverloaded) {
+            console.warn(`⚠️ Model ${primaryModel} failed (${error.message}). Switching to backup ${backupModel}...`);
+            try {
+                // Try Backup
+                const response = await ai.models.generateContent({
+                    model: backupModel,
+                    ...params
+                });
+                return response;
+            } catch (backupError: any) {
+                console.error(`❌ Backup Model ${backupModel} also failed:`, backupError);
+                throw error; // Throw original error or backup error? Throw original usually better context, or backup to show we tried.
+            }
+        }
+        throw error;
+    }
+};
+
 export const extractTextFromFile = async (base64Data: string, mimeType: string, apiKey?: string): Promise<string> => {
     // 1. Local Decoding (Instant)
     if (mimeType === 'text/plain' || mimeType === 'text/markdown' || mimeType === 'application/json' || mimeType === 'text/csv') {
@@ -71,7 +108,7 @@ export const extractTextFromFile = async (base64Data: string, mimeType: string, 
 
     // 3. Gemini Flash for PDF/Images (Fast Transcription)
     return withRetry(async () => {
-        const ai = new GoogleGenAI({ apiKey: getAuthKey(apiKey) });
+        const key = getAuthKey(apiKey);
 
         // TIMEOUT: Reduced to 60s for extraction to fail fast
         const timeoutPromise = new Promise<string>((_, reject) =>
@@ -79,8 +116,7 @@ export const extractTextFromFile = async (base64Data: string, mimeType: string, 
         );
 
         const genPromise = (async () => {
-            const response = await ai.models.generateContent({
-                model: MODEL_TEXT,
+            const response = await generateSafeContent(key, MODEL_TEXT, MODEL_TEXT_BACKUP, {
                 contents: {
                     parts: [
                         { inlineData: { data: base64Data, mimeType: mimeType } },
@@ -89,7 +125,10 @@ export const extractTextFromFile = async (base64Data: string, mimeType: string, 
                 },
                 config: { thinkingConfig: { thinkingBudget: 0 } }
             });
-            return response.text || "";
+
+            // @ts-ignore
+            const text = typeof response.text === 'function' ? response.text() : response.text;
+            return text || "";
         })();
 
         return Promise.race([genPromise, timeoutPromise]);
@@ -101,41 +140,45 @@ export const refineContext = async (rawText: string, apiKey?: string): Promise<S
     if (!rawText || rawText.length < 50) return FALLBACK_CONTEXT;
 
     const truncatedText = rawText.slice(0, 400000);
-    const ai = new GoogleGenAI({ apiKey: getAuthKey(apiKey) });
+    const key = getAuthKey(apiKey);
 
     return withRetry(async () => {
         const timeoutPromise = new Promise<never>((_, reject) =>
             setTimeout(() => reject(new Error("Timeout: Analysis took too long")), 90000)
         );
 
-        const genPromise = ai.models.generateContent({
-            model: MODEL_TEXT,
-            contents: [{ role: 'user', parts: [{ text: `CONTEXT:\n"${truncatedText}"\n\nTASK: Analyze and extract the marketing structure.` }] }],
-            config: {
-                systemInstruction: "You are a marketing analyst. Extract the Avatar, Problem, Mechanism, and Promise. Be concise.",
-                responseMimeType: "application/json",
-                responseSchema: {
-                    type: Type.OBJECT,
-                    properties: {
-                        productName: { type: Type.STRING },
-                        avatar: { type: Type.STRING },
-                        mechanismOfProblem: { type: Type.STRING },
-                        uniqueMechanism: { type: Type.STRING },
-                        bigPromise: { type: Type.STRING },
-                    },
-                    required: ["productName", "avatar", "mechanismOfProblem", "uniqueMechanism", "bigPromise"]
+        const genPromise = (async () => {
+            const response = await generateSafeContent(key, MODEL_TEXT, MODEL_TEXT_BACKUP, {
+                contents: [{ role: 'user', parts: [{ text: `CONTEXT:\n"${truncatedText}"\n\nTASK: Analyze and extract the marketing structure.` }] }],
+                config: {
+                    systemInstruction: "You are a marketing analyst. Extract the Avatar, Problem, Mechanism, and Promise. Be concise.",
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: Type.OBJECT,
+                        properties: {
+                            productName: { type: Type.STRING },
+                            avatar: { type: Type.STRING },
+                            mechanismOfProblem: { type: Type.STRING },
+                            uniqueMechanism: { type: Type.STRING },
+                            bigPromise: { type: Type.STRING },
+                        },
+                        required: ["productName", "avatar", "mechanismOfProblem", "uniqueMechanism", "bigPromise"]
+                    }
                 }
-            }
-        });
+            });
+            return response;
+        })();
 
         const response = await Promise.race([genPromise, timeoutPromise]) as any;
         // Fallback to default if it fails, don't block user
-        return safeJSONParse(response.text, FALLBACK_CONTEXT);
+        // @ts-ignore
+        const text = typeof response.text === 'function' ? response.text() : response.text;
+        return safeJSONParse(text, FALLBACK_CONTEXT);
     }, { maxRetries: 4, baseDelay: 3000, maxDelay: 10000 });
 };
 
 export const analyzeImage = async (base64Image: string, mimeType: string, apiKey?: string): Promise<ImageAnalysis> => {
-    const ai = new GoogleGenAI({ apiKey: getAuthKey(apiKey) });
+    const key = getAuthKey(apiKey);
 
     return withRetry(async () => {
         const timeoutPromise = new Promise<ImageAnalysis>((_, reject) =>
@@ -143,12 +186,9 @@ export const analyzeImage = async (base64Image: string, mimeType: string, apiKey
         );
 
         const genPromise = (async () => {
-            // Prepare parts for the new SDK format which is more stable
-            // Instead of complex object structure, pass simpler array of parts
             const promptText = "Analyze this high-performing ad. Break down why it works into JSON with the following structure: angleDetected, visualElements (array), copy, colors (array), composition, emotions (array).";
 
-            const response = await ai.models.generateContent({
-                model: MODEL_ANALYSIS,
+            const response = await generateSafeContent(key, MODEL_ANALYSIS, MODEL_TEXT_BACKUP, {
                 contents: [
                     {
                         role: 'user',
@@ -159,7 +199,6 @@ export const analyzeImage = async (base64Image: string, mimeType: string, apiKey
                     }
                 ],
                 config: {
-                    // thinkingConfig: { thinkingBudget: 0 }, // Removed to avoid potential conflicts with vision models
                     responseMimeType: "application/json",
                     responseSchema: {
                         type: Type.OBJECT,
@@ -188,7 +227,9 @@ export const analyzeImage = async (base64Image: string, mimeType: string, apiKey
                 emotions: [],
                 timestamp: Date.now()
             };
-            return safeJSONParse(response.text || "{}", fallback);
+            // @ts-ignore
+            const text = typeof response.text === 'function' ? response.text() : response.text;
+            return safeJSONParse(text || "{}", fallback);
         })();
 
         const result = await Promise.race([genPromise, timeoutPromise]);
@@ -206,7 +247,7 @@ export const generateAngles = async (
     existingAngles: Angle[] = [],
     apiKey?: string
 ): Promise<Angle[]> => {
-    const ai = new GoogleGenAI({ apiKey: getAuthKey(apiKey) });
+    const key = getAuthKey(apiKey);
 
     const rawContextSnippet = kb.generalContext ? kb.generalContext.slice(0, 50000) : "Contexto genérico de marketing.";
 
@@ -279,20 +320,19 @@ export const generateAngles = async (
         );
 
         const genPromise = (async () => {
-            const response = await ai.models.generateContent({
-                model: MODEL_TEXT,
+            const response = await generateSafeContent(key, MODEL_TEXT, MODEL_TEXT_BACKUP, {
                 contents: prompt,
                 config: {
                     systemInstruction: SYSTEM_PROMPT,
                     responseMimeType: "application/json",
-                    // Removed strict responseSchema here to allow more creative freedom and prevent 500s on complex history injection.
-                    // We rely on the prompt + safeJSONParse.
                 }
             });
 
             // Pass NULL as fallback to force an error if parsing fails, 
             // so the UI knows something went wrong instead of failing silently with [].
-            const parsed = safeJSONParse(response.text, null);
+            // @ts-ignore
+            const text = typeof response.text === 'function' ? response.text() : response.text;
+            const parsed = safeJSONParse(text, null);
 
             if (!parsed) return []; // Handle null fallback
 

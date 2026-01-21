@@ -152,7 +152,8 @@ export const saveBusinessToDb = async (business: Business) => {
                 user_id: user.id,
                 name: business.name,
                 knowledge_base: business.knowledgeBase,
-                branding: business.branding
+                branding: business.branding,
+                generated_angles: business.generatedAngles
             });
 
         if (error) console.error('Error saving business:', error);
@@ -182,6 +183,7 @@ export const getBusinessesFromDb = async (): Promise<Business[]> => {
             createdAt: new Date(d.created_at).getTime(),
             knowledgeBase: d.knowledge_base,
             branding: d.branding,
+            generatedAngles: d.generated_angles,
             ownerEmail: user.email
         }));
     } catch (e) {

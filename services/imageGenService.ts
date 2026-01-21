@@ -2,7 +2,7 @@
 
 import { GoogleGenAI } from "@google/genai";
 import { Branding, KnowledgeBase, ImageAnalysis } from '../types';
-import { MODEL_IMAGE_GEMINI } from '../constants';
+import { MODEL_IMAGE_GEMINI, MODEL_IMAGE_BACKUP } from '../constants';
 
 // ═══════════════════════════════════════════════════════════
 // ROBUST RETRY LOGIC (ENHANCED)
@@ -10,8 +10,8 @@ import { MODEL_IMAGE_GEMINI } from '../constants';
 
 const robustGeminiCall = async <T>(
     operation: () => Promise<T>,
-    retries = 3,
-    baseDelay = 2000
+    retries = 1, // Reduced to 1 to FAIL FAST on timeouts/overloads
+    baseDelay = 1000
 ): Promise<T> => {
     let lastError: any;
 
@@ -57,51 +57,36 @@ const robustGeminiCall = async <T>(
 // GEMINI IMAGE GENERATION
 // ═══════════════════════════════════════════════════════════
 
-const generateWithGemini = async (
+// Helper for specific model generation
+const generateContentWithModel = async (
+    modelName: string,
     prompt: string,
     apiKey: string,
-    aspectRatio: string,
+    finalRatio: string,
     referenceImages: { data: string, mimeType: string }[] = []
 ): Promise<string> => {
-
-    // Validate aspect ratio
-    const validRatios = ["1:1", "3:4", "4:3", "9:16", "16:9"];
-    const finalRatio = validRatios.includes(aspectRatio) ? aspectRatio : "3:4";
-
-    console.log(`🎨 Generating Image (${finalRatio}) - Prompt length: ${prompt.length}`);
-
     const ai = new GoogleGenAI({ apiKey });
 
     return robustGeminiCall(async () => {
-        // Reduced timeout to fail faster if stuck, but long enough for generation
         const timeoutPromise = new Promise<string>((_, reject) =>
             setTimeout(() => reject(new Error("Timeout: Gemini Generation took too long (>60s)")), 60000)
         );
 
         const genPromise = (async () => {
             const parts: any[] = [];
-
-            // Add reference images first (limit to 3 to prevent payload issues)
             referenceImages.slice(0, 3).forEach(img => {
                 parts.push({ inlineData: { data: img.data, mimeType: img.mimeType } });
             });
 
-            // Add text prompt with aspect ratio instruction
             parts.push({
-                text: `${prompt}
-
-TECHNICAL REQUIREMENTS:
-- Output aspect ratio: ${finalRatio} (vertical format for ads)
-- Resolution: High quality, suitable for social media ads
-- Style: Photorealistic, commercial photography quality`
+                text: `${prompt}\n\nTECHNICAL REQUIREMENTS:\n- Output aspect ratio: ${finalRatio} (vertical format for ads)\n- Resolution: High quality, suitable for social media ads\n- Style: Photorealistic, commercial photography quality`
             });
 
             const response = await ai.models.generateContent({
-                model: MODEL_IMAGE_GEMINI,
+                model: modelName, // Dynamic model
                 contents: { parts }
             });
 
-            // Extract image from response
             if (response.candidates && response.candidates.length > 0) {
                 const content = response.candidates[0].content;
                 if (content && content.parts) {
@@ -111,14 +96,58 @@ TECHNICAL REQUIREMENTS:
                             return `data:${mimeType};base64,${part.inlineData.data}`;
                         }
                     }
+                    // Check for text refusal/explanation
+                    const textPart = content.parts.find(p => p.text);
+                    if (textPart && textPart.text) {
+                        const shortReason = textPart.text.substring(0, 200);
+                        throw new Error(`Model Refusal: ${shortReason}...`);
+                    }
                 }
             }
-
-            throw new Error("No image data returned from Gemini API");
+            throw new Error(`No image data returned from ${modelName}`);
         })();
 
         return Promise.race([genPromise, timeoutPromise]);
-    }, 3, 3000); // 3 retries, start with 3s delay
+    }, 3, 3000);
+};
+
+// Helper: Create a placeholder image when AI fails (prevents UI crash)
+const createFallbackImage = (text: string): string => {
+    // Return a solid color placeholder (Base64 PNG) - Orange 1x1
+    // In a real app, this could be a generated SVG or a static asset
+    return "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==";
+};
+
+// Main Generation Function with Fallback
+const generateWithGemini = async (
+    prompt: string,
+    apiKey: string,
+    aspectRatio: string,
+    referenceImages: { data: string, mimeType: string }[] = []
+): Promise<string> => {
+    // Validate aspect ratio
+    const validRatios = ["1:1", "3:4", "4:3", "9:16", "16:9"];
+    const finalRatio = validRatios.includes(aspectRatio) ? aspectRatio : "3:4";
+    console.log(`🎨 Generating Image (${finalRatio}) - Prompt length: ${prompt.length}`);
+
+    // Try Primary Model (NanoBanana Pro)
+    try {
+        console.log(`🚀 Attempting Primary Model: ${MODEL_IMAGE_GEMINI}`);
+        return await generateContentWithModel(MODEL_IMAGE_GEMINI, prompt, apiKey, finalRatio, referenceImages);
+    } catch (primaryError: any) {
+        console.warn(`⚠️ Primary Model Failed (${primaryError.message}). Switching to Backup...`);
+
+        // Try Backup Model (Gemini 2.0 Flash)
+        try {
+            console.log(`🛡️ Attempting Backup Model: ${MODEL_IMAGE_BACKUP}`);
+            return await generateContentWithModel(MODEL_IMAGE_BACKUP, prompt, apiKey, finalRatio, referenceImages);
+        } catch (backupError: any) {
+            // If all models fail, return fallback instead of throwing
+            console.error(`❌ All models failed. Primary: ${primaryError.message} | Backup: ${backupError.message}`);
+            console.error("All models failed. Returning fallback image.", backupError);
+            return createFallbackImage("AI Busy");
+        }
+    }
 };
 
 // ═══════════════════════════════════════════════════════════
@@ -260,13 +289,21 @@ export const generateImageService = async (
     branding: Branding,
     knowledgeBase: KnowledgeBase,
     imageAnalysis: ImageAnalysis[],
-    variationType: string = ""
+    variationType: string = "",
+    referenceImage?: string
 ): Promise<string> => {
 
     if (!keys.google) throw new Error("Falta la Google API Key.");
 
     // Prepare reference images
     const references: { data: string, mimeType: string }[] = [];
+
+    // If we have a reference image (e.g. for variations), add it first as high priority
+    if (referenceImage) {
+        // Strip prefix if present
+        const cleanRef = referenceImage.replace(/^data:image\/\w+;base64,/, "");
+        references.push({ data: cleanRef, mimeType: 'image/png' });
+    }
 
     if (branding.personalPhoto && branding.includeFace) {
         const base64 = branding.personalPhoto.split(',')[1];

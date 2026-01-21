@@ -37,7 +37,7 @@ export const Input: React.FC<InputProps> = ({
 
         <input
           className={`
-            w-full bg-bg-tertiary border border-border-default rounded-xl px-4 py-2.5
+            w-full !bg-black border border-white/10 rounded-xl px-4 py-2.5
             text-text-primary placeholder:text-text-muted/50
             focus:outline-none focus:border-accent-primary/50 focus:ring-1 focus:ring-accent-primary/50
             disabled:opacity-50 disabled:cursor-not-allowed
@@ -85,7 +85,7 @@ export const TextArea: React.FC<TextAreaProps> = ({
       <textarea
         rows={rows}
         className={`
-          w-full bg-bg-tertiary border border-border-default rounded-xl px-4 py-3
+          w-full !bg-black border border-white/10 rounded-xl px-4 py-3
           text-text-primary placeholder:text-text-muted/50
           focus:outline-none focus:border-accent-primary/50 focus:ring-1 focus:ring-accent-primary/50
           disabled:opacity-50 disabled:cursor-not-allowed

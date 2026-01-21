@@ -32,6 +32,9 @@ export interface Business {
   knowledgeBase: KnowledgeBase;
   branding: Branding;
   ownerEmail?: string;
+  generatedAngles?: Angle[];
+  generatedImages?: GeneratedImage[];
+  imageAnalysis?: ImageAnalysis[];
 }
 
 export interface ImageAnalysis {
@@ -80,6 +83,9 @@ export interface GeneratedImage {
   variationIndex?: number;   // NUEVO: 1-9 para variaciones
   variationCategory?: 'safe' | 'medium' | 'aggressive'; // NUEVO
   errorMessage?: string; // NUEVO: Para guardar el error
+  approved?: boolean; // Added for UI state
+  isVariation?: boolean; // Added for UI state
+  timestamp?: number;
 }
 
 
