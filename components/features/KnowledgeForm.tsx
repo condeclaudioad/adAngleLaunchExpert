@@ -132,18 +132,29 @@ export const KnowledgeForm: React.FC = () => {
         }
     };
 
-    const handleSave = () => {
+    const [isSaving, setIsSaving] = useState(false);
+
+    const handleSave = async () => {
         if (!currentBusiness?.id) {
             alert("Error: No se encontró el negocio para guardar. Intenta recargar la página.");
             return;
         }
-        updateBusiness(currentBusiness.id, {
-            knowledgeBase: {
-                ...currentBusiness.knowledgeBase,
-                structuredAnalysis: analysis
-            }
-        });
-        setStep(AppStep.BRANDING);
+
+        setIsSaving(true);
+        try {
+            await updateBusiness(currentBusiness.id, {
+                knowledgeBase: {
+                    ...currentBusiness.knowledgeBase,
+                    structuredAnalysis: analysis
+                }
+            });
+            setStep(AppStep.BRANDING);
+        } catch (error) {
+            console.error(error);
+            alert("Error al guardar la estrategia.");
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     const handleChange = (field: keyof KnowledgeBase['structuredAnalysis'], value: string) => {
@@ -357,10 +368,14 @@ export const KnowledgeForm: React.FC = () => {
                                 <Button
                                     onClick={handleSave}
                                     size="lg"
-                                    disabled={!analysis?.productName}
-                                /* className="bg-white text-black hover:bg-gray-200 font-bold" */ // Using primary button style instead
+                                    disabled={!analysis?.productName || isSaving}
+                                    className="bg-gradient-to-r from-accent-primary to-orange-600 hover:scale-[1.02] transition-transform shadow-glow-orange"
                                 >
-                                    Confirmar Estrategia <ArrowRight className="ml-2 w-4 h-4" />
+                                    {isSaving ? (
+                                        <>Guardando...</>
+                                    ) : (
+                                        <>Confirmar Estrategia <ArrowRight className="ml-2 w-4 h-4" /></>
+                                    )}
                                 </Button>
                             </div>
                         </div>

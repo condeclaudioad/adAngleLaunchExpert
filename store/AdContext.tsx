@@ -517,6 +517,11 @@ export const AdProvider: React.FC<{ children: React.ReactNode }> = ({ children }
       await updateBusinessInDb(currentBusiness.id, data);
 
       setCurrentBusiness(updatedBiz);
+
+      // Sync separate states to ensure consistency
+      if (data.knowledgeBase) setKnowledgeBase(data.knowledgeBase);
+      if (data.branding) setBranding(data.branding);
+
       setBusinesses(prev => prev.map(b => b.id === updatedBiz.id ? updatedBiz : b));
     } catch (e) {
       reportError(e);
