@@ -19,15 +19,16 @@ import { Modal } from '../ui/Modal';
 
 export const AngleGenerator: React.FC = () => {
   /* Destructure needed data from context */
-  const { currentBusiness, setStep, googleApiKey: apiKey, knowledgeBase, imageAnalysis, angles, setAngles, toggleAngleSelection, deleteAngle } = useAdContext();
+  const { currentBusiness, setStep, googleApiKey: apiKey, knowledgeBase, imageAnalysis, angles, setAngles, toggleAngleSelection, deleteAngle, clearAngles } = useAdContext();
   const [isGenerating, setIsGenerating] = useState(false);
   const [angleToDelete, setAngleToDelete] = useState<string | null>(null);
+  const [showDeleteAllModal, setShowDeleteAllModal] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Sync angle selections to business on mount/update is no longer needed if we trust the Angle Table.
-  // However, for safety in the "Business Object" view, we might want to keep them in sync, but let's rely on the global list.
+  // ... (keeping existing functions)
 
   const handleGenerate = async () => {
+    // ... (existing implementation)
     if (!apiKey) {
       alert("Falta la API Key. Ve a Ajustes.");
       return;
@@ -47,8 +48,6 @@ export const AngleGenerator: React.FC = () => {
         throw new Error("No se generaron ángulos. Intenta de nuevo.");
       }
 
-      // Add to global state (which might trigger a DB save inside setAngles if specific logic existed, but we did it in service)
-      // Service `generateAngles` ALREADY saves to DB. We just need to update UI.
       setAngles([...angles, ...newAngles]);
 
     } catch (error: any) {
@@ -59,15 +58,14 @@ export const AngleGenerator: React.FC = () => {
     }
   };
 
+  // ... (toggleAngle, toggleAll, handleNext, getEmotionVariant)
+
   const toggleAngle = (id: string) => {
     toggleAngleSelection(id);
   };
 
   const toggleAll = () => {
     const allSelected = angles.every(a => a.selected);
-    // This is expensive as it calls DB for every item. Ideally we'd have a bulk update.
-    // For now, let's just update local state and maybe fire individual updates or a bulk one.
-    // Given the constraints, let's iterate.
     angles.forEach(a => {
       if (a.selected === allSelected) { // If we need to toggle it
         toggleAngleSelection(a.id);
@@ -104,6 +102,11 @@ export const AngleGenerator: React.FC = () => {
     if (!angleToDelete) return;
     deleteAngle(angleToDelete);
     setAngleToDelete(null);
+  };
+
+  const confirmDeleteAll = async () => {
+    await clearAngles();
+    setShowDeleteAllModal(false);
   };
 
   return (
@@ -143,9 +146,15 @@ export const AngleGenerator: React.FC = () => {
                 <span className="text-white font-bold text-base mr-1">{angles.filter(a => a.selected).length}</span> seleccionados
               </div>
             </div>
-            <Button variant="ghost" size="sm" onClick={toggleAll} className="text-text-muted hover:text-white">
-              {angles.every(a => a.selected) ? 'Deseleccionar Todos' : 'Seleccionar Todos'}
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="ghost" size="sm" onClick={() => setShowDeleteAllModal(true)} className="text-red-400 hover:bg-red-500/10 hover:text-red-300">
+                <Trash2 size={16} className="mr-2" /> Eliminar Todos
+              </Button>
+              <div className="w-px h-6 bg-white/10 my-auto" />
+              <Button variant="ghost" size="sm" onClick={toggleAll} className="text-text-muted hover:text-white">
+                {angles.every(a => a.selected) ? 'Deseleccionar Todos' : 'Seleccionar Todos'}
+              </Button>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -260,6 +269,27 @@ export const AngleGenerator: React.FC = () => {
           >
             <p className="text-sm text-text-secondary">
               ¿Estás seguro de que deseas eliminar este ángulo de venta? Esta acción no se puede deshacer.
+            </p>
+          </Modal>
+
+          <Modal
+            isOpen={showDeleteAllModal}
+            onClose={() => setShowDeleteAllModal(false)}
+            title="¿Eliminar TODOS los Ángulos?"
+            footer={
+              <>
+                <Button variant="ghost" onClick={() => setShowDeleteAllModal(false)}>
+                  Cancelar
+                </Button>
+                <Button variant="destructive" onClick={confirmDeleteAll}>
+                  Eliminar TODO
+                </Button>
+              </>
+            }
+          >
+            <p className="text-sm text-text-secondary">
+              Estas a punto de eliminar <b>todos los ángulos generados</b>. <br /><br />
+              Esta acción es irreversible y tendrás que generarlos de nuevo.
             </p>
           </Modal>
         </>

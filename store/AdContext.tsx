@@ -5,7 +5,7 @@ import {
   saveImageToDb, getImagesFromDb, deleteImageFromDb,
   saveBusinessToDb, getBusinessesFromDb, deleteBusinessFromDb,
   getVisualAnalyses, getExistingAngles, saveAngleToDb,
-  deleteAnalysisFromDb, deleteAngleFromDb
+  deleteAnalysisFromDb, deleteAngleFromDb, deleteAllAnglesFromDb
 } from '../services/dbService';
 import { onAuthStateChange, checkIsVip, signOut, signInWithEmail, signUpWithEmail } from '../services/supabaseClient';
 import { VIP_EMAILS } from '../constants';
@@ -59,6 +59,7 @@ interface AdContextType {
   setAngles: (angles: Angle[]) => void;
   toggleAngleSelection: (id: string) => void;
   deleteAngle: (id: string) => void;
+  clearAngles: () => Promise<void>;
 
   generatedImages: GeneratedImage[];
   addGeneratedImage: (img: GeneratedImage) => void;
@@ -614,6 +615,11 @@ export const AdProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     await deleteAngleFromDb(id);
   };
 
+  const clearAngles = async () => {
+    setAngles([]);
+    await deleteAllAnglesFromDb();
+  };
+
   const resetApp = async () => {
     if (confirm("¿Borrar todo y reiniciar de fábrica?")) {
       logout();
@@ -635,7 +641,7 @@ export const AdProvider: React.FC<{ children: React.ReactNode }> = ({ children }
       knowledgeBase, setKnowledgeBase,
       branding, setBranding,
       imageAnalysis, addImageAnalysis, deleteVisualAnalysis,
-      angles, setAngles, deleteAngle, toggleAngleSelection,
+      angles, setAngles, deleteAngle, toggleAngleSelection, clearAngles,
       generatedImages, addGeneratedImage, updateImageStatus, updateImageType,
       setApprovalStatus, updateImageFeedback, deleteImage,
       resetApp,

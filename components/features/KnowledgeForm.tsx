@@ -35,21 +35,27 @@ const fileToBase64 = (file: File): Promise<string> => {
 };
 
 export const KnowledgeForm: React.FC = () => {
-    const { currentBusiness, updateBusinessPartial: updateBusiness, setStep, googleApiKey: apiKey } = useAdContext();
+    const { currentBusiness, updateBusinessPartial: updateBusiness, setStep, googleApiKey: apiKey, knowledgeBase } = useAdContext();
     const [isProcessing, setIsProcessing] = useState(false);
     const [files, setFiles] = useState<File[]>([]);
+
+    // Initialize with whatever is available, but sync later
     const [analysis, setAnalysis] = useState<KnowledgeBase['structuredAnalysis']>(
-        currentBusiness?.knowledgeBase?.structuredAnalysis || {
+        knowledgeBase?.structuredAnalysis || {
             productName: '',
             avatar: '',
-            // currentSituation: '', // Removed from types? Check types.ts definition, preserving for safety if needed internally
-            // desireSituation: '',
             mechanismOfProblem: '',
             uniqueMechanism: '',
             bigPromise: '',
-            // offer: ''
         }
     );
+
+    // Hydrate form when context loads
+    React.useEffect(() => {
+        if (knowledgeBase?.structuredAnalysis) {
+            setAnalysis(knowledgeBase.structuredAnalysis);
+        }
+    }, [knowledgeBase]);
 
     const onDrop = useCallback((acceptedFiles: File[]) => {
         setFiles(prev => [...prev, ...acceptedFiles]);

@@ -141,6 +141,20 @@ export const deleteAngleFromDb = async (id: string) => {
     }
 };
 
+export const deleteAllAnglesFromDb = async () => {
+    try {
+        const user = await getCurrentUser();
+        if (!user) return;
+        const { error } = await getSupabase()
+            .from('generated_angles')
+            .delete()
+            .eq('user_id', user.id);
+        if (error) console.error('Error deleting all angles:', error);
+    } catch (e) {
+        console.error('Exception deleting all angles:', e);
+    }
+};
+
 // ——————————————— BUSINESSES ———————————————
 
 export const saveBusinessToDb = async (business: Business) => {
