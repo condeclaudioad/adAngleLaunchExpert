@@ -14,11 +14,20 @@ const getAuthKey = (overrideKey?: string) => {
 };
 
 const cleanJSON = (text: string) => {
-    return text
-        .replace(/^```json\s*/i, '')
-        .replace(/^```\s*/i, '')
-        .replace(/```$/i, '')
-        .trim();
+    // 1. Try to find markdown code block first
+    const codeBlockMatch = text.match(/```json\s*([\s\S]*?)\s*```/i);
+    if (codeBlockMatch && codeBlockMatch[1]) {
+        return codeBlockMatch[1].trim();
+    }
+
+    // 2. If no code block, try to find the outer-most JSON object
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+        return jsonMatch[0];
+    }
+
+    // 3. Fallback: just return the text (maybe already clean)
+    return text.trim();
 };
 
 const safeJSONParse = <T>(text: string, fallback: T | null = null): T => {
@@ -186,7 +195,19 @@ export const analyzeImage = async (base64Image: string, mimeType: string, apiKey
         );
 
         const genPromise = (async () => {
-            const promptText = "Analyze this high-performing ad. Break down why it works into JSON with the following structure: angleDetected, visualElements (array), copy, colors (array), composition, emotions (array).";
+            const promptText = `
+            Analyze this high-performing ad image.
+            
+            EXTRACT VISUAL PATTERNS:
+            1. angleDetected: What is the marketing mechanism? (e.g. "Us vs Them", "Founder Story", "Infographic").
+            2. visualElements: List specific 3-5 visual components (e.g. "Green checkmarks", "Phone mockup", "Split screen").
+            3. copy: Extract the headline/text exactly.
+            4. colors: Dominant hex codes.
+            5. emotions: 2-3 emotions evoked.
+            
+            OUTPUT:
+            Return ONLY valid JSON. No markdown formatting.
+            `;
 
             const response = await generateSafeContent(key, MODEL_ANALYSIS, MODEL_TEXT_BACKUP, {
                 contents: [
@@ -209,7 +230,8 @@ export const analyzeImage = async (base64Image: string, mimeType: string, apiKey
                             colors: { type: Type.ARRAY, items: { type: Type.STRING } },
                             composition: { type: Type.STRING },
                             emotions: { type: Type.ARRAY, items: { type: Type.STRING } },
-                        }
+                        },
+                        required: ["angleDetected", "visualElements", "copy", "colors", "composition", "emotions"]
                     }
                 }
             });
