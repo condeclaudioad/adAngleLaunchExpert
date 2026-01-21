@@ -157,6 +157,28 @@ export const deleteAllAnglesFromDb = async () => {
 
 // ——————————————— BUSINESSES ———————————————
 
+export const updateBusinessInDb = async (id: string, updates: Partial<Business>) => {
+    try {
+        const payload: any = {};
+        if (updates.name !== undefined) payload.name = updates.name;
+        if (updates.knowledgeBase !== undefined) payload.knowledge_base = updates.knowledgeBase;
+        if (updates.branding !== undefined) payload.branding = updates.branding;
+        // We do NOT save generated_angles to the business JSONB anymore to avoid bloat.
+        // They live in their own table 'generated_angles'.
+
+        if (Object.keys(payload).length === 0) return;
+
+        const { error } = await getSupabase()
+            .from('businesses')
+            .update(payload)
+            .match({ id });
+
+        if (error) console.error('Error updating business:', error);
+    } catch (e) {
+        console.error('Exception updating business:', e);
+    }
+};
+
 export const saveBusinessToDb = async (business: Business) => {
     try {
         const user = await getCurrentUser();
@@ -170,8 +192,8 @@ export const saveBusinessToDb = async (business: Business) => {
                 user_id: user.id,
                 name: business.name,
                 knowledge_base: business.knowledgeBase,
-                branding: business.branding,
-                generated_angles: business.generatedAngles
+                branding: business.branding
+                // generated_angles: business.generatedAngles // REMOVED to prevent timeouts
             });
 
         if (error) console.error('Error saving business:', error);

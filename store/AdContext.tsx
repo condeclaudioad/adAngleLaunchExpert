@@ -5,7 +5,7 @@ import {
   saveImageToDb, getImagesFromDb, deleteImageFromDb,
   saveBusinessToDb, getBusinessesFromDb, deleteBusinessFromDb,
   getVisualAnalyses, getExistingAngles, saveAngleToDb,
-  deleteAnalysisFromDb, deleteAngleFromDb, deleteAllAnglesFromDb
+  deleteAnalysisFromDb, deleteAngleFromDb, deleteAllAnglesFromDb, updateBusinessInDb
 } from '../services/dbService';
 import { onAuthStateChange, checkIsVip, signOut, signInWithEmail, signUpWithEmail } from '../services/supabaseClient';
 import { VIP_EMAILS } from '../constants';
@@ -458,8 +458,16 @@ export const AdProvider: React.FC<{ children: React.ReactNode }> = ({ children }
 
       console.log("Saving business:", finalName);
 
+      // If we already have a current business, we are updating it.
+      // Use the optimized update function to avoid sending massive payloads if only specific fields changed?
+      // Actually saveCurrentBusiness usually saves THE WHOLE state at that moment.
+      // But we can optimize by checking if ID exists.
+
+      const isUpdate = !!currentBusiness?.id;
+      const bizId = currentBusiness?.id || `biz-${Date.now()}`;
+
       const newBus: Business = {
-        id: currentBusiness?.id || `biz-${Date.now()}`,
+        id: bizId,
         name: finalName,
         createdAt: currentBusiness?.createdAt || Date.now(),
         knowledgeBase: knowledgeBase,
@@ -467,7 +475,17 @@ export const AdProvider: React.FC<{ children: React.ReactNode }> = ({ children }
         ownerEmail: user.email // Claim ownership
       };
 
-      await saveBusinessToDb(newBus);
+      if (isUpdate) {
+        // Optimized Update
+        await updateBusinessInDb(bizId, {
+          name: finalName,
+          knowledgeBase: knowledgeBase,
+          branding: branding
+        });
+      } else {
+        // New Insert
+        await saveBusinessToDb(newBus);
+      }
 
       setBusinesses(prev => {
         const exists = prev.findIndex(b => b.id === newBus.id);
@@ -495,7 +513,8 @@ export const AdProvider: React.FC<{ children: React.ReactNode }> = ({ children }
         ownerEmail: user?.email || currentBusiness.ownerEmail
       };
 
-      await saveBusinessToDb(updatedBiz);
+      // Use optimized update
+      await updateBusinessInDb(currentBusiness.id, data);
 
       setCurrentBusiness(updatedBiz);
       setBusinesses(prev => prev.map(b => b.id === updatedBiz.id ? updatedBiz : b));
