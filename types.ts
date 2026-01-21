@@ -57,6 +57,7 @@ export interface Angle {
   hook: string;
   emotion: string;
   visuals: string;
+  adCopy?: string; // High-converting ad caption (Lead, Bridge, Bullets, CTA)
   selected?: boolean;
 }
 

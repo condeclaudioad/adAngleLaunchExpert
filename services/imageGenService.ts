@@ -245,36 +245,38 @@ const buildMasterPrompt = (
     }
 
     return `
-ROLE: World-Class Ad Designer specialized in "NanoBanana Pro" style (High-Converting Infographics).
-TASK: Create a scroll-stopping ad image for "${productName}".
+ROLE: World-Class Information Designer & Ad Creative Expert (Specialized in Viral Infographics).
+TASK: Create a "Perfect Infographic Ad" for "${productName}".
 
 ${variationInstruction ? `VARIATION INSTRUCTION: ${variationInstruction}` : ''}
 
-## 1. STYLE: "NANOBANANA PRO" AESTHETIC
-- **Type**: Modern Infographic / High-End Product Photography Hybrid.
-- **Vibe**: Clean, Professional, Trustworthy, High-Tech.
-- **Lighting**: Bright, Even, Studio Lighting. No dark, moody shadows unless requested.
-- **Color**: Dominant ${primaryColor}, Accent ${secondaryColor}. Use high contrast for readability.
-- **Composition**: Central focus on the benefit/result. Clean negative space.
-- **Visuals**: Use 3D icons, floating elements, or split-screens to demonstrate value visually.
-
-## 2. TEXT RULES (CRITICAL):
+## 1. CORE AESTHETIC: "SCROLL-STOPPING INFOGRAPHIC"
+- **Style**: High-End 3D Render mixed with clean UI/UX Information Design.
+- **Goal**: Communicate value INSTANTLY (under 1 second).
+- **Background**: Deep, rich gradient or clean studio backdrop. High contrast with the foreground.
+- **Lighting**: Cinematic studio lighting. "Glossy" finish on 3D elements.
+- **Visual Types**:
+  - *If prompt mentions "Roadmap/Steps"*: Show a clear 1-2-3 progression with glowing path.
+  - *If prompt mentions "Comparison"*: Use a split screen (Red/X vs Green/Check).
+  - *If prompt mentions "System"*: Show a central "core" with orbiting elements or a flow.
+  
+## 2. TEXT RULES (ZERO TOLERANCE FOR ERRORS):
 - **HEADLINE**: "${cleanHook}"
-- **Render text EXACTLY as written above.** Spelling mistakes are unacceptable.
-- **MAXIMUM TEXT**: Use NO OTHER TEXT. Only the headline.
-- **Font**: Bold, Sans-Serif, Modern (like Helvetica, Inter, or Roboto).
-- **Placement**: Clear area, away from the product, fully legible.
-- **NO**: Paragraphs, clusters of text, or small labels. KEEP IT MINIMAL.
+- **RENDER THIS TEXT EXACTLY**. No typos. No extra words.
+- **Typography**: MASSIVE, BOLD, SANS-SERIF. White text on dark background (or vice versa).
+- **Readability**: Maximum contrast. Text must be legible on a small mobile screen.
+- **Hierarchy**: The Headline is the Hero. Everything else supports it.
 
-## 3. PROMPT CONCEPT:
+## 3. VISUAL CONCEPT (EXECUTE THIS PRECISELY):
 ${angleVisuals}
 
-## 4. BRANDING:
+## 4. BRANDING INTELLIGENCE:
 ${brandingInstructions}
 
-## 5. TECHNICAL:
+## 5. TECHNICAL SPECS:
 - Aspect Ratio: ${aspectRatio}
-- Quality: 8k, Sharp Focus, No distortion.
+- Composition: Center-heavy for social media safe zones (leave top/bottom margins).
+- Detail: 8k resolution, Unreal Engine 5 render style, "Glassmorphism" accents.
 `;
 };
 

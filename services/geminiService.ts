@@ -290,7 +290,7 @@ export const generateAngles = async (
     }
 
     const prompt = `
-    TASK: Generate High-Converting Advertising Angles (Direct Response).
+    ROLE: Elite Market Researcher & Direct Response Strategist (Specialized in Digital Products).
     
     PRODUCT CONTEXT:
     "${rawContextSnippet}..."
@@ -299,16 +299,43 @@ export const generateAngles = async (
     
     ${historyInstruction}
 
-    OUTPUT FORMAT:
-    Return a STRICT JSON ARRAY. No markdown code blocks, just the raw JSON.
+    TASK: Perform a deep "Simulated Market Research" to find the most profitable, untapped marketing angles for this product.
+    
+    PHASE 1: RESEARCH SIMULATION (Internal Processing)
+    Act as if you are browsing G2, Capterra, Reddit (specific subreddits), TikTok comments, and niche communities.
+    1. Identify "Ah-ha" moments: specific realizations users have when the product clicks.
+    2. Find bottlenecks/frustrations with current alternatives (e.g., "manual work", "expensive tools", "overwhelming courses").
+    3. Detect "Unexpected Use Cases": Is the product being used for something nimble?
+    4. look for "Comparison gaps": What is this product replacing? (e.g. "Better than hiring an agency").
+
+    PHASE 2: ANGLE GENERATION
+    Based on the research, generate 4-6 HIGH-CONVERTING AD ANGLES.
+    Each angle must be distinct (e.g., one about ROI, one about Ease of Use, one about "The Mechanism", one "Us vs Them").
+
+    OUTPUT FORMAT (STRICT JSON ARRAY):
+    Return a JSON ARRAY where:
+    - "name": The Angle Name (e.g., "The 'Lazy' Way", "The Agency Killer").
+    - "description": The EVIDENCE/LOGIC. Why this angle works. Summarize the "simulated research" findings here.
+    - "hook": A punchy, scroll-stopping headline (Direct Response style). Max 10 words.
+    - "emotion": The primary emotion.
+    - "visuals": Detailed visual description for the image generator (Infographic style: "Split screen...", "Roadmap...").
+    - "adCopy": The "Primary Text" (Caption) for the ad. MUST follow this structure:
+       1. THE LEAD (2 lines, curiosity hook).
+       2. THE BRIDGE (Contextualize problem).
+       3. BULLETS (3-4 Benefits with emojis).
+       4. SOCIAL PROOF (1 line).
+       5. CTA.
+       CRITICAL: DO NOT repeat the "hook" text in the copy. If image is "HOW", copy sells "WHY".
+
     Example:
     [
       {
-        "name": "The Mechanism Reveal",
-        "description": "Explaining the unique way it works",
-        "hook": "Por fin revelado: El secreto...",
-        "emotion": "Curiosity",
-        "visuals": "A split screen showing..."
+        "name": "The 'Agency Killer' Angle",
+        "description": "Users complain agencies are expensive. This positions tool as cheaper alternative.",
+        "hook": "Despide a tu agencia hoy",
+        "emotion": "Empowerment",
+        "visuals": "Split screen. Left: Invoice ($2000). Right: Tool ($49).",
+        "adCopy": "Tu agencia te está cobrando por aire 💨\\n\\n¿Por qué pagar $2k/mes cuando puedes hacerlo tú mismo en 5 min?\\n\\n✅ Ahorra $24,000 al año\\n✅ Sin contratos forzosos\\n✅ Calidad Pro\\n\\n👉 Úsalo gratis aquí."
       }
     ]
   `;

@@ -46,7 +46,8 @@ export const ExportPage: React.FC = () => {
             angles.filter(a => a.selected).forEach((a, i) => {
                 copyText += `\n### Angle ${i + 1}: ${a.name}\n`;
                 copyText += `Hook: "${a.hook}"\n`;
-                copyText += `Description: ${a.description}\n`;
+                copyText += `Evidence/Logic: ${a.description}\n`;
+                copyText += `\n--- AD COPY (PRIMARY TEXT) ---\n${a.adCopy || '(No copy generated)'}\n\n`;
             });
 
             root.file("Campaign_Brief.txt", copyText);
