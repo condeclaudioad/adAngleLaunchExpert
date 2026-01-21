@@ -642,6 +642,12 @@ export const AdProvider: React.FC<{ children: React.ReactNode }> = ({ children }
   const clearAngles = async () => {
     setAngles([]);
     await deleteAllAnglesFromDb();
+
+    // Also clear legacy business JSON data to prevent zombies
+    if (currentBusiness) {
+      // Force clear legacy column
+      await updateBusinessInDb(currentBusiness.id, { generatedAngles: [] } as any);
+    }
   };
 
   const resetApp = async () => {

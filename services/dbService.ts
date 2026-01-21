@@ -163,8 +163,9 @@ export const updateBusinessInDb = async (id: string, updates: Partial<Business>)
         if (updates.name !== undefined) payload.name = updates.name;
         if (updates.knowledgeBase !== undefined) payload.knowledge_base = updates.knowledgeBase;
         if (updates.branding !== undefined) payload.branding = updates.branding;
-        // We do NOT save generated_angles to the business JSONB anymore to avoid bloat.
-        // They live in their own table 'generated_angles'.
+
+        // Allow updating generated_angles (e.g. to clear legacy data)
+        if (updates.generatedAngles !== undefined) payload.generated_angles = updates.generatedAngles;
 
         if (Object.keys(payload).length === 0) return;
 
