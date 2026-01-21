@@ -374,6 +374,21 @@ export const generateAngles = async (
                 config: {
                     systemInstruction: SYSTEM_PROMPT,
                     responseMimeType: "application/json",
+                    responseSchema: {
+                        type: Type.ARRAY,
+                        items: {
+                            type: Type.OBJECT,
+                            properties: {
+                                name: { type: Type.STRING },
+                                description: { type: Type.STRING },
+                                hook: { type: Type.STRING },
+                                emotion: { type: Type.STRING },
+                                visuals: { type: Type.STRING },
+                                adCopy: { type: Type.STRING },
+                            },
+                            required: ["name", "description", "hook", "emotion", "visuals", "adCopy"]
+                        }
+                    }
                 }
             });
 
