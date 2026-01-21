@@ -14,19 +14,25 @@ const getAuthKey = (overrideKey?: string) => {
 };
 
 const cleanJSON = (text: string) => {
-    // 1. Try to find markdown code block first
-    const codeBlockMatch = text.match(/```json\s*([\s\S]*?)\s*```/i);
+    // 1. Try to find markdown code block first (json or generic)
+    const codeBlockMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
     if (codeBlockMatch && codeBlockMatch[1]) {
         return codeBlockMatch[1].trim();
     }
 
-    // 2. If no code block, try to find the outer-most JSON object
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-        return jsonMatch[0];
+    // 2. Try to find the outer-most JSON Array (Priority for lists)
+    const arrayMatch = text.match(/\[[\s\S]*\]/);
+    if (arrayMatch) {
+        return arrayMatch[0];
     }
 
-    // 3. Fallback: just return the text (maybe already clean)
+    // 3. Try to find the outer-most JSON Object
+    const objectMatch = text.match(/\{[\s\S]*\}/);
+    if (objectMatch) {
+        return objectMatch[0];
+    }
+
+    // 4. Fallback: just return the text (maybe already clean)
     return text.trim();
 };
 
