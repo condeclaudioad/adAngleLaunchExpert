@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useAdContext } from '../../store/AdContext';
 import { AppStep, GeneratedImage } from '../../types';
-import { generateImageService } from '../../services/imageGenService';
+import { generateImageService, editGeneratedImage } from '../../services/imageGenService';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { Input, Select } from '../ui/Input';
 import { Badge } from '../ui/Badge';
+import { Modal } from '../ui/Modal';
 import {
     Play,
     Check,
@@ -18,7 +19,8 @@ import {
     Wand2,
     Layers,
     Loader2,
-    Sparkles
+    Sparkles,
+    Edit2
 } from 'lucide-react';
 
 export const ImageFactory: React.FC = () => {
@@ -39,6 +41,11 @@ export const ImageFactory: React.FC = () => {
     const [localKey, setLocalKey] = useState(apiKey || '');
     const [variationCounts, setVariationCounts] = useState<Record<string, number>>({});
     const stopRef = React.useRef(false);
+
+    // NEW STATE
+    const [zoomImage, setZoomImage] = useState<GeneratedImage | null>(null);
+    const [editImage, setEditImage] = useState<GeneratedImage | null>(null);
+    const [editPrompt, setEditPrompt] = useState('');
 
     // Filter images relevant to the current business angles
     const selectedAngles = (currentBusiness?.generatedAngles && currentBusiness.generatedAngles.length > 0
@@ -132,9 +139,6 @@ export const ImageFactory: React.FC = () => {
 
     const handleApprove = (imgId: string, approved: boolean) => {
         setApprovalStatus(imgId, approved ? 'approved' : 'rejected');
-        // Also toggle the boolean flag for backward compatibility if needed, 
-        // but setApprovalStatus should handle DB sync.
-        // If the UI relies on 'approved' boolean, we might need to rely on re-render from context.
     };
 
     const handleGenerateAll = async () => {
@@ -196,8 +200,6 @@ export const ImageFactory: React.FC = () => {
             });
 
             const newVariations = await Promise.all(promises);
-            // newVariations.forEach(img => addGeneratedImage(img)); // Can't map async in state updates easily
-            // Better to loop and add
             for (const img of newVariations) {
                 await addGeneratedImage(img);
             }
@@ -205,6 +207,44 @@ export const ImageFactory: React.FC = () => {
         } catch (e: any) {
             console.error(e);
             if (!stopRef.current) showNotification('error', e.message || 'Error generando variaciones', 'Error de Variaciones');
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
+    // NEW HANDLER: Edit Image
+    const handleConfirmEdit = async () => {
+        if (!editImage || !editPrompt.trim() || !apiKey) return;
+        setIsProcessing(true);
+        try {
+            const resultUrl = await editGeneratedImage(
+                editImage.url,
+                editPrompt,
+                apiKey,
+                aspectRatio
+            );
+
+            const newImage: GeneratedImage = {
+                id: Date.now().toString(),
+                url: resultUrl,
+                angleId: editImage.angleId,
+                prompt: editImage.prompt + " | Edit: " + editPrompt,
+                approved: false,
+                approvalStatus: 'waiting',
+                isVariation: false, // Treat edits as new masters or variations? Treating as master replacement
+                type: 'master',
+                status: 'completed',
+                timestamp: Date.now()
+            };
+
+            await addGeneratedImage(newImage);
+            showNotification('success', 'Imagen editada correctamente', 'Éxito');
+            setEditImage(null);
+            setEditPrompt('');
+
+        } catch (e: any) {
+            console.error(e);
+            showNotification('error', e.message || 'Error al editar', 'Error');
         } finally {
             setIsProcessing(false);
         }
@@ -321,20 +361,41 @@ export const ImageFactory: React.FC = () => {
 
                                             {/* Action Buttons */}
                                             <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center gap-4">
-                                                <div className="flex gap-3 scale-90 group-hover:scale-100 transition-transform duration-300 delay-75">
+                                                <div className="flex gap-2 scale-90 group-hover:scale-100 transition-transform duration-300 delay-75">
+                                                    {/* Zoom Button */}
+                                                    <button
+                                                        onClick={() => setZoomImage(image)}
+                                                        className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-md text-white hover:bg-white/20 border border-white/20 flex items-center justify-center transition-all shadow-lg hover:scale-110"
+                                                        title="Ver en detalle"
+                                                    >
+                                                        <Maximize2 size={18} />
+                                                    </button>
+
+                                                    {/* Edit Button */}
+                                                    <button
+                                                        onClick={() => { setEditImage(image); setEditPrompt(''); }}
+                                                        className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-md text-white hover:bg-blue-500 border border-white/20 flex items-center justify-center transition-all shadow-lg hover:scale-110"
+                                                        title="Editar con prompt"
+                                                    >
+                                                        <Edit2 size={18} />
+                                                    </button>
+
+                                                    {/* Approve Button */}
                                                     <button
                                                         onClick={() => handleApprove(image.id, !image.approved)}
-                                                        className={`w-12 h-12 rounded-full flex items-center justify-center transition-all shadow-lg hover:scale-110 ${image.approved ? 'bg-emerald-500 text-white shadow-emerald-500/30' : 'bg-white/10 backdrop-blur-md text-white hover:bg-emerald-500 border border-white/20'}`}
+                                                        className={`w-10 h-10 rounded-full flex items-center justify-center transition-all shadow-lg hover:scale-110 ${image.approved ? 'bg-emerald-500 text-white shadow-emerald-500/30' : 'bg-white/10 backdrop-blur-md text-white hover:bg-emerald-500 border border-white/20'}`}
                                                         title={image.approved ? "Desaprobar" : "Aprobar"}
                                                     >
-                                                        <Check size={20} strokeWidth={3} />
+                                                        <Check size={18} strokeWidth={3} />
                                                     </button>
+
+                                                    {/* Regenerate Button */}
                                                     <button
                                                         onClick={() => generateSingleImage(angle.id)}
-                                                        className="w-12 h-12 rounded-full bg-white/10 backdrop-blur-md text-white hover:bg-purple-500 border border-white/20 flex items-center justify-center transition-all shadow-lg hover:scale-110"
+                                                        className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-md text-white hover:bg-purple-500 border border-white/20 flex items-center justify-center transition-all shadow-lg hover:scale-110"
                                                         title="Regenerar"
                                                     >
-                                                        <RefreshCw size={20} />
+                                                        <RefreshCw size={18} />
                                                     </button>
                                                 </div>
                                             </div>
@@ -391,8 +452,12 @@ export const ImageFactory: React.FC = () => {
                                                 <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20">Master</Badge>
                                                 <span className="text-xs text-text-secondary truncate block flex-1 text-right font-mono opacity-50">{masterImage.angleId}</span>
                                             </div>
-                                            <div className="aspect-[4/5] rounded-2xl overflow-hidden shadow-2xl border-2 border-emerald-500/20 relative">
+                                            <div className="aspect-[4/5] rounded-2xl overflow-hidden shadow-2xl border-2 border-emerald-500/20 relative group">
                                                 <img src={masterImage.url} className="w-full h-full object-cover" />
+                                                {/* Zoom for Master in Variations Tab */}
+                                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                    <button onClick={() => setZoomImage(masterImage)} className="p-3 bg-white/20 backdrop-blur rounded-full text-white hover:bg-white/30"><Maximize2 size={20} /></button>
+                                                </div>
                                             </div>
 
                                             {/* Generator Controls */}
@@ -433,10 +498,13 @@ export const ImageFactory: React.FC = () => {
                                                     {vars.map((v, i) => (
                                                         <div key={v.id} className="group relative aspect-square rounded-xl overflow-hidden bg-black/50 border border-white/5 hover:border-pink-500/50 transition-colors">
                                                             <img src={v.url} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
-                                                            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                                <Button size="sm" variant="icon" className="h-8 w-8 bg-black/50 backdrop-blur text-white">
+                                                            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
+                                                                <button onClick={() => setZoomImage(v)} className="h-8 w-8 bg-black/50 backdrop-blur text-white flex items-center justify-center rounded hover:bg-black/70">
+                                                                    <Maximize2 size={14} />
+                                                                </button>
+                                                                <a href={v.url} download={`variation-${i}.png`} className="h-8 w-8 bg-black/50 backdrop-blur text-white flex items-center justify-center rounded hover:bg-black/70" target="_blank">
                                                                     <Download size={14} />
-                                                                </Button>
+                                                                </a>
                                                             </div>
                                                         </div>
                                                     ))}
@@ -455,6 +523,71 @@ export const ImageFactory: React.FC = () => {
                     </div>
                 )}
             </div>
+
+            {/* ZOOM MODAL */}
+            <Modal
+                isOpen={!!zoomImage}
+                onClose={() => setZoomImage(null)}
+                title="Vista Detallada"
+            >
+                <div className="flex items-center justify-center bg-black/50 rounded-lg overflow-hidden">
+                    {zoomImage && (
+                        <img
+                            src={zoomImage.url}
+                            alt="Detalle"
+                            className="max-h-[80vh] max-w-full object-contain"
+                        />
+                    )}
+                </div>
+                <div className="mt-4 flex justify-between items-center text-sm text-text-muted">
+                    <p className="max-w-[70%] truncate">{zoomImage?.prompt}</p>
+                    <a
+                        href={zoomImage?.url}
+                        download="image.png"
+                        target="_blank"
+                        className="text-pink-400 hover:text-pink-300 flex items-center gap-2"
+                        rel="noreferrer"
+                    >
+                        <Download size={16} /> Descargar Original
+                    </a>
+                </div>
+            </Modal>
+
+            {/* EDIT MODAL */}
+            <Modal
+                isOpen={!!editImage}
+                onClose={() => { setEditImage(null); setIsProcessing(false); }}
+                title="Editar Imagen (Retoque AI)"
+                footer={
+                    <>
+                        <Button variant="secondary" onClick={() => setEditImage(null)} disabled={isProcessing}>Cancelar</Button>
+                        <Button onClick={handleConfirmEdit} disabled={!editPrompt.trim() || isProcessing} className="bg-blue-600 hover:bg-blue-500 text-white border-0">
+                            {isProcessing ? 'Editando...' : 'Aplicar Cambios'}
+                        </Button>
+                    </>
+                }
+            >
+                <div className="space-y-4">
+                    <div className="flex gap-4">
+                        <div className="w-24 h-24 rounded-lg overflow-hidden border border-white/10 shrink-0">
+                            {editImage && <img src={editImage.url} className="w-full h-full object-cover" />}
+                        </div>
+                        <div className="space-y-2 flex-1">
+                            <label className="text-sm font-bold text-white">Instrucción de Edición</label>
+                            <Input
+                                value={editPrompt}
+                                onChange={(e) => setEditPrompt(e.target.value)}
+                                placeholder="Ej: Hazla más brillante, cambia el fondo a azul, elimina el texto..."
+                                autoFocus
+                            />
+                            <p className="text-xs text-text-muted">
+                                Describe qué quieres cambiar. La AI intentará mantener la identidad principal de la imagen.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </Modal>
+
         </div >
     );
 };
