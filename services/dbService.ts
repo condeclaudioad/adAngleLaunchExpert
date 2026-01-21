@@ -78,14 +78,17 @@ export const saveAngleToDb = async (angle: Angle) => {
 
         const { error } = await getSupabase()
             .from('generated_angles')
-            .insert({
+            .upsert({
+                id: angle.id, // Ensure we upsert by ID
                 user_id: user.id,
                 name: angle.name,
                 description: angle.description,
                 hook: angle.hook,
                 emotion: angle.emotion,
-                visuals: angle.visuals
-            });
+                visuals: angle.visuals,
+                ad_copy: angle.adCopy, // New field
+                selected: angle.selected // New field
+            }, { onConflict: 'id' });
 
         if (error) console.error('Error saving angle to DB:', error);
     } catch (e) {
@@ -116,7 +119,8 @@ export const getExistingAngles = async (): Promise<Angle[]> => {
             hook: d.hook,
             emotion: d.emotion || "",
             visuals: d.visuals || "",
-            selected: false
+            adCopy: d.ad_copy || "",
+            selected: d.selected || false
         }));
     } catch (e) {
         console.error('Exception fetching angles:', e);

@@ -4,7 +4,7 @@ import { KnowledgeBase, ImageAnalysis, Angle, GeneratedImage, AppStep, ApprovalS
 import {
   saveImageToDb, getImagesFromDb, deleteImageFromDb,
   saveBusinessToDb, getBusinessesFromDb, deleteBusinessFromDb,
-  getVisualAnalyses, getExistingAngles,
+  getVisualAnalyses, getExistingAngles, saveAngleToDb,
   deleteAnalysisFromDb, deleteAngleFromDb
 } from '../services/dbService';
 import { onAuthStateChange, checkIsVip, signOut, signInWithEmail, signUpWithEmail } from '../services/supabaseClient';
@@ -57,6 +57,7 @@ interface AdContextType {
 
   angles: Angle[];
   setAngles: (angles: Angle[]) => void;
+  toggleAngleSelection: (id: string) => void;
   deleteAngle: (id: string) => void;
 
   generatedImages: GeneratedImage[];
@@ -597,6 +598,17 @@ export const AdProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     }
   };
 
+  const toggleAngleSelection = async (id: string) => {
+    setAngles(prev => {
+      const updated = prev.map(a => a.id === id ? { ...a, selected: !a.selected } : a);
+      const changedAngle = updated.find(a => a.id === id);
+      if (changedAngle) {
+        saveAngleToDb(changedAngle).catch(console.error);
+      }
+      return updated;
+    });
+  };
+
   const deleteAngle = async (id: string) => {
     setAngles(prev => prev.filter(a => a.id !== id));
     await deleteAngleFromDb(id);
@@ -623,7 +635,7 @@ export const AdProvider: React.FC<{ children: React.ReactNode }> = ({ children }
       knowledgeBase, setKnowledgeBase,
       branding, setBranding,
       imageAnalysis, addImageAnalysis, deleteVisualAnalysis,
-      angles, setAngles, deleteAngle,
+      angles, setAngles, deleteAngle, toggleAngleSelection,
       generatedImages, addGeneratedImage, updateImageStatus, updateImageType,
       setApprovalStatus, updateImageFeedback, deleteImage,
       resetApp,

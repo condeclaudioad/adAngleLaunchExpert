@@ -19,11 +19,13 @@ import { Modal } from '../ui/Modal';
 
 export const AngleGenerator: React.FC = () => {
   /* Destructure needed data from context */
-  const { currentBusiness, updateBusinessPartial: updateBusiness, setStep, googleApiKey: apiKey, knowledgeBase, imageAnalysis, angles: storedAngles } = useAdContext();
+  const { currentBusiness, setStep, googleApiKey: apiKey, knowledgeBase, imageAnalysis, angles, setAngles, toggleAngleSelection, deleteAngle } = useAdContext();
   const [isGenerating, setIsGenerating] = useState(false);
-  const [angles, setAngles] = useState<Angle[]>(currentBusiness?.generatedAngles || []);
   const [angleToDelete, setAngleToDelete] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Sync angle selections to business on mount/update is no longer needed if we trust the Angle Table.
+  // However, for safety in the "Business Object" view, we might want to keep them in sync, but let's rely on the global list.
 
   const handleGenerate = async () => {
     if (!apiKey) {
@@ -45,11 +47,9 @@ export const AngleGenerator: React.FC = () => {
         throw new Error("No se generaron ángulos. Intenta de nuevo.");
       }
 
-      const updatedAngles = [...angles, ...newAngles];
-      setAngles(updatedAngles);
-
-      // Update Context & DB
-      updateBusiness(currentBusiness!.id, { generatedAngles: updatedAngles });
+      // Add to global state (which might trigger a DB save inside setAngles if specific logic existed, but we did it in service)
+      // Service `generateAngles` ALREADY saves to DB. We just need to update UI.
+      setAngles([...angles, ...newAngles]);
 
     } catch (error: any) {
       console.error(error);
@@ -60,36 +60,28 @@ export const AngleGenerator: React.FC = () => {
   };
 
   const toggleAngle = (id: string) => {
-    const updated = angles.map(a => a.id === id ? { ...a, selected: !a.selected } : a);
-    setAngles(updated);
-    updateBusiness(currentBusiness!.id, { generatedAngles: updated });
+    toggleAngleSelection(id);
   };
 
   const toggleAll = () => {
     const allSelected = angles.every(a => a.selected);
-    const updated = angles.map(a => ({ ...a, selected: !allSelected }));
-    setAngles(updated);
-    updateBusiness(currentBusiness!.id, { generatedAngles: updated });
+    // This is expensive as it calls DB for every item. Ideally we'd have a bulk update.
+    // For now, let's just update local state and maybe fire individual updates or a bulk one.
+    // Given the constraints, let's iterate.
+    angles.forEach(a => {
+      if (a.selected === allSelected) { // If we need to toggle it
+        toggleAngleSelection(a.id);
+      }
+    });
   };
 
   const handleNext = async () => {
     setIsSaving(true);
     try {
-      if (currentBusiness && angles.length > 0) {
-        // Backup to localStorage to ensure availability in next step
-        try {
-          localStorage.setItem('le_temp_angles', JSON.stringify(angles));
-        } catch (e) {
-          console.warn("Could not save temp angles to LocalStorage (Quota exceeded)", e);
-          // Attempt cleanup
-          try { localStorage.removeItem('le_temp_angles'); } catch { }
-        }
-
-        // Force sync local state to context/DB before navigation
-        await updateBusiness(currentBusiness.id, { generatedAngles: angles });
-      }
+      // No need to save to local storage or business jsonb anymore.
+      // We trust the DB 'selected' flags.
     } catch (error) {
-      console.error("Save failed, proceeding anyway", error);
+      console.error("Save failed", error);
     } finally {
       setIsSaving(false);
       setStep(AppStep.GENERATION);
@@ -110,11 +102,7 @@ export const AngleGenerator: React.FC = () => {
   /* Delete Handler */
   const deleteSelectedAngle = async () => {
     if (!angleToDelete) return;
-    const updated = angles.filter(a => a.id !== angleToDelete);
-    setAngles(updated);
-    if (currentBusiness) {
-      updateBusiness(currentBusiness.id, { generatedAngles: updated });
-    }
+    deleteAngle(angleToDelete);
     setAngleToDelete(null);
   };
 
