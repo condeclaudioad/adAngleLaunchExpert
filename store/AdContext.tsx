@@ -101,16 +101,26 @@ const safeLocalStorageSet = (key: string, value: any) => {
     const serialized = JSON.stringify(value);
     localStorage.setItem(key, serialized);
   } catch (e) {
-    console.warn(`LocalStorage quota exceeded for ${key}. Attempting cleanup...`);
-    try {
-      // Clear potentially large temporary data
-      localStorage.removeItem('le_temp_angles');
-      localStorage.removeItem('le_history');
-      // Retry
-      const serialized = JSON.stringify(value);
-      localStorage.setItem(key, serialized);
-    } catch (retryError) {
-      console.error("Critical: LocalStorage full even after cleanup.", retryError);
+    if (e instanceof DOMException && (e.name === 'QuotaExceededError' || e.code === 22)) {
+      console.warn(`LocalStorage quota exceeded for ${key}. Performing aggressive cleanup...`);
+      try {
+        // 1. Clear known large buffers
+        localStorage.removeItem('le_temp_angles');
+        localStorage.removeItem('le_history');
+        localStorage.removeItem('le_generated_images'); // Potentially huge
+
+        // 2. Clear old business data if needed (keep only IDs)
+        // localStorage.removeItem('le_businesses'); 
+
+        // 3. Retry set
+        const serialized = JSON.stringify(value);
+        localStorage.setItem(key, serialized);
+        console.log("Cleanup successful. Data saved.");
+      } catch (retryError) {
+        console.error("Critical: LocalStorage still full after cleanup. Data not saved.", retryError);
+      }
+    } else {
+      console.error("LocalStorage Error", e);
     }
   }
 };
