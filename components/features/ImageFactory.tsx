@@ -22,7 +22,17 @@ import {
 } from 'lucide-react';
 
 export const ImageFactory: React.FC = () => {
-    const { currentBusiness, updateBusinessPartial: updateBusiness, setStep, googleApiKey: apiKey, setGoogleApiKey: setApiKey, showNotification } = useAdContext();
+    const {
+        currentBusiness,
+        setStep,
+        googleApiKey: apiKey,
+        setGoogleApiKey: setApiKey,
+        showNotification,
+        generatedImages, // Global state
+        addGeneratedImage,
+        setApprovalStatus
+    } = useAdContext();
+
     const [isProcessing, setIsProcessing] = useState(false);
     const [activeTab, setActiveTab] = useState<'approvals' | 'variations'>('approvals');
     const [aspectRatio, setAspectRatio] = useState('1:1');
@@ -30,13 +40,15 @@ export const ImageFactory: React.FC = () => {
     const [variationCounts, setVariationCounts] = useState<Record<string, number>>({});
     const stopRef = React.useRef(false);
 
-    // Fallback to localStorage if context not yet synced
+    // Filter images relevant to the current business angles
     const selectedAngles = (currentBusiness?.generatedAngles && currentBusiness.generatedAngles.length > 0
         ? currentBusiness.generatedAngles
         : JSON.parse(localStorage.getItem('le_temp_angles') || '[]') as any[]
     ).filter((a: any) => a.selected);
-    const images = currentBusiness?.generatedImages || [];
-    const approvedImages = images.filter(img => img.approved);
+
+    // Filter global images by matching angle IDs
+    const images = generatedImages.filter(img => selectedAngles.some((a: any) => a.id === img.angleId));
+    const approvedImages = images.filter(img => img.approved || img.approvalStatus === 'approved');
 
     // Sync local key
     useEffect(() => {
@@ -54,7 +66,10 @@ export const ImageFactory: React.FC = () => {
     };
 
     const getImageForAngle = (angleId: string) => {
-        return images.find(img => img.angleId === angleId && !img.isVariation);
+        // Find latest master image
+        return images
+            .filter(img => img.angleId === angleId && !img.isVariation && img.type !== 'variation')
+            .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))[0];
     };
 
     const generateSingleImage = async (angleId: string) => {
@@ -65,27 +80,17 @@ export const ImageFactory: React.FC = () => {
 
         setIsProcessing(true);
         try {
-            const angle = selectedAngles.find(a => a.id === angleId);
+            const angle = selectedAngles.find((a: any) => a.id === angleId);
             if (!angle) return;
 
-            // Prepare prompt from angle data since we don't have the raw prompt
+            // Prepare prompt
             const prompt = `Visual: ${angle.visuals}. HOOK: "${angle.hook}". Emotion: ${angle.emotion}`;
 
-
-
-            // Validation
-            if (!currentBusiness?.branding) {
-                showNotification('error', "Falta información de Branding.", 'Datos Incompletos');
-                setIsProcessing(false);
-                return;
-            }
-            if (!currentBusiness?.knowledgeBase) {
-                showNotification('error', "Falta la Base de Conocimiento.", 'Datos Incompletos');
-                setIsProcessing(false);
+            if (!currentBusiness?.branding || !currentBusiness?.knowledgeBase) {
+                showNotification('error', "Faltan datos del negocio.", 'Error');
                 return;
             }
 
-            // Check stop signal before API call
             if (stopRef.current) return;
 
             const resultUrl = await generateImageService(
@@ -104,15 +109,14 @@ export const ImageFactory: React.FC = () => {
                     angleId: angle.id,
                     prompt: prompt,
                     approved: false,
+                    approvalStatus: 'waiting',
                     isVariation: false,
                     type: 'master',
                     status: 'completed',
                     timestamp: Date.now()
                 };
 
-                // Replace existing if any for this angle (re-roll)
-                const otherImages = images.filter(img => img.angleId !== angleId || img.isVariation);
-                updateBusiness(currentBusiness!.id, { generatedImages: [...otherImages, newImage] });
+                await addGeneratedImage(newImage);
                 showNotification('success', 'Imagen generada correctamente', 'Éxito');
             }
 
@@ -122,19 +126,15 @@ export const ImageFactory: React.FC = () => {
                 showNotification('error', e.message || 'Error desconocido', 'Error de Generación');
             }
         } finally {
-            // Only reset processing if we are NOT in a loop (handleGenerateAll handles its own loop state usually, but here we reuse generateSingleImage)
-            // Actually, generateSingleImage sets setIsProcessing(false) at end. This breaks the loop's loading state.
-            // We should lift state management to the loop or pass a flag.
-            // For now, simpler: let the loop manage the overall state if possible, or just accept flicker.
-            // Better: remove strict setIsProcessing(false) here if part of batch?
-            // No, keep it simple.
             if (!stopRef.current) setIsProcessing(false);
         }
     };
 
     const handleApprove = (imgId: string, approved: boolean) => {
-        const updated = images.map(img => img.id === imgId ? { ...img, approved } : img);
-        updateBusiness(currentBusiness!.id, { generatedImages: updated });
+        setApprovalStatus(imgId, approved ? 'approved' : 'rejected');
+        // Also toggle the boolean flag for backward compatibility if needed, 
+        // but setApprovalStatus should handle DB sync.
+        // If the UI relies on 'approved' boolean, we might need to rely on re-render from context.
     };
 
     const handleGenerateAll = async () => {
@@ -145,10 +145,6 @@ export const ImageFactory: React.FC = () => {
             if (stopRef.current) break;
 
             if (!getImageForAngle(angle.id)) {
-                // generateSingleImage handles its own isProcessing, which might turn it off. 
-                // We need to ensure logic flow is correct.
-                // Refactor: make generateSingleImage NOT handle state, make a wrapper.
-                // Or just loop.
                 await generateSingleImage(angle.id);
             }
         }
@@ -165,15 +161,10 @@ export const ImageFactory: React.FC = () => {
         stopRef.current = false;
 
         try {
-            // Sequential to allow stopping? Or Parallel?
-            // Parallel is hard to stop mid-flight. Sequential is better for control.
-            // But existing code used Promise.all which is fast but unstoppable.
-            // Let's keep Promise.all but check stop before starting.
             if (stopRef.current) return;
 
             const promises = Array.from({ length: count }).map(async (_, index) => {
                 const variationIndex = index + 1;
-                // Add jitter to avoid exact duplicate calls if the API caches heavily
                 const variationPrompt = `VARIATION ${variationIndex}: Different camera angle and lighting. Maintain product identity.`;
 
                 const resultUrl = await generateImageService(
@@ -193,6 +184,7 @@ export const ImageFactory: React.FC = () => {
                     angleId: masterImage.angleId,
                     prompt: masterImage.prompt,
                     approved: false,
+                    approvalStatus: 'waiting',
                     isVariation: true,
                     type: 'variation',
                     parentId: masterId,
@@ -204,7 +196,11 @@ export const ImageFactory: React.FC = () => {
             });
 
             const newVariations = await Promise.all(promises);
-            updateBusiness(currentBusiness!.id, { generatedImages: [...images, ...newVariations] });
+            // newVariations.forEach(img => addGeneratedImage(img)); // Can't map async in state updates easily
+            // Better to loop and add
+            for (const img of newVariations) {
+                await addGeneratedImage(img);
+            }
 
         } catch (e: any) {
             console.error(e);
