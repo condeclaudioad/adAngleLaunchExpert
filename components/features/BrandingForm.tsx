@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 
 export const BrandingForm: React.FC = () => {
-  const { branding, setBranding, setStep, saveCurrentBusiness, currentBusiness } = useAdContext();
+  const { branding, setBranding, setStep, saveCurrentBusiness, currentBusiness, updateBusinessPartial } = useAdContext();
   const [bizName, setBizName] = useState(currentBusiness?.name || '');
   const [isSaving, setIsSaving] = useState(false);
 
@@ -64,6 +64,13 @@ export const BrandingForm: React.FC = () => {
     if (file) {
       // Resize before saving to State/DB to avoid massive payloads
       const resized = await resizeImage(file);
+      // Use updateBusinessPartial to persist upload immediately if business exists? 
+      // Actually user requested "Sync deletions", uploads usually require confirmation. 
+      // But for consistency let's stick to setBranding for uploads (unsaved changes) 
+      // unless user wants uploads to auto-save too. 
+      // The user specifically asked "cuando yo elimino algo... eliminarlo en BD".
+      // I will keep uploads as draft until "Save" but implement auto-delete.
+
       setBranding({ ...branding, [field]: resized });
     }
   };
@@ -105,7 +112,7 @@ export const BrandingForm: React.FC = () => {
               <Button
                 variant="destructive"
                 size="sm"
-                onClick={() => setBranding({ ...branding, [field]: null })}
+                onClick={() => updateBusinessPartial({ branding: { ...branding, [field]: null } })}
                 className="scale-90 group-hover/image:scale-100 transition-transform"
               >
                 <Trash2 size={16} className="mr-2" /> Eliminar
