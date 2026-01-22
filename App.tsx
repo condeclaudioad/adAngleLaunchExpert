@@ -1,4 +1,5 @@
 import React from 'react';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 import { AdProvider, useAdContext } from './store/AdContext';
 import { Layout } from './components/Layout';
 import { KnowledgeForm } from './components/features/KnowledgeForm';
@@ -50,6 +51,7 @@ const App: React.FC = () => {
   return (
     <AdProvider>
       <AppContent />
+      <SpeedInsights />
     </AdProvider>
   );
 };
