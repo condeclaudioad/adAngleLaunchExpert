@@ -185,9 +185,27 @@ export const ImageFactory: React.FC = () => {
         try {
             if (stopRef.current) return;
 
+            const variationAngles = [
+                "Camera Angle: Extreme Close-Up (Macro). Focus on details/texture. High contrast.",
+                "Camera Angle: Wide Shot (Contextual). Show the subject in full environment. Cinematic lighting.",
+                "Camera Angle: Low Angle (Hero Shot). Looking up at subject. Empowering perspective.",
+                "Camera Angle: Dutch Angle (Dynamic). Tilted horizon. Action-oriented energy.",
+                "Camera Angle: Top-Down (Flat Lay). Organized composition from above.",
+                "Camera Angle: " + (Math.random() > 0.5 ? "Side Profile (Silhouette)" : "Over the shoulder"),
+                "Camera Angle: Isometric View (3D tech style).",
+                "Camera Angle: Bokeh Depth of Field. Subject sharpness vs blurred background.",
+                "Camera Angle: Wide angle fisheye effect. Dynamic distortion."
+            ];
+
             const promises = Array.from({ length: count }).map(async (_, index) => {
                 const variationIndex = index + 1;
-                const variationPrompt = `VARIATION ${variationIndex}: Different camera angle and lighting. Maintain product identity.`;
+                // Use distinct prompt from array (modulo to wrap around) or fallback
+                const specificInstruction = variationAngles[index % variationAngles.length];
+
+                // Add randomness to prevent seed collision
+                const noise = `[Random Seed: ${Math.random().toString(36).substring(7)}]`;
+
+                const variationPrompt = `VARIATION REQUEST ${variationIndex}: Change composition style to: "${specificInstruction}".\nKeep the same branding and color palette, but RADICALLY change the perspective. ${noise}`;
 
                 const resultUrl = await generateImageService(
                     masterImage.prompt,
@@ -356,7 +374,7 @@ export const ImageFactory: React.FC = () => {
                                 <Wand2 size={48} className="text-text-muted opacity-20" />
                                 <p className="text-text-secondary text-lg">No hay ángulos seleccionados. Ve a la fase anterior.</p>
                                 <p className="text-[10px] font-mono text-text-muted">
-                                    (Debug: ContextAngles={angles.length}, ContextSelected={angles.filter(a=>a.selected).length}, LocalStorage={localStorage.getItem('le_selected_angles') ? 'yes' : 'no'})
+                                    (Debug: ContextAngles={angles.length}, ContextSelected={angles.filter(a => a.selected).length}, LocalStorage={localStorage.getItem('le_selected_angles') ? 'yes' : 'no'})
                                 </p>
                             </div>
                         ) : selectedAngles.map((angle, idx) => {
