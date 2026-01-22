@@ -36,10 +36,12 @@ export const AngleGenerator: React.FC = () => {
 
     setIsGenerating(true);
     try {
-      // Call Gemini Service
+      // Call Gemini Service with current context
+      // Use knowledgeBase from context (synced with currentBusiness)
+      // Use imageAnalysis from context (loaded from DB)
       const newAngles = await generateAngles(
-        currentBusiness?.knowledgeBase || knowledgeBase,
-        currentBusiness?.imageAnalysis || imageAnalysis,
+        knowledgeBase,
+        imageAnalysis,
         angles,
         apiKey
       );
