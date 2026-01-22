@@ -35,9 +35,10 @@ const fileToBase64 = (file: File): Promise<string> => {
 };
 
 export const KnowledgeForm: React.FC = () => {
-    const { currentBusiness, updateBusinessPartial: updateBusiness, setStep, googleApiKey: apiKey, knowledgeBase } = useAdContext();
+    const { currentBusiness, updateBusinessPartial, setStep, googleApiKey: apiKey, knowledgeBase } = useAdContext();
     const [isProcessing, setIsProcessing] = useState(false);
     const [files, setFiles] = useState<File[]>([]);
+    const [savedFileNames, setSavedFileNames] = useState<string[]>([]);
 
     // Initialize with whatever is available, but sync later
     const [analysis, setAnalysis] = useState<KnowledgeBase['structuredAnalysis']>(
@@ -50,10 +51,13 @@ export const KnowledgeForm: React.FC = () => {
         }
     );
 
-    // Hydrate form when context loads
+    // Hydrate form when context loads (including saved file names)
     React.useEffect(() => {
         if (knowledgeBase?.structuredAnalysis) {
             setAnalysis(knowledgeBase.structuredAnalysis);
+        }
+        if (knowledgeBase?.files && knowledgeBase.files.length > 0) {
+            setSavedFileNames(knowledgeBase.files);
         }
     }, [knowledgeBase]);
 
@@ -112,10 +116,13 @@ export const KnowledgeForm: React.FC = () => {
 
             // 4. Save to Business
             if (currentBusiness?.id) {
-                updateBusiness(currentBusiness.id, {
+                const fileNames = files.map(f => f.name);
+                setSavedFileNames(fileNames);
+                await updateBusinessPartial({
                     knowledgeBase: {
-                        generalContext: combinedText, // Save raw context too
-                        files: files.map(f => f.name),
+                        ...knowledgeBase,
+                        generalContext: combinedText,
+                        files: fileNames,
                         structuredAnalysis: result
                     }
                 });
@@ -142,9 +149,9 @@ export const KnowledgeForm: React.FC = () => {
 
         setIsSaving(true);
         try {
-            await updateBusiness(currentBusiness.id, {
+            await updateBusinessPartial({
                 knowledgeBase: {
-                    ...currentBusiness.knowledgeBase,
+                    ...knowledgeBase,
                     structuredAnalysis: analysis
                 }
             });
@@ -167,15 +174,17 @@ export const KnowledgeForm: React.FC = () => {
     const handleReset = () => {
         if (confirm('¿Estás seguro de borrar toda la base de conocimiento? Tendrás que subir los archivos de nuevo.')) {
             if (currentBusiness?.id) {
-                updateBusiness(currentBusiness.id, {
+                updateBusinessPartial({
                     knowledgeBase: {
                         generalContext: '',
+                        validatedAngles: '',
                         files: [],
                         structuredAnalysis: undefined
                     }
                 });
             }
             setFiles([]);
+            setSavedFileNames([]);
             setAnalysis({
                 productName: '',
                 avatar: '',
@@ -250,7 +259,33 @@ export const KnowledgeForm: React.FC = () => {
                         </div>
                     </Card>
 
-                    {/* File List */}
+                    {/* Saved Files from DB (when page reloads) */}
+                    {savedFileNames.length > 0 && files.length === 0 && (
+                        <div className="animate-fade-in space-y-3">
+                            <h4 className="text-sm font-semibold text-emerald-400 uppercase tracking-wider pl-1 flex items-center gap-2">
+                                <CheckCircle2 size={14} /> Archivos Procesados Anteriormente
+                            </h4>
+                            <div className="grid gap-3">
+                                {savedFileNames.map((fileName, idx) => (
+                                    <div key={idx} className="flex items-center gap-4 p-4 bg-bg-secondary border border-emerald-500/20 rounded-xl">
+                                        <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400">
+                                            <FileText size={20} />
+                                        </div>
+                                        <div className="flex-1 min-w-0 max-w-[200px] sm:max-w-xs">
+                                            <p className="font-medium text-white truncate">{fileName}</p>
+                                            <p className="text-xs text-emerald-400/70">Ya analizado</p>
+                                        </div>
+                                        <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                                    </div>
+                                ))}
+                            </div>
+                            <p className="text-xs text-text-muted pl-1">
+                                Puedes subir más archivos para agregar información adicional.
+                            </p>
+                        </div>
+                    )}
+
+                    {/* New File List */}
                     {files.length > 0 && (
                         <div className="animate-fade-in space-y-3">
                             <h4 className="text-sm font-semibold text-text-secondary uppercase tracking-wider pl-1">Archivos Listos para Análisis</h4>
