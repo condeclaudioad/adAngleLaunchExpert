@@ -32,7 +32,8 @@ export const ImageFactory: React.FC = () => {
         showNotification,
         generatedImages, // Global state
         addGeneratedImage,
-        setApprovalStatus
+        setApprovalStatus,
+        angles // Get angles from context to access selected state
     } = useAdContext();
 
     const [isProcessing, setIsProcessing] = useState(false);
@@ -47,11 +48,11 @@ export const ImageFactory: React.FC = () => {
     const [editImage, setEditImage] = useState<GeneratedImage | null>(null);
     const [editPrompt, setEditPrompt] = useState('');
 
-    // Filter images relevant to the current business angles
-    const selectedAngles = (currentBusiness?.generatedAngles && currentBusiness.generatedAngles.length > 0
-        ? currentBusiness.generatedAngles
-        : JSON.parse(localStorage.getItem('le_temp_angles') || '[]') as any[]
-    ).filter((a: any) => a.selected);
+    // Get selected angles from context, fallback to localStorage for page reloads
+    const contextSelected = angles.filter(a => a.selected);
+    const selectedAngles = contextSelected.length > 0
+        ? contextSelected
+        : JSON.parse(localStorage.getItem('le_selected_angles') || '[]');
 
     // Filter global images by matching angle IDs
     const images = generatedImages.filter(img => selectedAngles.some((a: any) => a.id === img.angleId));
