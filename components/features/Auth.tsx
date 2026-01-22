@@ -6,11 +6,14 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Badge } from '../ui/Badge';
 
+import { Modal } from '../ui/Modal';
+
 export const Login: React.FC = () => {
     const { login, register, setStep } = useAdContext();
     const [isLogin, setIsLogin] = useState(true);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [showSuccessModal, setShowSuccessModal] = useState(false); // New state
 
     // Form State
     const [email, setEmail] = useState('');
@@ -26,7 +29,8 @@ export const Login: React.FC = () => {
                 await login(email, password);
             } else {
                 await register(email, password, name);
-                alert("Cuenta creada con éxito. Por favor inicia sesión.");
+                // alert("Cuenta creada con éxito. Por favor inicia sesión."); <-- REMOVED
+                setShowSuccessModal(true); // Show modal instead
                 setIsLogin(true); // Switch to login after success
             }
         } catch (err: any) {
@@ -39,6 +43,32 @@ export const Login: React.FC = () => {
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-bg-primary p-4 relative overflow-hidden">
+            {/* Modal de Éxito al Registrarse */}
+            <Modal
+                isOpen={showSuccessModal}
+                onClose={() => setShowSuccessModal(false)}
+                title="¡Cuenta Creada con Éxito! 🚀"
+                footer={
+                    <Button variant="primary" onClick={() => setShowSuccessModal(false)}>
+                        Entendido, ir a iniciar sesión
+                    </Button>
+                }
+            >
+                <div className="space-y-4 text-center">
+                    <div className="w-16 h-16 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg className="w-8 h-8 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                    </div>
+                    <p className="text-lg text-white font-medium">
+                        Recibiste un Mail de confirmación.
+                    </p>
+                    <p className="text-sm text-text-secondary leading-relaxed">
+                        Por favor revisa tu bandeja de entrada (y spam) y abre el link del mail para activar tu cuenta y arrancar.
+                    </p>
+                </div>
+            </Modal>
+
             {/* Ambient Background - Premium Glow */}
             <div className="absolute inset-0 pointer-events-none overflow-hidden">
                 <div className="absolute top-[-20%] right-[-10%] w-[800px] h-[800px] bg-accent-primary/10 rounded-full blur-[120px] animate-pulse" />
