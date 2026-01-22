@@ -79,6 +79,7 @@ export const saveAngleToDb = async (angle: Angle) => {
         if (!user) return;
 
         // Only include columns that exist in the Supabase table
+        // Note: 'selected' and 'ad_copy' columns don't exist in DB - selection is managed in frontend state
         const { error } = await getSupabase()
             .from('generated_angles')
             .upsert({
@@ -88,8 +89,7 @@ export const saveAngleToDb = async (angle: Angle) => {
                 description: angle.description,
                 hook: angle.hook,
                 emotion: angle.emotion,
-                visuals: angle.visuals,
-                selected: angle.selected
+                visuals: angle.visuals
             }, { onConflict: 'id' });
 
         if (error) console.error('Error saving angle to DB:', error);
