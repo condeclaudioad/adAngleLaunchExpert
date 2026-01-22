@@ -437,7 +437,7 @@ export const AdProvider: React.FC<{ children: React.ReactNode }> = ({ children }
       createNewBusiness(); // Reset state
 
       const newBus: Business = {
-        id: `biz-${Date.now()}`,
+        id: crypto.randomUUID(),
         name: name,
         createdAt: Date.now(),
         knowledgeBase: defaultKB,
