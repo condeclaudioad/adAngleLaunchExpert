@@ -48,11 +48,28 @@ export const ImageFactory: React.FC = () => {
     const [editImage, setEditImage] = useState<GeneratedImage | null>(null);
     const [editPrompt, setEditPrompt] = useState('');
 
-    // Get selected angles from context, fallback to localStorage for page reloads
-    const contextSelected = angles.filter(a => a.selected);
-    const selectedAngles = contextSelected.length > 0
-        ? contextSelected
-        : JSON.parse(localStorage.getItem('le_selected_angles') || '[]');
+    // Get selected angles - try multiple sources
+    const getSelectedAngles = () => {
+        // 1. First try context (when navigating from AngleGenerator)
+        const fromContext = angles.filter(a => a.selected);
+        if (fromContext.length > 0) return fromContext;
+
+        // 2. Try localStorage (for page reloads)
+        try {
+            const stored = localStorage.getItem('le_selected_angles');
+            if (stored) {
+                const parsed = JSON.parse(stored);
+                if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+            }
+        } catch (e) {
+            console.error('Error reading selected angles from localStorage:', e);
+        }
+
+        // 3. If nothing selected, show all angles as available (not ideal but better UX)
+        return [];
+    };
+
+    const selectedAngles = getSelectedAngles();
 
     // Filter global images by matching angle IDs
     const images = generatedImages.filter(img => selectedAngles.some((a: any) => a.id === img.angleId));
@@ -339,7 +356,7 @@ export const ImageFactory: React.FC = () => {
                                 <Wand2 size={48} className="text-text-muted opacity-20" />
                                 <p className="text-text-secondary text-lg">No hay ángulos seleccionados. Ve a la fase anterior.</p>
                                 <p className="text-[10px] font-mono text-text-muted">
-                                    (Debug: Biz={currentBusiness?.id}, Total={currentBusiness?.generatedAngles?.length}, Selected={selectedAngles.length})
+                                    (Debug: ContextAngles={angles.length}, ContextSelected={angles.filter(a=>a.selected).length}, LocalStorage={localStorage.getItem('le_selected_angles') ? 'yes' : 'no'})
                                 </p>
                             </div>
                         ) : selectedAngles.map((angle, idx) => {
