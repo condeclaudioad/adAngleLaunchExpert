@@ -98,24 +98,26 @@ const defaultBranding: Branding = {
 
 const AdContext = createContext<AdContextType | undefined>(undefined);
 
-const safeLocalStorageSet = (key: string, value: any) => {
+const safeLocalStorageSet = (key: string, value: any, skipStringify = false) => {
   try {
-    const serialized = JSON.stringify(value);
+    const serialized = skipStringify ? String(value) : JSON.stringify(value);
     localStorage.setItem(key, serialized);
   } catch (e) {
     if (e instanceof DOMException && (e.name === 'QuotaExceededError' || e.code === 22)) {
       console.warn(`LocalStorage quota exceeded for ${key}. Performing aggressive cleanup...`);
       try {
-        // 1. Clear known large buffers
-        localStorage.removeItem('le_temp_angles');
-        localStorage.removeItem('le_history');
-        localStorage.removeItem('le_generated_images'); // Potentially huge
+        // Clear known large buffers that can be regenerated
+        const keysToClean = [
+          'le_temp_angles',
+          'le_history',
+          'le_generated_images',
+          'le_image_cache',
+          'le_analysis_cache'
+        ];
+        keysToClean.forEach(k => localStorage.removeItem(k));
 
-        // 2. Clear old business data if needed (keep only IDs)
-        // localStorage.removeItem('le_businesses'); 
-
-        // 3. Retry set
-        const serialized = JSON.stringify(value);
+        // Retry set after cleanup
+        const serialized = skipStringify ? String(value) : JSON.stringify(value);
         localStorage.setItem(key, serialized);
         console.log("Cleanup successful. Data saved.");
       } catch (retryError) {
@@ -147,7 +149,13 @@ const parseJwt = (token: string) => {
 
 export const AdProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [theme, setTheme] = useState<Theme>(() => {
-    try { return (localStorage.getItem('le_theme') as Theme) || 'dark'; } catch { return 'dark'; }
+    try {
+      const stored = localStorage.getItem('le_theme');
+      if (!stored) return 'dark';
+      // Handle legacy JSON-stringified value (e.g., '"dark"')
+      const cleaned = stored.replace(/^"|"$/g, '');
+      return (cleaned === 'light' || cleaned === 'dark') ? cleaned : 'dark';
+    } catch { return 'dark'; }
   });
 
   // Global Error State
@@ -391,7 +399,7 @@ export const AdProvider: React.FC<{ children: React.ReactNode }> = ({ children }
   useEffect(() => {
     const root = document.documentElement;
     theme === 'dark' ? root.classList.add('dark') : root.classList.remove('dark');
-    safeLocalStorageSet('le_theme', theme);
+    safeLocalStorageSet('le_theme', theme, true); // skipStringify for simple string
   }, [theme]);
 
   useEffect(() => {
