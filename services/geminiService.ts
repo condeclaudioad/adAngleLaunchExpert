@@ -202,17 +202,47 @@ export const analyzeImage = async (base64Image: string, mimeType: string, apiKey
 
         const genPromise = (async () => {
             const promptText = `
-            Analyze this high-performing ad image.
+            ROLE: Elite Visual Ad Analyst especializado en Infografías Publicitarias de Alto Impacto.
             
-            EXTRACT VISUAL PATTERNS:
-            1. angleDetected: What is the marketing mechanism? (e.g. "Us vs Them", "Founder Story", "Infographic").
-            2. visualElements: List specific 3-5 visual components (e.g. "Green checkmarks", "Phone mockup", "Split screen").
-            3. copy: Extract the headline/text exactly.
-            4. colors: Dominant hex codes.
-            5. emotions: 2-3 emotions evoked.
+            TASK: Convertí esta imagen publicitaria a una estructura JSON precisa describiendo todos sus componentes de marketing.
             
-            OUTPUT:
-            Return ONLY valid JSON. No markdown formatting.
+            TÉCNICA IMAGE-TO-JSON:
+            Analizá la imagen como si fuera un blueprint de diseño y extraé:
+            
+            1. angleDetected: ¿Cuál es el mecanismo visual principal?
+               - "Person Centered" (persona como hero central)
+               - "Split Screen Comparison" (comparación lado a lado)
+               - "Timeline/Roadmap" (pasos o proceso)
+               - "Cards/Grid" (cards flotantes con beneficios)
+               - "Before/After" (transformación visual)
+               - "Infographic Data" (estadísticas visuales)
+            
+            2. visualElements: Lista ESPECÍFICA de 5-8 elementos visuales:
+               - Elementos de información (timeline, cards, badges, checkmarks)
+               - Elementos de diseño (gradientes, glassmorphism, glow effects)
+               - Elementos de branding (logo, escudos, certificaciones)
+               - Elementos de prueba social (estrellas, números, testimonios)
+            
+            3. copy: Extraé el texto EXACTO del headline principal (ortografía perfecta).
+            
+            4. colors: Códigos HEX de los 3-5 colores dominantes.
+            
+            5. composition: Descripción de la composición:
+               - Posición de la persona (centro, izquierda, derecha, fondo)
+               - Posición de elementos informativos (abajo, overlay, lados)
+               - Tipo de fondo (gradiente oscuro, foto blur, sólido)
+               - Estilo de iluminación (studio, cinematográfico, natural)
+            
+            6. emotions: 2-3 emociones que evoca (urgencia, confianza, FOMO, autoridad, aspiración).
+            
+            7. infographicStyle: Estilo específico de los elementos infográficos:
+               - "3D Rendered Cards" (cards con perspectiva 3D)
+               - "Flat Minimal Icons"
+               - "Glassmorphism UI"
+               - "Neon Glow Effects"
+               - "Metallic Badges"
+            
+            OUTPUT: JSON válido con todos los campos.
             `;
 
             const response = await generateSafeContent(key, MODEL_ANALYSIS, MODEL_TEXT_BACKUP, {
@@ -325,55 +355,92 @@ export const generateAngles = async (
     }
 
     const prompt = `
-    ROLE: Elite Market Researcher & Direct Response Strategist (Specialized in Digital Products).
-    
-    PRODUCT CONTEXT:
+    CONTEXTO DEL PRODUCTO/SERVICIO:
     "${rawContextSnippet}..."
     
     ${visualInstructions}
     
     ${historyInstruction}
 
-    TASK: Perform a deep "Simulated Market Research" to find the most profitable, untapped marketing angles for this product.
+    ═══════════════════════════════════════════════════════════
+    PROCESO DE GENERACIÓN DE ÁNGULOS DE VENTA
+    ═══════════════════════════════════════════════════════════
+
+    FASE 1: INVESTIGACIÓN SIMULADA (Procesamiento Interno)
+    Actuá como si hubieras pasado 100 horas analizando:
+    - Reseñas de 1★ de la competencia (para encontrar dolores)
+    - Reseñas de 5★ (para encontrar "Momentos Ah-Ha")
+    - Hilos de Reddit, comentarios de TikTok y foros del nicho
     
-    PHASE 1: RESEARCH SIMULATION (Internal Processing)
-    Act as if you are browsing G2, Capterra, Reddit (specific subreddits), TikTok comments, and niche communities.
-    1. Identify "Ah-ha" moments: specific realizations users have when the product clicks.
-    2. Find bottlenecks/frustrations with current alternatives (e.g., "manual work", "expensive tools", "overwhelming courses").
-    3. Detect "Unexpected Use Cases": Is the product being used for something nimble?
-    4. look for "Comparison gaps": What is this product replacing? (e.g. "Better than hiring an agency").
+    Identificá internamente:
+    • 10 dolores actuales del día a día del avatar
+    • 10 deseos/transformaciones que buscan
+    • 10 objeciones típicas antes de comprar
+    • 5 creencias erróneas ("cree que X pero en realidad Y")
+    • 5 métricas que el negocio puede mejorar (%, horas, $, conversión)
 
-    PHASE 2: ANGLE GENERATION
-    Based on the research, generate 4-6 HIGH-CONVERTING AD ANGLES.
-    Each angle must be distinct (e.g., one about ROI, one about Ease of Use, one about "The Mechanism", one "Us vs Them").
+    FASE 2: GENERACIÓN DE ÁNGULOS
+    Con esa base, generá 8-12 ángulos NUEVOS y DISTINTOS distribuidos en las 5 familias:
+    
+    🔴 PROBLEMA/DOLOR (2-3 ángulos)
+    - Frustraciones del día a día
+    - "Estoy harto de..."
+    
+    🟢 DESEO/TRANSFORMACIÓN (2-3 ángulos)
+    - El futuro ideal post-compra
+    - "Imaginate poder..."
+    
+    🔵 AUTORIDAD/PRUEBA (1-2 ángulos)
+    - Credibilidad, resultados, números
+    - "X clientes ya lograron..."
+    
+    🟡 CONEXIÓN/IDENTIDAD (1-2 ángulos)
+    - Hacer que se sientan comprendidos
+    - "Si sos de los que..."
+    
+    🟣 HISTORIA/NARRATIVA (1-2 ángulos)
+    - Historias con arco emocional
+    - "Hace 2 años yo estaba..."
 
-    OUTPUT FORMAT (STRICT JSON ARRAY):
-    Return a JSON ARRAY where:
-    - "name": The Angle Name (e.g., "The 'Lazy' Way", "The Agency Killer").
-    - "description": The EVIDENCE/LOGIC. Why this angle works. Summarize the "simulated research" findings here.
-    - "hook": A punchy, scroll-stopping headline (Direct Response style). Max 10 words.
-    - "emotion": The primary emotion.
-    - "visuals": Detailed visual description for the image generator (Infographic style: "Split screen...", "Roadmap...").
-    - "adCopy": The "Primary Text" (Caption) for the ad. MUST follow this structure:
-       1. THE LEAD (2 lines, curiosity hook).
-       2. THE BRIDGE (Contextualize problem).
-       3. BULLETS (3-4 Benefits with emojis).
-       4. SOCIAL PROOF (1 line).
-       5. CTA.
-       CRITICAL: DO NOT repeat the "hook" text in the copy. If image is "HOW", copy sells "WHY".
+    ═══════════════════════════════════════════════════════════
+    FORMATO DE SALIDA (JSON ARRAY ESTRICTO)
+    ═══════════════════════════════════════════════════════════
+    
+    Cada objeto debe tener:
+    - "family": Una de ["Problema", "Deseo", "Autoridad", "Conexión", "Historia"]
+    - "name": Nombre corto del ángulo (máx 6 palabras, ej: "El Matador de Agencias")
+    - "description": El INSIGHT central + por qué funciona este ángulo (2-3 oraciones)
+    - "hook": Hook scroll-stopper para Reel (máx 10 palabras, punzante)
+    - "emotion": Emoción primaria (Miedo, Codicia, Urgencia, Curiosidad, Orgullo, Frustración)
+    - "visuals": Descripción visual EN INGLÉS para generar infografía (composición, elementos, estilo)
+    - "adCopy": Primary Text del ad con estructura: 
+       1. LEAD (2 líneas, curiosidad)
+       2. BRIDGE (contexto del problema)
+       3. BULLETS (3-4 beneficios con emojis)
+       4. SOCIAL PROOF (1 línea)
+       5. CTA
+       CRÍTICO: NO repetir el hook en el copy.
+    - "beliefBreak": "El prospecto cree que... pero en realidad..." (1 oración)
+    - "whatsappClose": Argumento de cierre por WhatsApp (máx 2 líneas directas)
+    - "intensity": Puntuación 1-10 de qué tan fuerte es para vender YA
 
-    Example:
+    EJEMPLO:
     [
       {
-        "name": "The 'Agency Killer' Angle",
-        "description": "Users complain agencies are expensive. This positions tool as cheaper alternative.",
-        "hook": "Despide a tu agencia hoy",
-        "emotion": "Empowerment",
-        "visuals": "Split screen. Left: Invoice ($2000). Right: Tool ($49).",
-        "adCopy": "Tu agencia te está cobrando por aire 💨\\n\\n¿Por qué pagar $2k/mes cuando puedes hacerlo tú mismo en 5 min?\\n\\n✅ Ahorra $24,000 al año\\n✅ Sin contratos forzosos\\n✅ Calidad Pro\\n\\n👉 Úsalo gratis aquí."
+        "family": "Problema",
+        "name": "El Matador de Agencias",
+        "description": "Los usuarios se quejan de que las agencias cobran $2000/mes por trabajo que pueden hacer solos. Este ángulo capitaliza esa frustración.",
+        "hook": "Tu agencia te está robando",
+        "emotion": "Frustración",
+        "visuals": "Split screen. Left side: Red-tinted invoice showing $2000/month with angry emoji. Right side: Green-tinted app interface showing $49/month with happy checkmark. Professional lighting, infographic style.",
+        "adCopy": "¿Cuánto te cobra tu agencia por mes? 💸\\n\\nSi la respuesta es más de $500, seguí leyendo...\\n\\n✅ Hacelo vos mismo en 5 minutos\\n✅ Ahorrá +$20,000 al año\\n✅ Sin contratos de por vida\\n✅ Calidad profesional garantizada\\n\\n+2,400 negocios ya hicieron el cambio.\\n\\n👉 Probalo gratis hoy.",
+        "beliefBreak": "El prospecto cree que necesita una agencia para verse profesional, pero en realidad las herramientas actuales lo hacen mejor y más barato.",
+        "whatsappClose": "Mirá, si seguís pagando $2000/mes a tu agencia, en un año son $24,000. Con esto lo hacés vos en 5 min. ¿Te muestro cómo?",
+        "intensity": 9
       }
     ]
   `;
+
 
     return withRetry(async () => {
         // 2 minutes max
@@ -392,14 +459,18 @@ export const generateAngles = async (
                         items: {
                             type: Type.OBJECT,
                             properties: {
+                                family: { type: Type.STRING },
                                 name: { type: Type.STRING },
                                 description: { type: Type.STRING },
                                 hook: { type: Type.STRING },
                                 emotion: { type: Type.STRING },
                                 visuals: { type: Type.STRING },
                                 adCopy: { type: Type.STRING },
+                                beliefBreak: { type: Type.STRING },
+                                whatsappClose: { type: Type.STRING },
+                                intensity: { type: Type.NUMBER },
                             },
-                            required: ["name", "description", "hook", "emotion", "visuals", "adCopy"]
+                            required: ["family", "name", "description", "hook", "emotion", "visuals", "adCopy", "beliefBreak", "whatsappClose", "intensity"]
                         }
                     }
                 }

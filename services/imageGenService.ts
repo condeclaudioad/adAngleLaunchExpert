@@ -222,61 +222,120 @@ const buildMasterPrompt = (
 ): string => {
     const primaryColor = branding.colors.primary;
     const secondaryColor = branding.colors.secondary;
-    const productName = kb.structuredAnalysis?.productName || "Product";
+    const productName = kb.structuredAnalysis?.productName || "Producto Digital";
 
-    const cleanHook = hook.replace(/"/g, '').replace(/\.$/, '').toUpperCase().substring(0, 30); // Shorter hook
+    // Limpiar hook para renderizado perfecto
+    const cleanHook = hook.replace(/"/g, '').replace(/\.$/, '').toUpperCase().substring(0, 50);
 
     let brandingInstructions = "";
     let refIndex = 1;
 
     if (branding.personalPhoto && branding.includeFace) {
-        brandingInstructions += `\n- REFERENCE IMAGE ${refIndex}: This is the EXPERT/FACE of the brand. Generate the main character to look exactly like this person (Face ID Preservation).`;
+        brandingInstructions += `\n- REFERENCE IMAGE ${refIndex}: Esta es la CARA del experto/fundador. La persona principal de la imagen debe verse EXACTAMENTE como esta referencia. Preservá la identidad facial al 100%.`;
         refIndex++;
     }
 
     if (branding.logo) {
-        brandingInstructions += `\n- REFERENCE IMAGE ${refIndex}: This is the LOGO. Place it subtly in a top corner or on the product packaging.`;
+        brandingInstructions += `\n- REFERENCE IMAGE ${refIndex}: Este es el LOGO de la marca. Ubicalo sutilmente en la esquina superior izquierda. Estilo: Escudo/Shield con diseño premium.`;
         refIndex++;
     }
 
     if (branding.productMockup) {
-        brandingInstructions += `\n- REFERENCE IMAGE ${refIndex}: This is the OFFICIAL PRODUCT PACKAGING. Render the product looking EXACTLY like this reference.`;
+        brandingInstructions += `\n- REFERENCE IMAGE ${refIndex}: Este es el MOCKUP del producto. Si aparece un producto en la imagen, debe verse EXACTAMENTE así.`;
         refIndex++;
     }
 
     return `
-ROLE: World-Class Information Designer & Ad Creative Expert (Specialized in Viral Infographics).
-TASK: Create a "Perfect Infographic Ad" for "${productName}".
+ROLE: Eres un Prompt Engineer especializado en generación de INFOGRAFÍAS PUBLICITARIAS de alta conversión.
 
-${variationInstruction ? `VARIATION INSTRUCTION: ${variationInstruction}` : ''}
+TASK: Crear una infografía publicitaria viral para "${productName}".
 
-## 1. CORE AESTHETIC: "SCROLL-STOPPING INFOGRAPHIC"
-- **Style**: High-End 3D Render mixed with clean UI/UX Information Design.
-- **Goal**: Communicate value INSTANTLY (under 1 second).
-- **Background**: Deep, rich gradient or clean studio backdrop. High contrast with the foreground.
-- **Lighting**: Cinematic studio lighting. "Glossy" finish on 3D elements.
-- **Visual Types**:
-  - *If prompt mentions "Roadmap/Steps"*: Show a clear 1-2-3 progression with glowing path.
-  - *If prompt mentions "Comparison"*: Use a split screen (Red/X vs Green/Check).
-  - *If prompt mentions "System"*: Show a central "core" with orbiting elements or a flow.
-  
-## 2. TEXT RULES (ZERO TOLERANCE FOR ERRORS):
-- **HEADLINE**: "${cleanHook}"
-- **RENDER THIS TEXT EXACTLY**. No typos. No extra words.
-- **Typography**: MASSIVE, BOLD, SANS-SERIF. White text on dark background (or vice versa).
-- **Readability**: Maximum contrast. Text must be legible on a small mobile screen.
-- **Hierarchy**: The Headline is the Hero. Everything else supports it.
+═══════════════════════════════════════════════════════════
+STYLE REFERENCE: INFOGRAFÍAS DE ALTO IMPACTO (ESTILO EXACTO)
+═══════════════════════════════════════════════════════════
 
-## 3. VISUAL CONCEPT (EXECUTE THIS PRECISELY):
+${variationInstruction ? `⚡ VARIACIÓN SOLICITADA: ${variationInstruction}\n` : ''}
+
+## 1. COMPOSICIÓN CENTRAL (HERO SHOT)
+- **Persona real** como elemento central de la imagen
+- La persona mira directamente a cámara con expresión **confiada/seria/profesional**
+- Posición: Centro de la imagen, ocupando 40-60% del frame
+- Pose: Brazos cruzados sobre mesa, o pose de "experto pensando"
+- **FONDO**: Gradiente oscuro azul-morado (#1a1a2e → #16213e) + setup de oficina/monitors difuminado
+- **ILUMINACIÓN**: Luz de estudio profesional, contraste cinematográfico, rim light suave
+
+## 2. HEADLINE HERO (TEXTO EXACTO - CERO ERRORES)
+
+RENDERIZAR ESTE TEXTO EXACTAMENTE: "${cleanHook}"
+
+REGLAS DE TIPOGRAFÍA:
+- Fuente: Sans-serif MASIVA (estilo Inter Black, Outfit Extra Bold)
+- Color: Blanco puro (#FFFFFF) 
+- Tamaño: ENORME, ocupando 30-40% del ancho
+- Posición: Centro-superior, envolviendo a la persona
+- Drop shadow sutil para máximo contraste
+- Tildes correctas (á, é, í, ó, ú)
+- NO inventar texto adicional
+- NO errores ortográficos
+
+## 3. ELEMENTOS INFOGRÁFICOS (según el concepto)
+
+${angleVisuals.toLowerCase().includes('paso') || angleVisuals.toLowerCase().includes('step') || angleVisuals.toLowerCase().includes('roadmap') ? `
+🔹 TIPO: TIMELINE / ROADMAP
+- Timeline horizontal en la parte inferior
+- 4-7 pasos con conectores de línea gradiente (azul → cyan)
+- Cada paso: Círculo con checkmark ✓ + texto corto (Día 1, Día 3, etc.)
+- Último paso: Ícono de IA/cerebro brillante como "meta final"
+- Checkmarks con glow verde/cyan
+- Estilo: Glassmorphism con blur sutil
+` : ''}
+
+${angleVisuals.toLowerCase().includes('compar') || angleVisuals.toLowerCase().includes('vs') || angleVisuals.toLowerCase().includes('versus') ? `
+🔹 TIPO: COMPARACIÓN / CARDS
+- 3 cards flotantes en perspectiva 3D (ligeramente inclinadas)
+- Card IZQUIERDA: Roja con ❌ (Lo malo/El problema)
+- Card CENTRO: Amarilla con ❓ (La duda/Lo común)
+- Card DERECHA: Verde brillante con ✅ (La solución)
+- Cada card: Texto corto de 2-3 palabras + ícono
+- Efecto: Hover/floating con sombra suave
+- Borde con glow del color respectivo
+` : ''}
+
+${angleVisuals.toLowerCase().includes('kit') || angleVisuals.toLowerCase().includes('herramienta') || angleVisuals.toLowerCase().includes('tool') ? `
+🔹 TIPO: KIT / HERRAMIENTAS
+- 4 cards en fila horizontal
+- Cada card: Ícono holográfico/neon + Nombre corto
+- Ejemplos: "Plantillas", "Workflows", "Checklist", "Ruta"
+- Estilo: Cards con borde verde/cyan brillante
+- Efecto 3D con perspectiva ligera
+` : ''}
+
+## 4. BADGES DE CREDIBILIDAD
+- **Posición**: Esquinas inferiores (izq y der)
+- **Estilo**: Metálico/plateado con borde sutil
+- **Ejemplos**:
+  - "ANTI-HUMO CERTIFICADO" (escudo + check)
+  - "STACK NO-CODE" (badge hexagonal)
+  - "RESULTADOS COMPROBADOS" (estrella)
+  - "GARANTIZADO" (sello)
+
+## 5. BRANDING INTELLIGENCE
+${brandingInstructions || '- No se proporcionaron assets de branding. Usar diseño genérico premium.'}
+
+## 6. ESPECIFICACIONES TÉCNICAS
+- **Aspect Ratio**: ${aspectRatio}
+- **Resolución**: 8K render quality
+- **Engine Style**: Unreal Engine 5 / Octane quality
+- **Efectos**: Glassmorphism, bloom suave, depth of field sutil
+- **Safe Zones**: Dejar márgenes arriba/abajo para social media
+- **Colores primarios**: ${primaryColor} / ${secondaryColor}
+
+## 7. CONCEPTO VISUAL DEL ÁNGULO
 ${angleVisuals}
 
-## 4. BRANDING INTELLIGENCE:
-${brandingInstructions}
-
-## 5. TECHNICAL SPECS:
-- Aspect Ratio: ${aspectRatio}
-- Composition: Center-heavy for social media safe zones (leave top/bottom margins).
-- Detail: 8k resolution, Unreal Engine 5 render style, "Glassmorphism" accents.
+═══════════════════════════════════════════════════════════
+OUTPUT: Una infografía publicitaria fotorrealista, de calidad profesional, lista para usar como ad en Meta/TikTok.
+═══════════════════════════════════════════════════════════
 `;
 };
 

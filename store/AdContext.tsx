@@ -649,12 +649,14 @@ export const AdProvider: React.FC<{ children: React.ReactNode }> = ({ children }
 
   const clearAngles = async () => {
     try {
-      setAngles([]);
+      // IMPORTANTE: Primero eliminar de Supabase, LUEGO limpiar estado local
+      // Esto evita race conditions donde los ángulos reaparecen
       await deleteAllAnglesFromDb();
+      setAngles([]); // Solo limpiar DESPUÉS de confirmar DB
       showNotification('success', 'Todos los ángulos han sido eliminados.', 'Limpieza Completa');
     } catch (e) {
       reportError(e);
-      showNotification('error', 'Error al eliminar ángulos.', 'Error');
+      showNotification('error', 'Error al eliminar ángulos de la base de datos.', 'Error');
     }
   };
 
