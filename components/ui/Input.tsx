@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useId } from 'react';
 
 // --- INPUT ---
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
@@ -16,14 +16,19 @@ export const Input: React.FC<InputProps> = ({
   helperText,
   className = '',
   fullWidth = true,
+  id: providedId,
+  name,
   ...props
 }) => {
+  const generatedId = useId();
+  const inputId = providedId || generatedId;
+  const inputName = name || inputId;
   const wrapperClass = fullWidth ? 'w-full' : 'inline-block';
 
   return (
     <div className={`${wrapperClass} flex flex-col gap-1.5`}>
       {label && (
-        <label className="text-xs font-medium text-text-secondary ml-1">
+        <label htmlFor={inputId} className="text-xs font-medium text-text-secondary ml-1">
           {label}
         </label>
       )}
@@ -36,6 +41,8 @@ export const Input: React.FC<InputProps> = ({
         )}
 
         <input
+          id={inputId}
+          name={inputName}
           className={`
             w-full !bg-black border border-white/10 rounded-xl px-4 py-2.5
             text-text-primary placeholder:text-text-muted/50
@@ -72,17 +79,25 @@ export const TextArea: React.FC<TextAreaProps> = ({
   helperText,
   className = '',
   rows = 4,
+  id: providedId,
+  name,
   ...props
 }) => {
+  const generatedId = useId();
+  const textareaId = providedId || generatedId;
+  const textareaName = name || textareaId;
+
   return (
     <div className="w-full flex flex-col gap-1.5">
       {label && (
-        <label className="text-xs font-medium text-text-secondary ml-1">
+        <label htmlFor={textareaId} className="text-xs font-medium text-text-secondary ml-1">
           {label}
         </label>
       )}
 
       <textarea
+        id={textareaId}
+        name={textareaName}
         rows={rows}
         className={`
           w-full !bg-black border border-white/10 rounded-xl px-4 py-3
@@ -118,18 +133,26 @@ export const Select: React.FC<SelectProps> = ({
   error,
   options,
   className = '',
+  id: providedId,
+  name,
   ...props
 }) => {
+  const generatedId = useId();
+  const selectId = providedId || generatedId;
+  const selectName = name || selectId;
+
   return (
     <div className="w-full flex flex-col gap-1.5">
       {label && (
-        <label className="text-xs font-medium text-text-secondary ml-1">
+        <label htmlFor={selectId} className="text-xs font-medium text-text-secondary ml-1">
           {label}
         </label>
       )}
 
       <div className="relative">
         <select
+          id={selectId}
+          name={selectName}
           className={`
             w-full bg-bg-tertiary border border-border-default rounded-xl px-4 py-2.5
             text-text-primary appearance-none cursor-pointer
