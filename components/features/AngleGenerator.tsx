@@ -36,10 +36,12 @@ export const AngleGenerator: React.FC = () => {
 
     setIsGenerating(true);
     try {
-      // Call Gemini Service
+      // Call Gemini Service with current context
+      // Use knowledgeBase from context (synced with currentBusiness)
+      // Use imageAnalysis from context (loaded from DB)
       const newAngles = await generateAngles(
-        currentBusiness?.knowledgeBase || knowledgeBase,
-        currentBusiness?.imageAnalysis || imageAnalysis,
+        knowledgeBase,
+        imageAnalysis,
         angles,
         apiKey
       );
@@ -110,7 +112,7 @@ export const AngleGenerator: React.FC = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto space-y-10 animate-fade-in pb-24">
+    <div className="max-w-7xl mx-auto space-y-10 animate-fade-in pb-32 md:pb-24">
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-end gap-6 border-b border-white/5 pb-8">
         <div>
@@ -140,19 +142,19 @@ export const AngleGenerator: React.FC = () => {
       {/* Content */}
       {angles.length > 0 ? (
         <>
-          <div className="flex items-center justify-between pb-2">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-4">
             <div className="flex items-center gap-3">
               <div className="text-sm font-medium text-text-secondary bg-white/5 px-3 py-1.5 rounded-lg border border-white/5">
                 <span className="text-white font-bold text-base mr-1">{angles.filter(a => a.selected).length}</span> seleccionados
               </div>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Button variant="ghost" size="sm" onClick={() => setShowDeleteAllModal(true)} className="text-red-400 hover:bg-red-500/10 hover:text-red-300">
-                <Trash2 size={16} className="mr-2" /> Eliminar Todos
+                <Trash2 size={16} className="mr-1 sm:mr-2" /> <span className="hidden sm:inline">Eliminar</span> Todos
               </Button>
-              <div className="w-px h-6 bg-white/10 my-auto" />
+              <div className="w-px h-6 bg-white/10 my-auto hidden sm:block" />
               <Button variant="ghost" size="sm" onClick={toggleAll} className="text-text-muted hover:text-white">
-                {angles.every(a => a.selected) ? 'Deseleccionar Todos' : 'Seleccionar Todos'}
+                {angles.every(a => a.selected) ? 'Deseleccionar' : 'Seleccionar'} <span className="hidden sm:inline">Todos</span>
               </Button>
             </div>
           </div>
@@ -235,17 +237,18 @@ export const AngleGenerator: React.FC = () => {
             ))}
           </div>
 
-          <div className="flex justify-end pt-8 pb-10 border-t border-white/5 sticky bottom-0 bg-gradient-to-t from-bg-primary via-bg-primary to-transparent z-20 pointer-events-none">
-            <div className="pointer-events-auto">
+          {/* Fixed bottom action bar */}
+          <div className="fixed bottom-0 left-0 right-0 md:relative md:bottom-auto p-4 md:p-0 md:pt-8 md:pb-10 border-t border-white/10 md:border-white/5 bg-bg-primary/95 md:bg-gradient-to-t md:from-bg-primary md:via-bg-primary md:to-transparent backdrop-blur-lg md:backdrop-blur-none z-30 md:z-20">
+            <div className="max-w-7xl mx-auto flex justify-end">
               <Button
                 onClick={handleNext}
                 disabled={!angles.some(a => a.selected) || isSaving}
                 loading={isSaving}
                 size="lg"
                 className={`
-                                    shadow-glow-emerald transition-all duration-300
-                                    ${!angles.some(a => a.selected) ? 'opacity-50 grayscale' : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:scale-105'}
-                                `}
+                  w-full md:w-auto shadow-glow-emerald transition-all duration-300
+                  ${!angles.some(a => a.selected) ? 'opacity-50 grayscale' : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:scale-105'}
+                `}
               >
                 Ir a Fábrica Creativa <ArrowRight size={18} className="ml-2" />
               </Button>

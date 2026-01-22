@@ -651,12 +651,6 @@ export const AdProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     try {
       setAngles([]);
       await deleteAllAnglesFromDb();
-
-      // Clear legacy business JSON data (zombie prevention)
-      // Using updateBusinessPartial ensures local state AND DB are synced
-      if (currentBusiness) {
-        await updateBusinessPartial({ generatedAngles: [] } as any);
-      }
       showNotification('success', 'Todos los ángulos han sido eliminados.', 'Limpieza Completa');
     } catch (e) {
       reportError(e);
