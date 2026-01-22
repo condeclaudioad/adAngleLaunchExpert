@@ -216,13 +216,42 @@ const buildMasterPrompt = (
     hook: string,
     angleVisuals: string,
     branding: Branding,
-    kb: KnowledgeBase,
+    knowledgeBase: KnowledgeBase,
+    imageAnalysis: ImageAnalysis[], // NEW PARAM
     aspectRatio: string = "3:4",
     variationInstruction: string = ""
 ): string => {
     const primaryColor = branding.colors.primary;
     const secondaryColor = branding.colors.secondary;
-    const productName = kb.structuredAnalysis?.productName || "Producto Digital";
+    const productName = knowledgeBase.structuredAnalysis?.productName || "Producto Digital";
+
+    // Prepare Winning Patterns from Analysis
+    let winningPatternsInstruction = "";
+    if (imageAnalysis && imageAnalysis.length > 0) {
+        // Take the top 3 analyses to find common winning themes
+        const topPatterns = imageAnalysis.slice(0, 3).map((analysis, i) => `
+        --- WINNING REFERENCE ${i + 1} ---
+        • Composition: ${analysis.composition}
+        • Key Elements: ${analysis.visualElements.join(', ')}
+        • Color Palette: ${analysis.colors.join(', ')}
+        • Atmosphere: ${analysis.emotions.join(', ')}
+        `).join('\n');
+
+        winningPatternsInstruction = `
+        ═══════════════════════════════════════════════════════════
+        🏆 CRITICAL: REPLICATE WINNING VISUAL DNA
+        The user has provided validated high-performing ads. YOU MUST ADAPT THEIR STYLE.
+        
+        Analyzed Winning Patterns:
+        ${topPatterns}
+
+        INSTRUCTION:
+        - Harmonize the requested angle with these winning vibes.
+        - If the angle asks for a specific layout (e.g. split screen), use it, BUT infuse it with the "Atmosphere" and "Color Palette" from the winning references above.
+        - The goal is to make it look like part of the same successful campaign family.
+        ═══════════════════════════════════════════════════════════
+        `;
+    }
 
     // Limpiar hook para renderizado perfecto
     const cleanHook = hook.replace(/"/g, '').replace(/\.$/, '').toUpperCase().substring(0, 50);
@@ -246,6 +275,8 @@ const buildMasterPrompt = (
     }
 
     return `
+${winningPatternsInstruction}
+
 ROLE: Eres un Prompt Engineer especializado en generación de INFOGRAFÍAS PUBLICITARIAS de alta conversión.
 
 TASK: Crear una infografía publicitaria viral para "${productName}".
@@ -381,6 +412,7 @@ export const generateImageService = async (
         angleVisuals,
         branding,
         knowledgeBase,
+        imageAnalysis,
         aspectRatio,
         variationType
     );
