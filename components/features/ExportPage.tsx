@@ -59,15 +59,23 @@ export const ExportPage: React.FC = () => {
                 for (let i = 0; i < approvedImages.length; i++) {
                     const img = approvedImages[i];
                     try {
-                        const response = await fetch(img.url);
-                        const blob = await response.blob();
                         const angleName = angles.find(a => a.id === img.angleId)?.name || 'Variation';
                         const safeName = angleName.replace(/[^a-z0-9]/gi, '_').substring(0, 20);
-                        // Using a more unique name to prevent overwrites
                         const name = `Creative_${safeName}_${img.id.slice(-4)}.png`;
-                        imgFolder.file(name, blob);
+
+                        if (img.url.startsWith('data:')) {
+                            // Handle Base64 Data URI directly (More reliable/fast)
+                            const base64Data = img.url.split(',')[1];
+                            imgFolder.file(name, base64Data, { base64: true });
+                        } else {
+                            // Handle Remote URLs (Supabase/External)
+                            const response = await fetch(img.url);
+                            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                            const blob = await response.blob();
+                            imgFolder.file(name, blob);
+                        }
                     } catch (err) {
-                        console.error("Failed to fetch image", img.url, err);
+                        console.error("Failed to add image to ZIP:", img.id, err);
                     }
                 }
             }
