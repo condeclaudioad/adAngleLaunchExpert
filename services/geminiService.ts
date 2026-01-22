@@ -380,27 +380,29 @@ export const generateAngles = async (
     • 5 métricas que el negocio puede mejorar (%, horas, $, conversión)
 
     FASE 2: GENERACIÓN DE ÁNGULOS
-    Con esa base, generá 8-12 ángulos NUEVOS y DISTINTOS distribuidos en las 5 familias:
+    Con esa base, generá MÍNIMO 10 ángulos (idealmente 12-15) NUEVOS y DISTINTOS distribuidos en las 5 familias:
     
-    🔴 PROBLEMA/DOLOR (2-3 ángulos)
+    🔴 PROBLEMA/DOLOR (3-4 ángulos OBLIGATORIOS)
     - Frustraciones del día a día
     - "Estoy harto de..."
     
-    🟢 DESEO/TRANSFORMACIÓN (2-3 ángulos)
+    🟢 DESEO/TRANSFORMACIÓN (3-4 ángulos OBLIGATORIOS)
     - El futuro ideal post-compra
     - "Imaginate poder..."
     
-    🔵 AUTORIDAD/PRUEBA (1-2 ángulos)
+    🔵 AUTORIDAD/PRUEBA (2-3 ángulos)
     - Credibilidad, resultados, números
     - "X clientes ya lograron..."
     
-    🟡 CONEXIÓN/IDENTIDAD (1-2 ángulos)
+    🟡 CONEXIÓN/IDENTIDAD (2 ángulos)
     - Hacer que se sientan comprendidos
     - "Si sos de los que..."
     
-    🟣 HISTORIA/NARRATIVA (1-2 ángulos)
+    🟣 HISTORIA/NARRATIVA (2 ángulos)
     - Historias con arco emocional
     - "Hace 2 años yo estaba..."
+
+    ⚠️ IMPORTANTE: GENERAR MÍNIMO 10 ÁNGULOS. Si generas menos de 10, FALLASTE.
 
     ═══════════════════════════════════════════════════════════
     FORMATO DE SALIDA (JSON ARRAY ESTRICTO)
@@ -490,10 +492,11 @@ export const generateAngles = async (
                 selected: true
             }));
 
-            // Save NEW angles to DB
-            newAngles.forEach((angle: Angle) => {
-                saveAngleToDb(angle).catch(e => console.error("Background save angle failed", e));
-            });
+            console.log(`✅ Generados ${newAngles.length} ángulos nuevos`);
+
+            // NOTA: El guardado en DB se hace desde el contexto (AdContext.tsx)
+            // cuando el usuario navega a la siguiente pantalla, evitando errores RLS
+            // durante la generación inicial.
 
             return newAngles;
         })();

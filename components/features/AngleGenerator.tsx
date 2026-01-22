@@ -81,6 +81,18 @@ export const AngleGenerator: React.FC = () => {
       // Save selected angles to localStorage for persistence across page reloads
       const selectedAngles = angles.filter(a => a.selected);
       localStorage.setItem('le_selected_angles', JSON.stringify(selectedAngles));
+
+      // También guardar todos los ángulos en Supabase (fire and forget)
+      // Esto se hace aquí para evitar errores RLS durante la generación
+      for (const angle of angles) {
+        try {
+          const { saveAngleToDb } = await import('../../services/dbService');
+          await saveAngleToDb(angle);
+        } catch (dbError) {
+          console.warn('Error guardando ángulo en DB (no crítico):', dbError);
+          // No bloquear la navegación por errores de DB
+        }
+      }
     } catch (error) {
       console.error("Save failed", error);
     } finally {
