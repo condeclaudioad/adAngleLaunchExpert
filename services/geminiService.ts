@@ -43,7 +43,7 @@ const safeJSONParse = <T>(text: string, fallback: T | null = null): T => {
         return JSON.parse(cleaned) as T;
     } catch (e) {
         console.warn("JSON Parse Warning:", e);
-        console.log("Failed Text:", text);
+        // console.log("Failed Text:", text);
         if (fallback !== null) return fallback;
         throw new Error("La IA no generó un formato válido. Intenta de nuevo.");
     }
@@ -492,7 +492,7 @@ export const generateAngles = async (
                 selected: true
             }));
 
-            console.log(`✅ Generados ${newAngles.length} ángulos nuevos`);
+            // console.log(`✅ Generados ${newAngles.length} ángulos nuevos`);
 
             // NOTA: El guardado en DB se hace desde el contexto (AdContext.tsx)
             // cuando el usuario navega a la siguiente pantalla, evitando errores RLS

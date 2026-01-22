@@ -128,18 +128,18 @@ const generateWithGemini = async (
     // Validate aspect ratio
     const validRatios = ["1:1", "3:4", "4:3", "9:16", "16:9"];
     const finalRatio = validRatios.includes(aspectRatio) ? aspectRatio : "3:4";
-    console.log(`🎨 Generating Image (${finalRatio}) - Prompt length: ${prompt.length}`);
+    // console.log(`🎨 Generating Image (${finalRatio}) - Prompt length: ${prompt.length}`);
 
     // Try Primary Model (NanoBanana Pro)
     try {
-        console.log(`🚀 Attempting Primary Model: ${MODEL_IMAGE_GEMINI}`);
+        // console.log(`🚀 Attempting Primary Model: ${MODEL_IMAGE_GEMINI}`);
         return await generateContentWithModel(MODEL_IMAGE_GEMINI, prompt, apiKey, finalRatio, referenceImages);
     } catch (primaryError: any) {
         console.warn(`⚠️ Primary Model Failed (${primaryError.message}). Switching to Backup...`);
 
         // Try Backup Model (Gemini 2.0 Flash)
         try {
-            console.log(`🛡️ Attempting Backup Model: ${MODEL_IMAGE_BACKUP}`);
+            // console.log(`🛡️ Attempting Backup Model: ${MODEL_IMAGE_BACKUP}`);
             return await generateContentWithModel(MODEL_IMAGE_BACKUP, prompt, apiKey, finalRatio, referenceImages);
         } catch (backupError: any) {
             // If all models fail, return fallback instead of throwing
@@ -402,6 +402,6 @@ export const generateImageService = async (
     );
 
     // PROCEED TO GENERATION
-    console.log(`🎨 Requesting generation with Gemini (Variation: ${!!variationType})`);
+    // console.log(`🎨 Requesting generation with Gemini (Variation: ${!!variationType})`);
     return await generateWithGemini(finalPrompt, keys.google, aspectRatio, references);
 };
