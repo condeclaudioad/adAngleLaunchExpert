@@ -12,6 +12,7 @@ export interface KnowledgeBase {
   generalContext: string;
   structuredAnalysis?: StructuredContext;
   validatedAngles: string;
+  files?: string[]; // Nombres de archivos cargados
 }
 
 export interface Branding {

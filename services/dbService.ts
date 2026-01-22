@@ -10,7 +10,8 @@ export const saveAnalysisToDb = async (analysis: ImageAnalysis) => {
 
         const { error } = await getSupabase()
             .from('visual_analyses')
-            .insert({
+            .upsert({
+                id: analysis.id, // Include ID for proper sync with frontend
                 user_id: user.id,
                 angle_detected: analysis.angleDetected,
                 visual_elements: analysis.visualElements,
@@ -18,7 +19,7 @@ export const saveAnalysisToDb = async (analysis: ImageAnalysis) => {
                 colors: analysis.colors,
                 composition: analysis.composition,
                 emotions: analysis.emotions
-            });
+            }, { onConflict: 'id' });
 
         if (error) console.error('Error saving analysis to DB:', error);
     } catch (e) {
@@ -34,6 +35,7 @@ export const getVisualAnalyses = async (): Promise<ImageAnalysis[]> => {
         const { data, error } = await getSupabase()
             .from('visual_analyses')
             .select('*')
+            .eq('user_id', user.id)
             .order('created_at', { ascending: false });
 
         if (error) {
@@ -104,6 +106,7 @@ export const getExistingAngles = async (): Promise<Angle[]> => {
         const { data, error } = await getSupabase()
             .from('generated_angles')
             .select('*')
+            .eq('user_id', user.id)
             .order('created_at', { ascending: false })
             .limit(100);
 
@@ -211,6 +214,7 @@ export const getBusinessesFromDb = async (): Promise<Business[]> => {
         const { data, error } = await getSupabase()
             .from('businesses')
             .select('*')
+            .eq('user_id', user.id)
             .order('created_at', { ascending: false });
 
         if (error) {
@@ -280,6 +284,7 @@ export const getImagesFromDb = async (): Promise<GeneratedImage[]> => {
         const { data, error } = await getSupabase()
             .from('generated_images')
             .select('*')
+            .eq('user_id', user.id)
             .order('created_at', { ascending: false });
 
         if (error) {

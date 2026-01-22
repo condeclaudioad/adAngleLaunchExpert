@@ -257,7 +257,14 @@ export const analyzeImage = async (base64Image: string, mimeType: string, apiKey
             };
             // @ts-ignore
             const text = typeof response.text === 'function' ? response.text() : response.text;
-            return safeJSONParse(text || "{}", fallback);
+            const parsed = safeJSONParse(text || "{}", fallback);
+
+            // Ensure ID and timestamp are always present
+            return {
+                ...parsed,
+                id: parsed.id || `analysis-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                timestamp: parsed.timestamp || Date.now()
+            };
         })();
 
         const result = await Promise.race([genPromise, timeoutPromise]);
