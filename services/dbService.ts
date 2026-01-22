@@ -133,10 +133,14 @@ export const getExistingAngles = async (): Promise<Angle[]> => {
 
 export const deleteAngleFromDb = async (id: string) => {
     try {
+        const user = await getCurrentUser();
+        if (!user) return;
+
         const { error } = await getSupabase()
             .from('generated_angles')
             .delete()
-            .match({ id });
+            .eq('id', id)
+            .eq('user_id', user.id); // Required for RLS policy
         if (error) console.error('Error deleting angle:', error);
     } catch (e) {
         console.error('Exception deleting angle:', e);

@@ -78,8 +78,9 @@ export const AngleGenerator: React.FC = () => {
   const handleNext = async () => {
     setIsSaving(true);
     try {
-      // No need to save to local storage or business jsonb anymore.
-      // We trust the DB 'selected' flags.
+      // Save selected angles to localStorage for persistence across page reloads
+      const selectedAngles = angles.filter(a => a.selected);
+      localStorage.setItem('le_selected_angles', JSON.stringify(selectedAngles));
     } catch (error) {
       console.error("Save failed", error);
     } finally {
