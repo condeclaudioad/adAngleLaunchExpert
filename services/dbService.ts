@@ -78,18 +78,18 @@ export const saveAngleToDb = async (angle: Angle) => {
         const user = await getCurrentUser();
         if (!user) return;
 
+        // Only include columns that exist in the Supabase table
         const { error } = await getSupabase()
             .from('generated_angles')
             .upsert({
-                id: angle.id, // Ensure we upsert by ID
+                id: angle.id,
                 user_id: user.id,
                 name: angle.name,
                 description: angle.description,
                 hook: angle.hook,
                 emotion: angle.emotion,
                 visuals: angle.visuals,
-                ad_copy: angle.adCopy, // New field
-                selected: angle.selected // New field
+                selected: angle.selected
             }, { onConflict: 'id' });
 
         if (error) console.error('Error saving angle to DB:', error);
@@ -122,7 +122,6 @@ export const getExistingAngles = async (): Promise<Angle[]> => {
             hook: d.hook,
             emotion: d.emotion || "",
             visuals: d.visuals || "",
-            adCopy: d.ad_copy || "",
             selected: d.selected || false
         }));
     } catch (e) {
@@ -167,8 +166,7 @@ export const updateBusinessInDb = async (id: string, updates: Partial<Business>)
         if (updates.knowledgeBase !== undefined) payload.knowledge_base = updates.knowledgeBase;
         if (updates.branding !== undefined) payload.branding = updates.branding;
 
-        // Allow updating generated_angles (e.g. to clear legacy data)
-        if (updates.generatedAngles !== undefined) payload.generated_angles = updates.generatedAngles;
+        // Note: generated_angles column doesn't exist in Supabase - angles are stored in separate table
 
         if (Object.keys(payload).length === 0) return;
 
