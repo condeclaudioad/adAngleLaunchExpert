@@ -4,7 +4,7 @@ import { KnowledgeBase, ImageAnalysis, Angle, GeneratedImage, AppStep, ApprovalS
 import {
   saveImageToDb, getImagesFromDb, deleteImageFromDb,
   saveBusinessToDb, getBusinessesFromDb, deleteBusinessFromDb,
-  getVisualAnalyses, getExistingAngles, saveAngleToDb,
+  getVisualAnalyses, getExistingAngles, saveAngleToDb, saveAnalysisToDb,
   deleteAnalysisFromDb, deleteAngleFromDb, deleteAllAnglesFromDb, updateBusinessInDb
 } from '../services/dbService';
 import { onAuthStateChange, checkIsVip, signOut, signInWithEmail, signUpWithEmail } from '../services/supabaseClient';
@@ -54,6 +54,8 @@ interface AdContextType {
   imageAnalysis: ImageAnalysis[];
   addImageAnalysis: (analysis: ImageAnalysis) => void;
   deleteVisualAnalysis: (id: string) => void;
+  clearAllVisualAnalyses: () => Promise<void>;
+  syncToDatabase: () => Promise<void>;
 
   angles: Angle[];
   setAngles: (angles: Angle[]) => void;
@@ -561,9 +563,48 @@ export const AdProvider: React.FC<{ children: React.ReactNode }> = ({ children }
   };
 
   const addImageAnalysis = (analysis: ImageAnalysis) => setImageAnalysis(prev => [...prev, analysis]);
+
   const deleteVisualAnalysis = async (id: string) => {
-    setImageAnalysis(prev => prev.filter(p => p.id !== id));
-    await deleteAnalysisFromDb(id);
+    try {
+      // Primero eliminar de DB, luego actualizar estado local
+      await deleteAnalysisFromDb(id);
+      setImageAnalysis(prev => prev.filter(p => p.id !== id));
+    } catch (e) {
+      console.error('Error deleting visual analysis:', e);
+    }
+  };
+
+  const clearAllVisualAnalyses = async () => {
+    try {
+      const { deleteAllAnalysesFromDb } = await import('../services/dbService');
+      await deleteAllAnalysesFromDb();
+      setImageAnalysis([]);
+      showNotification('success', 'Todos los análisis visuales han sido eliminados.', 'Limpieza Completa');
+    } catch (e) {
+      reportError(e);
+      showNotification('error', 'Error al eliminar análisis visuales.', 'Error');
+    }
+  };
+
+  const syncToDatabase = async () => {
+    try {
+      showNotification('info', 'Sincronizando con la base de datos...', 'Sincronización');
+
+      // Sincronizar ángulos
+      for (const angle of angles) {
+        await saveAngleToDb(angle);
+      }
+
+      // Sincronizar análisis visuales
+      for (const analysis of imageAnalysis) {
+        await saveAnalysisToDb(analysis);
+      }
+
+      showNotification('success', 'Datos sincronizados correctamente.', 'Sincronización Completa');
+    } catch (e) {
+      reportError(e);
+      showNotification('error', 'Error al sincronizar con la base de datos.', 'Error');
+    }
   };
 
   const addGeneratedImage = async (img: GeneratedImage) => {
@@ -680,7 +721,7 @@ export const AdProvider: React.FC<{ children: React.ReactNode }> = ({ children }
       businesses, currentBusiness, createNewBusiness, startNewBusiness, saveCurrentBusiness, updateBusinessPartial, selectBusiness, deleteBusiness,
       knowledgeBase, setKnowledgeBase,
       branding, setBranding,
-      imageAnalysis, addImageAnalysis, deleteVisualAnalysis,
+      imageAnalysis, addImageAnalysis, deleteVisualAnalysis, clearAllVisualAnalyses, syncToDatabase,
       angles, setAngles, deleteAngle, toggleAngleSelection, clearAngles,
       generatedImages, addGeneratedImage, updateImageStatus, updateImageType,
       setApprovalStatus, updateImageFeedback, deleteImage,

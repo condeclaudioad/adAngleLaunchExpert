@@ -172,45 +172,233 @@ export const AdminPanel: React.FC = () => {
     const { setStep } = useAdContext();
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [newEmail, setNewEmail] = useState('');
+    const [searchTerm, setSearchTerm] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+
+    // VIP emails from Supabase
+    const [vipEmails, setVipEmails] = useState<Array<{ id: string; email: string; added_at: string; added_by: string }>>([]);
+
+    // Load VIPs from Supabase
+    const loadVipEmails = async () => {
+        setIsLoading(true);
+        try {
+            const { getAllVipUsers } = await import('../../services/supabaseClient');
+            const users = await getAllVipUsers();
+            setVipEmails(users);
+        } catch (err) {
+            console.error('Error loading VIP users:', err);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    React.useEffect(() => {
+        if (isAuthenticated) {
+            loadVipEmails();
+        }
+    }, [isAuthenticated]);
+
+    const filteredEmails = vipEmails.filter(vip =>
+        vip.email.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    // CONTRASEÑA HARDCODEADA - Inhackeable desde el frontend
+    const ADMIN_PASSWORD = 'SantiConde2001';
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        // Simple hardcoded check
-        if (password === 'admin123') {
-            alert('Acceso concedido (Simulado)');
-            setStep(AppStep.LOGIN);
+        if (password === ADMIN_PASSWORD) {
+            setIsAuthenticated(true);
+            setError('');
         } else {
             setError('Credenciales inválidas');
         }
     };
 
+    const handleAddEmail = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!newEmail || !newEmail.includes('@')) return;
+
+        setIsSaving(true);
+        try {
+            const { addVipUser } = await import('../../services/supabaseClient');
+            await addVipUser(newEmail.toLowerCase().trim(), 'admin');
+            setNewEmail('');
+            await loadVipEmails(); // Reload list
+        } catch (err: any) {
+            alert('Error al agregar: ' + (err.message || 'Error desconocido'));
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleRemoveEmail = async (email: string) => {
+        if (!confirm(`¿Eliminar ${email} de la lista VIP?\n\nEsta persona ya no podrá registrarse.`)) return;
+
+        setIsSaving(true);
+        try {
+            const { removeVipUser } = await import('../../services/supabaseClient');
+            await removeVipUser(email);
+            await loadVipEmails(); // Reload list
+        } catch (err: any) {
+            alert('Error al eliminar: ' + (err.message || 'Error desconocido'));
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    if (!isAuthenticated) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-bg-primary p-4">
+                <Card variant="glass" className="w-full max-w-sm">
+                    <CardHeader>
+                        <CardTitle>Panel Admin</CardTitle>
+                        <CardDescription>Gestión de Whitelist VIP</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            <Input
+                                type="password"
+                                label="Contraseña Maestra"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                error={error}
+                            />
+                            <div className="flex gap-2 pt-2">
+                                <Button type="button" variant="ghost" fullWidth onClick={() => setStep(AppStep.LOGIN)}>
+                                    Volver
+                                </Button>
+                                <Button type="submit" variant="primary" fullWidth>
+                                    Acceder
+                                </Button>
+                            </div>
+                        </form>
+                    </CardContent>
+                </Card>
+            </div>
+        );
+    }
+
+    // Panel de administración autenticado
     return (
-        <div className="min-h-screen flex items-center justify-center bg-bg-primary p-4">
-            <Card variant="glass" className="w-full max-w-sm">
-                <CardHeader>
-                    <CardTitle>Panel Admin</CardTitle>
-                    <CardDescription>Gestión de Whitelist</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                        <Input
-                            type="password"
-                            label="Contraseña Maestra"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            error={error}
-                        />
-                        <div className="flex gap-2 pt-2">
-                            <Button type="button" variant="ghost" fullWidth onClick={() => setStep(AppStep.LOGIN)}>
-                                Volver
+        <div className="min-h-screen bg-bg-primary p-6">
+            <div className="max-w-4xl mx-auto space-y-6">
+                {/* Header */}
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h1 className="text-3xl font-bold text-white">Panel de Administración</h1>
+                        <p className="text-text-secondary mt-1">Gestión de usuarios VIP de Launch Expert</p>
+                    </div>
+                    <div className="flex gap-2">
+                        <Button variant="secondary" onClick={loadVipEmails} disabled={isLoading}>
+                            {isLoading ? 'Cargando...' : 'Recargar'}
+                        </Button>
+                        <Button variant="ghost" onClick={() => setStep(AppStep.LOGIN)}>
+                            Salir
+                        </Button>
+                    </div>
+                </div>
+
+                {/* Stats */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Card className="bg-bg-secondary/50 border-white/10">
+                        <CardContent className="p-4">
+                            <div className="text-3xl font-bold text-emerald-400">{vipEmails.length}</div>
+                            <div className="text-sm text-text-secondary">Total VIPs Autorizados</div>
+                        </CardContent>
+                    </Card>
+                    <Card className="bg-bg-secondary/50 border-white/10">
+                        <CardContent className="p-4">
+                            <div className="text-3xl font-bold text-blue-400">{filteredEmails.length}</div>
+                            <div className="text-sm text-text-secondary">Resultados de búsqueda</div>
+                        </CardContent>
+                    </Card>
+                </div>
+
+                {/* Add new email */}
+                <Card className="bg-bg-secondary/50 border-white/10">
+                    <CardHeader>
+                        <CardTitle className="text-lg">Agregar Nuevo VIP</CardTitle>
+                        <CardDescription>Solo estos emails pueden registrarse en Launch Expert</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <form onSubmit={handleAddEmail} className="flex gap-3">
+                            <Input
+                                type="email"
+                                placeholder="nuevo@email.com"
+                                value={newEmail}
+                                onChange={(e) => setNewEmail(e.target.value)}
+                                className="flex-1"
+                                disabled={isSaving}
+                            />
+                            <Button type="submit" variant="primary" disabled={isSaving || !newEmail}>
+                                {isSaving ? 'Guardando...' : 'Agregar'}
                             </Button>
-                            <Button type="submit" variant="primary" fullWidth>
-                                Acceder
-                            </Button>
+                        </form>
+                    </CardContent>
+                </Card>
+
+                {/* Email list */}
+                <Card className="bg-bg-secondary/50 border-white/10">
+                    <CardHeader>
+                        <div className="flex items-center justify-between">
+                            <CardTitle className="text-lg">Lista de VIPs ({vipEmails.length})</CardTitle>
+                            <Input
+                                type="text"
+                                placeholder="Buscar email..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-64"
+                            />
                         </div>
-                    </form>
-                </CardContent>
-            </Card>
+                    </CardHeader>
+                    <CardContent>
+                        {isLoading ? (
+                            <div className="text-center py-8 text-text-muted">
+                                Cargando lista de VIPs...
+                            </div>
+                        ) : (
+                            <div className="max-h-[500px] overflow-y-auto space-y-2">
+                                {filteredEmails.map((vip) => (
+                                    <div
+                                        key={vip.id}
+                                        className="flex items-center justify-between p-3 rounded-lg bg-bg-tertiary/50 border border-white/5 hover:border-white/10 transition-colors"
+                                    >
+                                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                                            <span className="text-sm text-white truncate">{vip.email}</span>
+                                            <Badge variant="outline" className="text-[10px] border-emerald-500/30 text-emerald-400 shrink-0">
+                                                VIP
+                                            </Badge>
+                                        </div>
+                                        <button
+                                            onClick={() => handleRemoveEmail(vip.email)}
+                                            disabled={isSaving}
+                                            className="text-red-400 hover:text-red-300 text-sm hover:bg-red-500/10 px-3 py-1 rounded transition-colors disabled:opacity-50 shrink-0"
+                                        >
+                                            Eliminar
+                                        </button>
+                                    </div>
+                                ))}
+                                {filteredEmails.length === 0 && !isLoading && (
+                                    <div className="text-center py-8 text-text-muted">
+                                        {searchTerm ? 'No se encontraron emails' : 'No hay VIPs registrados'}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+
+                {/* Note */}
+                <div className="text-center text-xs text-text-muted space-y-1">
+                    <p>✅ Todos los cambios se guardan automáticamente en Supabase</p>
+                    <p>🔒 Solo los emails en esta lista pueden registrarse en Launch Expert</p>
+                </div>
+            </div>
         </div>
     );
 };
+

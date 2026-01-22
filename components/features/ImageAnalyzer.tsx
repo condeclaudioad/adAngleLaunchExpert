@@ -19,11 +19,13 @@ import {
 } from 'lucide-react';
 
 export const ImageAnalyzer: React.FC = () => {
-  const { addImageAnalysis, imageAnalysis, setStep, deleteVisualAnalysis, googleApiKey: apiKey } = useAdContext();
+  const { addImageAnalysis, imageAnalysis, setStep, deleteVisualAnalysis, clearAllVisualAnalyses, googleApiKey: apiKey } = useAdContext();
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [processedCount, setProcessedCount] = useState(0);
   const [totalToProcess, setTotalToProcess] = useState(0);
   const [analysisToDelete, setAnalysisToDelete] = useState<string | null>(null);
+  const [showDeleteAllModal, setShowDeleteAllModal] = useState(false);
+  const [isDeletingAll, setIsDeletingAll] = useState(false);
 
   const readFileAsBase64 = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -181,13 +183,24 @@ export const ImageAnalyzer: React.FC = () => {
         </div>
         <div className="flex gap-3">
           {imageAnalysis.length > 0 && (
-            <Button
-              onClick={() => setStep(AppStep.ANGLES)}
-              disabled={isAnalyzing}
-              className="h-12 px-6 shadow-glow-blue bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-medium border-0"
-            >
-              Generar Mis Ángulos <ArrowRight size={18} className="ml-2" />
-            </Button>
+            <>
+              <Button
+                variant="outline"
+                onClick={() => setShowDeleteAllModal(true)}
+                disabled={isAnalyzing || isDeletingAll}
+                className="h-12 px-4 border-red-500/30 text-red-400 hover:bg-red-500/10"
+              >
+                <Trash2 size={16} className="mr-2" />
+                Eliminar Todos
+              </Button>
+              <Button
+                onClick={() => setStep(AppStep.ANGLES)}
+                disabled={isAnalyzing}
+                className="h-12 px-6 shadow-glow-blue bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-medium border-0"
+              >
+                Generar Mis Ángulos <ArrowRight size={18} className="ml-2" />
+              </Button>
+            </>
           )}
         </div>
       </div>
@@ -303,6 +316,41 @@ export const ImageAnalyzer: React.FC = () => {
       >
         <p className="text-sm text-text-secondary">
           Esta acción eliminará permanentemente este análisis visual y no se podrá recuperar.
+          <br /><br />
+          ¿Estás seguro de continuar?
+        </p>
+      </Modal>
+
+      {/* Modal para eliminar TODOS los análisis */}
+      <Modal
+        isOpen={showDeleteAllModal}
+        onClose={() => setShowDeleteAllModal(false)}
+        title="¿Eliminar TODOS los análisis?"
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setShowDeleteAllModal(false)}>
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={isDeletingAll}
+              onClick={async () => {
+                setIsDeletingAll(true);
+                try {
+                  await clearAllVisualAnalyses();
+                  setShowDeleteAllModal(false);
+                } finally {
+                  setIsDeletingAll(false);
+                }
+              }}
+            >
+              {isDeletingAll ? 'Eliminando...' : 'Eliminar Todos'}
+            </Button>
+          </>
+        }
+      >
+        <p className="text-sm text-text-secondary">
+          Esta acción eliminará <strong>TODOS</strong> los análisis visuales ({imageAnalysis.length} en total) y no se podrán recuperar.
           <br /><br />
           ¿Estás seguro de continuar?
         </p>

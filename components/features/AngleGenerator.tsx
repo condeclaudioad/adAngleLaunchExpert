@@ -13,17 +13,20 @@ import {
   Target,
   Lightbulb,
   Palette,
-  Trash2
+  Trash2,
+  Save,
+  Loader2
 } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 
 export const AngleGenerator: React.FC = () => {
   /* Destructure needed data from context */
-  const { currentBusiness, setStep, googleApiKey: apiKey, knowledgeBase, imageAnalysis, angles, setAngles, toggleAngleSelection, deleteAngle, clearAngles } = useAdContext();
+  const { currentBusiness, setStep, googleApiKey: apiKey, knowledgeBase, imageAnalysis, angles, setAngles, toggleAngleSelection, deleteAngle, clearAngles, syncToDatabase } = useAdContext();
   const [isGenerating, setIsGenerating] = useState(false);
   const [angleToDelete, setAngleToDelete] = useState<string | null>(null);
   const [showDeleteAllModal, setShowDeleteAllModal] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   // ... (keeping existing functions)
 
@@ -164,6 +167,23 @@ export const AngleGenerator: React.FC = () => {
             <div className="flex flex-wrap gap-2">
               <Button variant="ghost" size="sm" onClick={() => setShowDeleteAllModal(true)} className="text-red-400 hover:bg-red-500/10 hover:text-red-300">
                 <Trash2 size={16} className="mr-1 sm:mr-2" /> <span className="hidden sm:inline">Eliminar</span> Todos
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={async () => {
+                  setIsSyncing(true);
+                  try {
+                    await syncToDatabase();
+                  } finally {
+                    setIsSyncing(false);
+                  }
+                }}
+                disabled={isSyncing}
+                className="text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300"
+              >
+                {isSyncing ? <Loader2 size={16} className="mr-1 sm:mr-2 animate-spin" /> : <Save size={16} className="mr-1 sm:mr-2" />}
+                <span className="hidden sm:inline">Guardar</span>
               </Button>
               <div className="w-px h-6 bg-white/10 my-auto hidden sm:block" />
               <Button variant="ghost" size="sm" onClick={toggleAll} className="text-text-muted hover:text-white">

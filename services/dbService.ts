@@ -61,13 +61,32 @@ export const getVisualAnalyses = async (): Promise<ImageAnalysis[]> => {
 
 export const deleteAnalysisFromDb = async (id: string) => {
     try {
+        const user = await getCurrentUser();
+        if (!user) return;
+
         const { error } = await getSupabase()
             .from('visual_analyses')
             .delete()
-            .match({ id });
+            .eq('id', id)
+            .eq('user_id', user.id); // Agregar user_id para RLS
         if (error) console.error('Error deleting analysis:', error);
     } catch (e) {
         console.error('Exception deleting analysis:', e);
+    }
+};
+
+export const deleteAllAnalysesFromDb = async () => {
+    try {
+        const user = await getCurrentUser();
+        if (!user) return;
+
+        const { error } = await getSupabase()
+            .from('visual_analyses')
+            .delete()
+            .eq('user_id', user.id);
+        if (error) console.error('Error deleting all analyses:', error);
+    } catch (e) {
+        console.error('Exception deleting all analyses:', e);
     }
 };
 
