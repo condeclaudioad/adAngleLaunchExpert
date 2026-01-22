@@ -111,7 +111,7 @@ export const ImageFactory: React.FC = () => {
 
             if (resultUrl) {
                 const newImage: GeneratedImage = {
-                    id: Date.now().toString(),
+                    id: crypto.randomUUID(),
                     url: resultUrl,
                     angleId: angle.id,
                     prompt: prompt,
@@ -183,7 +183,7 @@ export const ImageFactory: React.FC = () => {
                 );
 
                 const newImage: GeneratedImage = {
-                    id: Date.now().toString() + Math.random().toString().slice(2, 6),
+                    id: crypto.randomUUID(),
                     url: resultUrl,
                     angleId: masterImage.angleId,
                     prompt: masterImage.prompt,
@@ -225,7 +225,7 @@ export const ImageFactory: React.FC = () => {
             );
 
             const newImage: GeneratedImage = {
-                id: Date.now().toString(),
+                id: crypto.randomUUID(),
                 url: resultUrl,
                 angleId: editImage.angleId,
                 prompt: editImage.prompt + " | Edit: " + editPrompt,

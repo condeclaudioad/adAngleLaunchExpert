@@ -244,7 +244,7 @@ export const analyzeImage = async (base64Image: string, mimeType: string, apiKey
 
             // Fallback for image analysis
             const fallback: ImageAnalysis = {
-                id: `analysis-${Date.now()}`,
+                id: crypto.randomUUID(),
                 imageId: 'unknown',
                 role: 'inspiration',
                 angleDetected: "Desconocido",
@@ -262,7 +262,7 @@ export const analyzeImage = async (base64Image: string, mimeType: string, apiKey
             // Ensure ID and timestamp are always present
             return {
                 ...parsed,
-                id: parsed.id || `analysis-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                id: parsed.id || crypto.randomUUID(),
                 timestamp: parsed.timestamp || Date.now()
             };
         })();
@@ -413,9 +413,9 @@ export const generateAngles = async (
 
             if (!parsed) return []; // Handle null fallback
 
-            const newAngles = parsed.map((a: any, index: number) => ({
+            const newAngles = parsed.map((a: any) => ({
                 ...a,
-                id: `angle-${Date.now()}-${index}`, // temporary ID until saved? Or just keep this.
+                id: crypto.randomUUID(), // Generate valid UUID for Supabase
                 selected: true
             }));
 
