@@ -254,87 +254,71 @@ TASK: Crear una infografía publicitaria viral para "${productName}".
 STYLE REFERENCE: INFOGRAFÍAS DE ALTO IMPACTO (ESTILO EXACTO)
 ═══════════════════════════════════════════════════════════
 
+
 ${variationInstruction ? `⚡ VARIACIÓN SOLICITADA: ${variationInstruction}\n` : ''}
 
-## 1. COMPOSICIÓN CENTRAL (HERO SHOT)
-- **Persona real** como elemento central de la imagen
-- La persona mira directamente a cámara con expresión **confiada/seria/profesional**
-- Posición: Centro de la imagen, ocupando 40-60% del frame
-- Pose: Brazos cruzados sobre mesa, o pose de "experto pensando"
-- **FONDO**: Gradiente oscuro azul-morado (#1a1a2e → #16213e) + setup de oficina/monitors difuminado
-- **ILUMINACIÓN**: Luz de estudio profesional, contraste cinematográfico, rim light suave
+## 1. ESTILO Y DIRECCIÓN CREATIVA (VITAL)
+"Al final son creativos, tiene que tener una gran creatividad."
 
-## 2. HEADLINE HERO (TEXTO EXACTO - CERO ERRORES)
+🚨 **NO USAR SIEMPRE EL MISMO DISEÑO.** ROMPER PATRONES.
+El objetivo es detener el scroll (Scroll-Stopping).
+
+**CARACTERÍSTICAS DINÁMICAS (VARÍA ESTOS ELEMENTOS):**
+- **Composición**: NO pongas siempre a la persona en el centro. Probá: Regla de tercios, Ángulo holandés, Primerísimos primeros planos, o Perspectiva desde abajo (Hero).
+- **Fondo**: NO usar siempre gradientes oscuros. Probá: Entornos 3D abstractos, Texturas de papel, Oficina moderna luminosa, Paisajes urbanos neon, o Minimalismo sólido.
+- **Iluminación**: Variar entre: Luz de estudio suave, Contraste alto (dramático), Neón cyberpunk, o Luz natural cálida (Golden hour).
+
+## 2. COMPOSICIÓN (SI HAY PERSONA)
+${branding.personalPhoto ? `
+- **Persona real** interactuando con los elementos (señalando, sosteniendo, reaccionando).
+- EVITAR la pose estática de "brazos cruzados" si es posible. Buscar dinamismo.
+- Integración natural con el fondo (Depth of Field).
+` : '- Usar silueta profesional o Avatar 3D estilizado si el ángulo lo requiere, o enfocar en TIPOGRAFÍA 3D masiva.'}
+
+## 3. HEADLINE HERO (TEXTO EXACTO - CERO ERRORES)
 
 RENDERIZAR ESTE TEXTO EXACTAMENTE: "${cleanHook}"
 
 REGLAS DE TIPOGRAFÍA:
-- Fuente: Sans-serif MASIVA (estilo Inter Black, Outfit Extra Bold)
-- Color: Blanco puro (#FFFFFF) 
-- Tamaño: ENORME, ocupando 30-40% del ancho
-- Posición: Centro-superior, envolviendo a la persona
-- Drop shadow sutil para máximo contraste
+- Fuente: Sans-serif MASIVA (Inter Black, Impact, o similar)
+- Color: Alto contraste (Blanco, Amarillo Neón, o Cyan según fondo)
+- Tamaño: GRANDE, ocupando espacio visual importante (30-50% del frame)
+- Posición: Integrada con la imagen (detrás de la persona, flotando en 3D, o envolvente)
+- Efectos permitidos: Sombra 3D, Glow, Textura metálica, o Sticker style.
 - Tildes correctas (á, é, í, ó, ú)
-- NO inventar texto adicional
 - NO errores ortográficos
 
-## 3. ELEMENTOS INFOGRÁFICOS (según el concepto)
+## 4. ELEMENTOS INFOGRÁFICOS (SEGÚN ÁNGULO)
 
 ${angleVisuals.toLowerCase().includes('paso') || angleVisuals.toLowerCase().includes('step') || angleVisuals.toLowerCase().includes('roadmap') ? `
-🔹 TIPO: TIMELINE / ROADMAP
-- Timeline horizontal en la parte inferior
-- 4-7 pasos con conectores de línea gradiente (azul → cyan)
-- Cada paso: Círculo con checkmark ✓ + texto corto (Día 1, Día 3, etc.)
-- Último paso: Ícono de IA/cerebro brillante como "meta final"
-- Checkmarks con glow verde/cyan
-- Estilo: Glassmorphism con blur sutil
+🔹 ESTILO TIMELINE / PROCESO:
+- No hacer un diagrama aburrido. Hacerlo inmersivo.
+- Pasos flotando en el espacio 3D.
+- Conectores de luz o energía.
 ` : ''}
 
 ${angleVisuals.toLowerCase().includes('compar') || angleVisuals.toLowerCase().includes('vs') || angleVisuals.toLowerCase().includes('versus') ? `
-🔹 TIPO: COMPARACIÓN / CARDS
-- 3 cards flotantes en perspectiva 3D (ligeramente inclinadas)
-- Card IZQUIERDA: Roja con ❌ (Lo malo/El problema)
-- Card CENTRO: Amarilla con ❓ (La duda/Lo común)
-- Card DERECHA: Verde brillante con ✅ (La solución)
-- Cada card: Texto corto de 2-3 palabras + ícono
-- Efecto: Hover/floating con sombra suave
-- Borde con glow del color respectivo
+🔹 ESTILO VS / COMPARACIÓN:
+- Contraste visual EXTREMO entre los dos lados.
+- Lado "Malo": Desaturado, caótico, rojo/gris.
+- Lado "Bueno": Vibrante, ordenado, verde/dorado.
+- Separación física o rotura en el medio.
 ` : ''}
-
-${angleVisuals.toLowerCase().includes('kit') || angleVisuals.toLowerCase().includes('herramienta') || angleVisuals.toLowerCase().includes('tool') ? `
-🔹 TIPO: KIT / HERRAMIENTAS
-- 4 cards en fila horizontal
-- Cada card: Ícono holográfico/neon + Nombre corto
-- Ejemplos: "Plantillas", "Workflows", "Checklist", "Ruta"
-- Estilo: Cards con borde verde/cyan brillante
-- Efecto 3D con perspectiva ligera
-` : ''}
-
-## 4. BADGES DE CREDIBILIDAD
-- **Posición**: Esquinas inferiores (izq y der)
-- **Estilo**: Metálico/plateado con borde sutil
-- **Ejemplos**:
-  - "ANTI-HUMO CERTIFICADO" (escudo + check)
-  - "STACK NO-CODE" (badge hexagonal)
-  - "RESULTADOS COMPROBADOS" (estrella)
-  - "GARANTIZADO" (sello)
 
 ## 5. BRANDING INTELLIGENCE
-${brandingInstructions || '- No se proporcionaron assets de branding. Usar diseño genérico premium.'}
+${brandingInstructions || '- Integrar paleta de colores de forma artística, no forzada.'}
 
 ## 6. ESPECIFICACIONES TÉCNICAS
 - **Aspect Ratio**: ${aspectRatio}
-- **Resolución**: 8K render quality
-- **Engine Style**: Unreal Engine 5 / Octane quality
-- **Efectos**: Glassmorphism, bloom suave, depth of field sutil
-- **Safe Zones**: Dejar márgenes arriba/abajo para social media
+- **Resolución**: 8K, Ultra Detailed
+- **Engine Options (Mix & Match)**: Unreal Engine 5, Octane Render, Blender 3D, Photography, Mixed Media.
 - **Colores primarios**: ${primaryColor} / ${secondaryColor}
 
-## 7. CONCEPTO VISUAL DEL ÁNGULO
+## 7. CONCEPTO VISUAL ESPECÍFICO (EL GUIÓN)
 ${angleVisuals}
 
 ═══════════════════════════════════════════════════════════
-OUTPUT: Una infografía publicitaria fotorrealista, de calidad profesional, lista para usar como ad en Meta/TikTok.
+OUTPUT: Una imagen publicitaria CREATIVA, ÚNICA y de ALTO IMPACTO. NO HAGAS SIEMPRE LO MISMO.
 ═══════════════════════════════════════════════════════════
 `;
 };
