@@ -7,6 +7,8 @@ import { Button } from '../ui/Button';
 import { Input, Select } from '../ui/Input';
 import { Badge } from '../ui/Badge';
 import { Modal } from '../ui/Modal';
+import JSZip from 'jszip';
+import { saveAs } from 'file-saver';
 import {
     Play,
     Check,
@@ -286,6 +288,49 @@ export const ImageFactory: React.FC = () => {
         }
     };
 
+    // NEW HANDLER: Download ZIP
+    const handleDownloadZip = async (masterImage: GeneratedImage, variations: GeneratedImage[]) => {
+        try {
+            const zip = new JSZip();
+            const folderName = `variations-${masterImage.id.substring(0, 8)}`;
+
+            // Helper to fetch image as blob
+            const fetchImage = async (url: string) => {
+                const response = await fetch(url);
+                return await response.blob();
+            };
+
+            showNotification('info', 'Preparando descarga ZIP...', 'Descarga Iniciada');
+
+            // Add Master Image
+            try {
+                const masterBlob = await fetchImage(masterImage.url);
+                zip.file(`master-image.png`, masterBlob);
+            } catch (e) {
+                console.error("Error fetching master image", e);
+            }
+
+            // Add Variations
+            await Promise.all(variations.map(async (v, i) => {
+                try {
+                    const blob = await fetchImage(v.url);
+                    zip.file(`variation-${i + 1}.png`, blob);
+                } catch (e) {
+                    console.error(`Error fetching variation ${i}`, e);
+                }
+            }));
+
+            // Generate and save
+            const content = await zip.generateAsync({ type: "blob" });
+            saveAs(content, `${folderName}.zip`);
+            showNotification('success', 'Archivo ZIP descargado con éxito.', 'Descarga Completa');
+
+        } catch (error) {
+            console.error('Error generating ZIP:', error);
+            showNotification('error', 'No se pudo generar el archivo ZIP.', 'Error Descarga');
+        }
+    };
+
     return (
         <div className="max-w-7xl mx-auto space-y-8 animate-fade-in pb-24">
             {/* Header */}
@@ -525,8 +570,21 @@ export const ImageFactory: React.FC = () => {
                                         {/* Right: Variations Grid */}
                                         <div>
                                             <div className="flex items-center justify-between mb-6">
-                                                <h3 className="text-xl font-bold text-white">Galería de Variaciones</h3>
-                                                <Badge variant="outline" className="text-text-muted">{vars.length} generadas</Badge>
+                                                <div className="flex items-center gap-3">
+                                                    <h3 className="text-xl font-bold text-white">Galería de Variaciones</h3>
+                                                    <Badge variant="outline" className="text-text-muted">{vars.length} generadas</Badge>
+                                                </div>
+
+                                                {vars.length > 0 && (
+                                                    <Button
+                                                        size="sm"
+                                                        onClick={() => handleDownloadZip(masterImage, vars)}
+                                                        className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20"
+                                                        icon={<Download size={14} />}
+                                                    >
+                                                        Descargar ZIP
+                                                    </Button>
+                                                )}
                                             </div>
 
                                             {vars.length > 0 ? (
