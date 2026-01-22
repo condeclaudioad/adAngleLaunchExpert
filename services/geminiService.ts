@@ -14,26 +14,55 @@ const getAuthKey = (overrideKey?: string) => {
 };
 
 const cleanJSON = (text: string) => {
-    // 1. Try to find markdown code block first (json or generic)
-    const codeBlockMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+    let workText = text;
+    // 1. Try to find markdown code block first
+    const codeBlockMatch = workText.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
     if (codeBlockMatch && codeBlockMatch[1]) {
-        return codeBlockMatch[1].trim();
+        workText = codeBlockMatch[1];
     }
 
-    // 2. Try to find the outer-most JSON Array (Priority for lists)
-    const arrayMatch = text.match(/\[[\s\S]*\]/);
-    if (arrayMatch) {
-        return arrayMatch[0];
+    // 2. Find first distinct JSON start
+    const firstOpen = workText.indexOf('{');
+    const firstArray = workText.indexOf('[');
+
+    let startIndex = -1;
+    let isObject = false;
+
+    if (firstOpen !== -1 && (firstArray === -1 || firstOpen < firstArray)) {
+        startIndex = firstOpen;
+        isObject = true;
+    } else if (firstArray !== -1) {
+        startIndex = firstArray;
+        isObject = false;
     }
 
-    // 3. Try to find the outer-most JSON Object
-    const objectMatch = text.match(/\{[\s\S]*\}/);
-    if (objectMatch) {
-        return objectMatch[0];
+    if (startIndex === -1) return workText.trim();
+
+    // 3. Stack-based simple extractor
+    let openCount = 0;
+    let inString = false;
+    let isEscaped = false;
+
+    for (let i = startIndex; i < workText.length; i++) {
+        const char = workText[i];
+        if (isEscaped) { isEscaped = false; continue; }
+        if (char === '\\') { isEscaped = true; continue; }
+        if (char === '"') { inString = !inString; continue; }
+
+        if (!inString) {
+            if (isObject && char === '{') openCount++;
+            else if (isObject && char === '}') openCount--;
+            else if (!isObject && char === '[') openCount++;
+            else if (!isObject && char === ']') openCount--;
+
+            if (openCount === 0) {
+                return workText.substring(startIndex, i + 1);
+            }
+        }
     }
 
-    // 4. Fallback: just return the text (maybe already clean)
-    return text.trim();
+    // Fallback: if we never balanced, return from start
+    return workText.substring(startIndex).trim();
 };
 
 const safeJSONParse = <T>(text: string, fallback: T | null = null): T => {
