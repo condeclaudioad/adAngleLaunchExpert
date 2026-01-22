@@ -85,7 +85,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                     <div className="text-[10px] text-text-muted uppercase font-bold tracking-wider mb-1">Proyecto Activo</div>
                     <div className="font-medium text-white truncate text-sm">{currentBusiness.name}</div>
                     <div className="text-[10px] text-text-secondary mt-0.5 truncate opacity-70">
-                      {currentBusiness.knowledgeBase?.structuredAnalysis?.userPersona.substring(0, 25) || 'Configurando...'}...
+                      {currentBusiness.knowledgeBase?.structuredAnalysis?.avatar?.substring(0, 25) || 'Configurando...'}
                     </div>
                   </div>
                   <div className="w-6 h-6 rounded-full bg-accent-primary/10 flex items-center justify-center text-accent-primary">
