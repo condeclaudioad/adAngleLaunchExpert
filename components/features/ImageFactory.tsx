@@ -288,46 +288,85 @@ export const ImageFactory: React.FC = () => {
         }
     };
 
+    // Helper: Base64 to Blob
+    const base64ToBlob = (base64: string, contentType: string = 'image/png'): Blob => {
+        const byteCharacters = atob(base64.split(',')[1]);
+        const byteArrays = [];
+        for (let offset = 0; offset < byteCharacters.length; offset += 512) {
+            const slice = byteCharacters.slice(offset, offset + 512);
+            const byteNumbers = new Array(slice.length);
+            for (let i = 0; i < slice.length; i++) {
+                byteNumbers[i] = slice.charCodeAt(i);
+            }
+            const byteArray = new Uint8Array(byteNumbers);
+            byteArrays.push(byteArray);
+        }
+        return new Blob(byteArrays, { type: contentType });
+    };
+
     // NEW HANDLER: Download ZIP
     const handleDownloadZip = async (masterImage: GeneratedImage, variations: GeneratedImage[]) => {
         try {
             const zip = new JSZip();
-            const folderName = `variations-${masterImage.id.substring(0, 8)}`;
-
-            // Helper to fetch image as blob
-            const fetchImage = async (url: string) => {
-                const response = await fetch(url);
-                return await response.blob();
-            };
+            // Use hook or timestamp for folder name to be more descriptive
+            const cleanHook = masterImage.prompt.match(/HOOK:\s*"?(.*?)"?(\.|$)/)?.[1]?.substring(0, 15)?.replace(/[^a-z0-9]/gi, '_') || "set";
+            const folderName = `ad_${cleanHook}_${masterImage.id.substring(0, 4)}`;
 
             showNotification('info', 'Preparando descarga ZIP...', 'Descarga Iniciada');
 
             // Add Master Image
             try {
-                const masterBlob = await fetchImage(masterImage.url);
-                zip.file(`master-image.png`, masterBlob);
+                // Check if it's base64 (likely) or URL
+                let masterBlob: Blob;
+                if (masterImage.url.startsWith('data:')) {
+                    masterBlob = base64ToBlob(masterImage.url);
+                } else {
+                    const response = await fetch(masterImage.url);
+                    masterBlob = await response.blob();
+                }
+                zip.file(`${folderName}/master_01.png`, masterBlob);
             } catch (e) {
-                console.error("Error fetching master image", e);
+                console.error("Error processing master image", e);
             }
 
             // Add Variations
-            await Promise.all(variations.map(async (v, i) => {
+            variations.forEach((v, i) => {
                 try {
-                    const blob = await fetchImage(v.url);
-                    zip.file(`variation-${i + 1}.png`, blob);
+                    let varBlob: Blob;
+                    if (v.url.startsWith('data:')) {
+                        varBlob = base64ToBlob(v.url);
+                    } else {
+                        // We skip fetch here to avoid cors/network issues if possible, but if not base64 we have to try
+                        // Warning: if this is a remote URL without CORS, it might fail.
+                        // Ideally we should have base64 in memory.
+                        return; // Skip if not base64 for now to be safe, or implement fetch if needed. 
+                        // Actually, let's keep the fetch fallback but wrapped carefully.
+                    }
+                    zip.file(`${folderName}/variation_${i + 1}.png`, varBlob);
                 } catch (e) {
-                    console.error(`Error fetching variation ${i}`, e);
+                    console.error(`Error processing variation ${i}`, e);
                 }
+            });
+
+            // If we have URL based variations that we missed above:
+            await Promise.all(variations.map(async (v, i) => {
+                if (v.url.startsWith('data:')) return; // Already handled
+                try {
+                    const response = await fetch(v.url);
+                    const blob = await response.blob();
+                    zip.file(`${folderName}/variation_${i + 1}.png`, blob);
+                } catch (e) { console.error("Fetch failed", e); }
             }));
+
 
             // Generate and save
             const content = await zip.generateAsync({ type: "blob" });
-            saveAs(content, `${folderName}.zip`);
+            saveAs(content, `${folderName}_complete.zip`);
             showNotification('success', 'Archivo ZIP descargado con éxito.', 'Descarga Completa');
 
         } catch (error) {
             console.error('Error generating ZIP:', error);
-            showNotification('error', 'No se pudo generar el archivo ZIP.', 'Error Descarga');
+            showNotification('error', 'No se pudo generar el archivo ZIP. Intente descargar individualmente.', 'Error Descarga');
         }
     };
 
@@ -564,27 +603,25 @@ export const ImageFactory: React.FC = () => {
                                                     {isProcessing ? <Loader2 className="animate-spin" /> : <Sparkles className="mr-2 w-4 h-4 text-pink-500" />}
                                                     Generar ({count})
                                                 </Button>
+
+                                                {/* ---- NEW EXPORT BUTTON ---- */}
+                                                <Button
+                                                    onClick={() => handleDownloadZip(masterImage, vars)}
+                                                    className="w-full bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white font-bold border-0 shadow-lg shadow-orange-900/20"
+                                                    size="sm"
+                                                    icon={<Download size={16} />}
+                                                >
+                                                    Exportar Set
+                                                </Button>
+                                                {/* --------------------------- */}
                                             </div>
                                         </div>
 
                                         {/* Right: Variations Grid */}
                                         <div>
-                                            <div className="flex items-center justify-between mb-6">
-                                                <div className="flex items-center gap-3">
-                                                    <h3 className="text-xl font-bold text-white">Galería de Variaciones</h3>
-                                                    <Badge variant="outline" className="text-text-muted">{vars.length} generadas</Badge>
-                                                </div>
-
-                                                {vars.length > 0 && (
-                                                    <Button
-                                                        size="sm"
-                                                        onClick={() => handleDownloadZip(masterImage, vars)}
-                                                        className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20"
-                                                        icon={<Download size={14} />}
-                                                    >
-                                                        Descargar ZIP
-                                                    </Button>
-                                                )}
+                                            <div className="flex items-center justify-center md:justify-start gap-3 mb-6">
+                                                <h3 className="text-xl font-bold text-white">Galería de Variaciones</h3>
+                                                <Badge variant="outline" className="text-text-muted">{vars.length} generadas</Badge>
                                             </div>
 
                                             {vars.length > 0 ? (

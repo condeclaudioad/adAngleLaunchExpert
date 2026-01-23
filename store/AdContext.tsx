@@ -2,11 +2,18 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { KnowledgeBase, ImageAnalysis, Angle, GeneratedImage, AppStep, ApprovalStatus, Branding, Business, User } from '../types';
 import {
-  saveImageToDb, getImagesFromDb, deleteImageFromDb,
+  saveImageToDb, getImagesFromDb as getImagesFromCloud, deleteImageFromDb,
   saveBusinessToDb, getBusinessesFromDb, deleteBusinessFromDb,
   getVisualAnalyses, getExistingAngles, saveAngleToDb, saveAnalysisToDb,
   deleteAnalysisFromDb, deleteAngleFromDb, deleteAllAnglesFromDb, updateBusinessInDb
 } from '../services/dbService';
+// Import Local Storage Service (IndexedDB)
+import {
+  saveImageToDB as saveToLocalDB,
+  getAllImagesFromDB as getFromLocalDB,
+  deleteImageFromDB as deleteFromLocalDB
+} from '../services/storageService';
+
 import { onAuthStateChange, checkIsVip, signOut, signInWithEmail, signUpWithEmail } from '../services/supabaseClient';
 import { VIP_EMAILS } from '../constants';
 import { AppError, errorHandler } from '../services/errorHandler';
@@ -369,9 +376,46 @@ export const AdProvider: React.FC<{ children: React.ReactNode }> = ({ children }
 
           setBusinesses(userBusinesses);
 
-          // Load Images
-          const dbImages = await getImagesFromDb();
-          setGeneratedImages(dbImages);
+          // —————————————————————————————————————————————————————————————
+          // DUAL LOAD STRATEGY (Correct Fix for Memory/Storage Issues)
+          // —————————————————————————————————————————————————————————————
+          const loadImages = async () => {
+            // 1. Load from Cloud (Supabase)
+            const cloudImages = await getImagesFromCloud();
+
+            // 2. Load from Local (IndexedDB)
+            const localImages = await getFromLocalDB();
+
+            // 3. Merge Strategies
+            // Create a map to deduplicate by ID.
+            // If collision: Prefer Cloud if 'approved', but generally Local might have newer data if offline?
+            // Actually, Supabase is source of truth, but Local has the heavy base64 chunks that might be missing if Supabase failed.
+            const mergedMap = new Map();
+
+            // First fill with cloud (metadata is usually reliable)
+            cloudImages.forEach(img => mergedMap.set(img.id, img));
+
+            // Overlay local references. 
+            // IMPORTANT: If cloud URL is missing or broken, but local has it, use local.
+            localImages.forEach(localImg => {
+              const existing = mergedMap.get(localImg.id);
+              if (existing) {
+                // If existing (Cloud) has no URL or local has a heavy dataURI while cloud returned a link, keep local?
+                // For this specific app, cloud fails to save big images. So local is likely the ONLY survivor for new gens.
+                // We overwrite cloud with local if local exists, because local is 'cache'.
+                // Actually, safer to just add if missing, or update if timestamp needs it.
+                mergedMap.set(localImg.id, localImg);
+              } else {
+                // If not in cloud (failed save), definitely keep local
+                mergedMap.set(localImg.id, localImg);
+              }
+            });
+
+            setGeneratedImages(Array.from(mergedMap.values()));
+          };
+
+          loadImages();
+
 
           // Load Analysis History
           const dbAnalyses = await getVisualAnalyses();
@@ -610,10 +654,15 @@ export const AdProvider: React.FC<{ children: React.ReactNode }> = ({ children }
   const addGeneratedImage = async (img: GeneratedImage) => {
     setGeneratedImages(prev => [...prev, img]);
     try {
+      // 1. Save to Local IndexedDB (Guaranteed & Fast)
+      await saveToLocalDB(img);
+
+      // 2. Try Save to Cloud
+      // console.log("Backing up to cloud...");
       await saveImageToDb(img);
     } catch (e) {
       // Silently fail on storage limit, but keep in memory
-      console.warn("Could not save to DB", e);
+      console.warn("Could not save to Cloud DB (likely size limit)", e);
     }
   };
 
@@ -624,6 +673,8 @@ export const AdProvider: React.FC<{ children: React.ReactNode }> = ({ children }
       );
       const updatedImg = newImages.find(i => i.id === id);
       if (updatedImg) {
+        // Update both storages
+        saveToLocalDB(updatedImg).catch(console.warn);
         saveImageToDb(updatedImg).catch(console.warn);
       }
       return newImages;
@@ -637,6 +688,7 @@ export const AdProvider: React.FC<{ children: React.ReactNode }> = ({ children }
       );
       const updatedImg = newImages.find(i => i.id === id);
       if (updatedImg) {
+        saveToLocalDB(updatedImg).catch(console.warn);
         saveImageToDb(updatedImg).catch(console.warn);
       }
       return newImages;
@@ -649,7 +701,10 @@ export const AdProvider: React.FC<{ children: React.ReactNode }> = ({ children }
         img.id === id ? { ...img, approvalStatus: status } : img
       );
       const updatedImg = newImages.find(i => i.id === id);
-      if (updatedImg) saveImageToDb(updatedImg).catch(console.warn);
+      if (updatedImg) {
+        saveToLocalDB(updatedImg).catch(console.warn);
+        saveImageToDb(updatedImg).catch(console.warn);
+      }
       return newImages;
     });
   };
@@ -658,16 +713,24 @@ export const AdProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     setGeneratedImages(prev => {
       const newImages = prev.map(img => img.id === id ? { ...img, feedback } : img);
       const updatedImg = newImages.find(i => i.id === id);
-      if (updatedImg) saveImageToDb(updatedImg).catch(console.warn);
+      if (updatedImg) {
+        saveToLocalDB(updatedImg).catch(console.warn);
+        saveImageToDb(updatedImg).catch(console.warn);
+      }
       return newImages;
     });
   };
 
   const deleteImage = async (id: string) => {
     setGeneratedImages(prev => prev.filter(img => img.id !== id && img.parentId !== id));
+
+    // Delete from both
+    await deleteFromLocalDB(id);
     await deleteImageFromDb(id);
+
     const variations = generatedImages.filter(i => i.parentId === id);
     for (const v of variations) {
+      await deleteFromLocalDB(v.id);
       await deleteImageFromDb(v.id);
     }
   };
