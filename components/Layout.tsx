@@ -27,7 +27,7 @@ const NAV_ITEMS = [
   { step: AppStep.ANALYSIS, label: 'Análisis Visual', icon: Eye },
   { step: AppStep.ANGLES, label: 'Ángulos de Venta', icon: Zap },
   { step: AppStep.GENERATION, label: 'Fábrica Creativa', icon: ImageIcon },
-  { step: AppStep.EXPORT, label: 'Export & Drive', icon: Cloud },
+  { step: AppStep.EXPORT, label: 'Próximamente', icon: Cloud },
 ];
 
 export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {

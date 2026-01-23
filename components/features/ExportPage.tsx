@@ -87,13 +87,7 @@ export const ExportPage: React.FC = () => {
                     color="text-blue-500"
                     delay={100}
                 />
-                <FeatureCard
-                    icon={Youtube}
-                    title="Google & YouTube"
-                    description="Exportación nativa para campañas P-Max y YouTube Shorts con adaptación automática de formatos."
-                    color="text-red-500"
-                    delay={200}
-                />
+
                 <FeatureCard
                     icon={BarChart3}
                     title="Predictive Analytics"
@@ -125,25 +119,7 @@ export const ExportPage: React.FC = () => {
             </div>
 
             {/* CTA Box */}
-            <div className="max-w-2xl mx-auto mt-16 text-center animate-fade-in-up" style={{ animationDelay: '700ms' }}>
-                <Card className="p-8 border border-white/10 bg-gradient-to-br from-bg-secondary to-bg-elevated">
-                    <h3 className="text-2xl font-bold text-white mb-4">¿Listo para lo que sigue?</h3>
-                    <p className="text-text-secondary mb-8">
-                        Estamos construyendo el futuro de la publicidad automatizada. Mantente atento a las actualizaciones.
-                    </p>
-                    <div className="flex justify-center gap-4">
-                        <Button variant="secondary" onClick={() => window.open('https://twitter.com', '_blank')}>
-                            Seguir Actualizaciones
-                        </Button>
-                        <Button
-                            className="bg-white text-black hover:bg-gray-200"
-                            onClick={() => alert("¡Gracias por tu interés! Te avisaremos cuando V2.0 esté disponible.")}
-                        >
-                            Unirse a la Waitlist
-                        </Button>
-                    </div>
-                </Card>
-            </div>
+
 
             {/* Footer Navigation */}
             <div className="flex justify-center pt-12 border-t border-white/5">
