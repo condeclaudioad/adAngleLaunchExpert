@@ -1,244 +1,148 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useAdContext } from '../../store/AdContext';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 import { AppStep } from '../../types';
-import JSZip from 'jszip';
-import { saveAs } from 'file-saver';
 import {
     Rocket,
-    Download,
     Share2,
     Facebook,
     Instagram,
-    CheckCircle2,
-    ArrowRight,
+    Youtube,
     LayoutGrid,
-    Box,
-    FileText,
-    Sparkles,
-    ShieldCheck
+    Zap,
+    Target,
+    BarChart3,
+    ArrowRight
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 export const ExportPage: React.FC = () => {
-    const { generatedImages, angles, knowledgeBase, branding, setStep } = useAdContext();
-    const approvedImages = generatedImages.filter(img => img.approved);
-    const [isDownloading, setIsDownloading] = useState(false);
+    const { setStep } = useAdContext();
 
-    const handleDownloadAll = async () => {
-        setIsDownloading(true);
-        try {
-            const zip = new JSZip();
-            const dateStr = new Date().toISOString().split('T')[0];
-            const folderName = `LaunchExpert_Campaign_${dateStr}`;
-            const root = zip.folder(folderName);
+    // Trigger celebration on mount
+    React.useEffect(() => {
+        const duration = 3 * 1000;
+        const animationEnd = Date.now() + duration;
+        const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
 
-            if (!root) return;
+        const randomInRange = (min: number, max: number) => Math.random() * (max - min) + min;
 
-            // 1. Text Assets
-            let copyText = `# Campaign Assets - ${dateStr}\n\n`;
-            copyText += `## Product: ${knowledgeBase.structuredAnalysis?.productName || 'N/A'}\n`;
-            copyText += `## Big Promise: ${knowledgeBase.structuredAnalysis?.bigPromise || 'N/A'}\n\n`;
+        const interval: any = setInterval(function () {
+            const timeLeft = animationEnd - Date.now();
 
-            copyText += `## Selected Angles\n`;
-            angles.filter(a => a.selected).forEach((a, i) => {
-                copyText += `\n### Angle ${i + 1}: ${a.name}\n`;
-                copyText += `Hook: "${a.hook}"\n`;
-                copyText += `Evidence/Logic: ${a.description}\n`;
-                copyText += `\n--- AD COPY (PRIMARY TEXT) ---\n${a.adCopy || '(No copy generated)'}\n\n`;
-            });
-
-            root.file("Campaign_Brief.txt", copyText);
-
-            // 2. Images
-            const imgFolder = root.folder("Creatives");
-            if (imgFolder) {
-                // Use Promise.all for parallel processing if possible, but sequential is safer for blob fetching issues
-                for (let i = 0; i < approvedImages.length; i++) {
-                    const img = approvedImages[i];
-                    try {
-                        const angleName = angles.find(a => a.id === img.angleId)?.name || 'Variation';
-                        const safeName = angleName.replace(/[^a-z0-9]/gi, '_').substring(0, 20);
-                        const name = `Creative_${safeName}_${img.id.slice(-4)}.png`;
-
-                        if (img.url.startsWith('data:')) {
-                            // Handle Base64 Data URI directly (More reliable/fast)
-                            const base64Data = img.url.split(',')[1];
-                            imgFolder.file(name, base64Data, { base64: true });
-                        } else {
-                            // Handle Remote URLs (Supabase/External)
-                            const response = await fetch(img.url);
-                            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                            const blob = await response.blob();
-                            imgFolder.file(name, blob);
-                        }
-                    } catch (err) {
-                        console.error("Failed to add image to ZIP:", img.id, err);
-                    }
-                }
+            if (timeLeft <= 0) {
+                return clearInterval(interval);
             }
 
-            const content = await zip.generateAsync({ type: "blob" });
-            saveAs(content, `${folderName}.zip`);
+            const particleCount = 50 * (timeLeft / duration);
+            confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } });
+            confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } });
+        }, 250);
 
-            confetti({
-                particleCount: 150,
-                spread: 100,
-                origin: { y: 0.6 },
-                colors: ['#FF5722', '#F59E0B', '#FFFFFF']
-            });
+        return () => clearInterval(interval);
+    }, []);
 
-        } catch (e) {
-            console.error("Export failed", e);
-            alert("Error creando el ZIP. Revisa la consola.");
-        } finally {
-            setIsDownloading(false);
-        }
-    };
-
-    const AssetSummaryCard = ({ icon: Icon, label, value, color, delay }: any) => (
-        <div className="animate-fade-in-up" style={{ animationDelay: `${delay}ms` }}>
-            <Card className="flex items-center gap-5 p-6 bg-bg-secondary/50 backdrop-blur-md border-white/5 hover:border-accent-primary/20 transition-all hover:-translate-y-1">
-                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg ${color}`}>
-                    <Icon size={28} strokeWidth={1.5} />
-                </div>
-                <div>
-                    <p className="text-3xl font-bold text-white leading-none mb-1">{value}</p>
-                    <p className="text-xs font-bold text-text-muted uppercase tracking-wider">{label}</p>
-                </div>
-            </Card>
-        </div>
+    const FeatureCard = ({ icon: Icon, title, description, color, delay }: any) => (
+        <Card className="p-6 bg-bg-secondary/30 border-white/5 backdrop-blur-sm relative overflow-hidden group hover:bg-bg-secondary/50 transition-all animate-fade-in-up" style={{ animationDelay: `${delay}ms` }}>
+            <div className={`absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity ${color}`}>
+                <Icon size={80} />
+            </div>
+            <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 ${color} bg-white/5`}>
+                <Icon size={24} />
+            </div>
+            <h3 className="text-xl font-bold text-white mb-2">{title}</h3>
+            <p className="text-sm text-text-secondary mb-4">{description}</p>
+            <Badge variant="outline" className="text-[10px] py-0 border-white/10 text-text-muted">Próximamente en V2.0</Badge>
+        </Card>
     );
 
     return (
         <div className="max-w-6xl mx-auto space-y-12 animate-fade-in pb-24">
             {/* Header */}
             <div className="text-center space-y-6 pt-10 pb-6 relative">
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-2xl h-64 bg-accent-primary/5 blur-[100px] -z-10 rounded-full" />
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-2xl h-64 bg-accent-primary/10 blur-[100px] -z-10 rounded-full" />
 
-                <Badge variant="vip" size="lg" className="mb-6 mx-auto px-4 py-1.5 bg-gradient-to-r from-orange-500/20 to-red-500/20 text-orange-400 border-orange-500/30">
+                <Badge variant="vip" size="lg" className="mb-6 mx-auto px-4 py-1.5 bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-blue-400 border-blue-500/30">
                     <Rocket className="w-4 h-4 mr-2" /> Misión Cumplida
                 </Badge>
 
                 <h2 className="text-6xl font-bold text-white tracking-tight">
-                    Launchpad de <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent-primary to-orange-400">Campaña</span>
+                    Launchpad <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">(V2.0)</span>
                 </h2>
 
                 <p className="text-text-secondary text-xl max-w-2xl mx-auto leading-relaxed">
-                    Todo listo. Has desbloqueado una campaña de alto rendimiento.<br />
-                    Descarga tus activos y prepárate para escalar.
+                    Has completado la generación de activos. <br />
+                    Esta sección se transformará en tu centro de comando para lanzar campañas reales.
                 </p>
             </div>
 
-            {/* Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 px-4 md:px-0">
-                <AssetSummaryCard
-                    icon={CheckCircle2}
-                    label="Ángulos Ganadores"
-                    value={angles.filter(a => a.selected).length}
-                    color="bg-blue-500/10 text-blue-500 ring-1 ring-blue-500/20"
+            {/* Coming Soon Grid */}
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <FeatureCard
+                    icon={Target}
+                    title="Meta Ads Integration"
+                    description="Conecta tu cuenta publicitaria y lanza tus ganadores directamente a Facebook e Instagram en un clic."
+                    color="text-blue-500"
                     delay={100}
                 />
-                <AssetSummaryCard
-                    icon={LayoutGrid}
-                    label="Creativos Listos"
-                    value={approvedImages.length}
-                    color="bg-emerald-500/10 text-emerald-500 ring-1 ring-emerald-500/20"
+                <FeatureCard
+                    icon={Youtube}
+                    title="Google & YouTube"
+                    description="Exportación nativa para campañas P-Max y YouTube Shorts con adaptación automática de formatos."
+                    color="text-red-500"
                     delay={200}
                 />
-                <AssetSummaryCard
-                    icon={Rocket}
-                    label="Potencial de ROAS"
-                    value="Alta"
-                    color="bg-purple-500/10 text-purple-500 ring-1 ring-purple-500/20"
+                <FeatureCard
+                    icon={BarChart3}
+                    title="Predictive Analytics"
+                    description="AI que predice el CTR y ROAS de tus creativos antes de gastar un solo centavo en publicidad."
+                    color="text-emerald-500"
                     delay={300}
+                />
+                <FeatureCard
+                    icon={Zap}
+                    title="Instant A/B Testing"
+                    description="Genera automáticamente estructuras de campaña para testear ángulos y hooks masivamente."
+                    color="text-yellow-500"
+                    delay={400}
+                />
+                <FeatureCard
+                    icon={LayoutGrid}
+                    title="Creative Refresh"
+                    description="Detecta fatiga de anuncios y genera nuevas variaciones visuales automáticamente."
+                    color="text-pink-500"
+                    delay={500}
+                />
+                <FeatureCard
+                    icon={Share2}
+                    title="Team Collaboration"
+                    description="Comparte links de revisión con tu equipo o clientes sin necesidad de descargar archivos."
+                    color="text-orange-500"
+                    delay={600}
                 />
             </div>
 
-            {/* Main Action Area */}
-            <div className="grid md:grid-cols-12 gap-8">
-                {/* Download Card */}
-                <div className="md:col-span-7 animate-fade-in-up" style={{ animationDelay: '400ms' }}>
-                    <Card className="h-full p-8 md:p-10 border-2 border-accent-primary/20 bg-gradient-to-br from-bg-secondary to-bg-elevated relative overflow-hidden group">
-
-                        <div className="absolute inset-0 bg-accent-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-
-                        <div className="relative z-10 flex flex-col justify-center items-center text-center space-y-8 h-full">
-                            <div className="relative">
-                                <div className="absolute inset-0 bg-accent-primary blur-3xl opacity-20 animate-pulse" />
-                                <div className="w-24 h-24 bg-gradient-to-br from-accent-primary to-orange-600 rounded-2xl flex items-center justify-center text-white mb-2 shadow-2xl shadow-orange-900/50 transform group-hover:scale-110 transition-transform duration-500">
-                                    <Download size={48} />
-                                </div>
-                            </div>
-
-                            <div className="space-y-2">
-                                <h3 className="text-3xl font-bold text-white">Descargar Pack Completo</h3>
-                                <p className="text-text-muted text-sm max-w-sm mx-auto">
-                                    Incluye <span className="text-white font-medium">Brief Estratégico (.txt)</span> y todas las <span className="text-white font-medium">Imágenes en alta resolución</span>.
-                                </p>
-                            </div>
-
-                            <Button
-                                size="lg"
-                                onClick={handleDownloadAll}
-                                loading={isDownloading}
-                                className="w-full max-w-sm shadow-glow-orange text-lg py-7 rounded-xl bg-accent-primary text-white hover:bg-accent-secondary hover:scale-105 transition-all font-bold"
-                            >
-                                {isDownloading ? 'Comprimiendo Activos...' : 'Descargar ZIP Ahora'}
-                            </Button>
-
-                            <div className="flex items-center gap-4 text-[10px] text-text-muted uppercase font-bold tracking-widest opacity-60">
-                                <span className="flex items-center gap-1"><ShieldCheck size={12} /> Secure 256-bit</span>
-                                <span className="flex items-center gap-1"><Box size={12} /> .ZIP Format</span>
-                            </div>
-                        </div>
-                    </Card>
-                </div>
-
-                {/* Integration Info */}
-                <div className="md:col-span-5 space-y-6 animate-fade-in-up" style={{ animationDelay: '500ms' }}>
-                    <Card className="p-8 border border-white/5 bg-bg-secondary/30 backdrop-blur-md h-full flex flex-col">
-                        <div className="mb-6">
-                            <h3 className="text-xl font-bold text-white mb-2 flex items-center gap-2">
-                                <Share2 size={20} className="text-blue-400" /> Integraciones
-                            </h3>
-                            <p className="text-sm text-text-secondary">Exportación directa a plataformas (Próximamente v2.0)</p>
-                        </div>
-
-                        <div className="space-y-4 flex-1">
-                            <div className="group p-4 rounded-xl bg-bg-elevated border border-white/5 flex items-center justify-between opacity-50 hover:opacity-100 transition-opacity cursor-not-allowed">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-2 bg-[#1877F2]/20 text-[#1877F2] rounded-lg">
-                                        <Facebook size={20} />
-                                    </div>
-                                    <span className="font-medium text-white">Facebook Ads</span>
-                                </div>
-                                <Badge variant="secondary" size="sm">Pro</Badge>
-                            </div>
-
-                            <div className="group p-4 rounded-xl bg-bg-elevated border border-white/5 flex items-center justify-between opacity-50 hover:opacity-100 transition-opacity cursor-not-allowed">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-2 bg-[#E4405F]/20 text-[#E4405F] rounded-lg">
-                                        <Instagram size={20} />
-                                    </div>
-                                    <span className="font-medium text-white">Instagram Ads</span>
-                                </div>
-                                <Badge variant="secondary" size="sm">Pro</Badge>
-                            </div>
-                        </div>
-
-                        <div className="mt-8 pt-6 border-t border-white/5 text-center">
-                            <p className="text-xs text-text-muted mb-4">
-                                ¿Quieres escalar más rápido con agenciamiento manual?
-                            </p>
-                            <Button variant="ghost" className="w-full text-text-secondary hover:text-white border border-white/5 hover:bg-white/5">
-                                Contactar Soporte VIP <ArrowRight size={14} className="ml-2" />
-                            </Button>
-                        </div>
-                    </Card>
-                </div>
+            {/* CTA Box */}
+            <div className="max-w-2xl mx-auto mt-16 text-center animate-fade-in-up" style={{ animationDelay: '700ms' }}>
+                <Card className="p-8 border border-white/10 bg-gradient-to-br from-bg-secondary to-bg-elevated">
+                    <h3 className="text-2xl font-bold text-white mb-4">¿Listo para lo que sigue?</h3>
+                    <p className="text-text-secondary mb-8">
+                        Estamos construyendo el futuro de la publicidad automatizada. Mantente atento a las actualizaciones.
+                    </p>
+                    <div className="flex justify-center gap-4">
+                        <Button variant="secondary" onClick={() => window.open('https://twitter.com', '_blank')}>
+                            Seguir Actualizaciones
+                        </Button>
+                        <Button
+                            className="bg-white text-black hover:bg-gray-200"
+                            onClick={() => alert("¡Gracias por tu interés! Te avisaremos cuando V2.0 esté disponible.")}
+                        >
+                            Unirse a la Waitlist
+                        </Button>
+                    </div>
+                </Card>
             </div>
 
             {/* Footer Navigation */}
@@ -258,3 +162,4 @@ export const ExportPage: React.FC = () => {
         </div>
     );
 };
+
