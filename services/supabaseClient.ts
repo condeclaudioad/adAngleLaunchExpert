@@ -1,7 +1,7 @@
 // services/supabaseClient.ts - NUEVO ARCHIVO
 
 import { createClient, SupabaseClient, User as SupabaseUser } from '@supabase/supabase-js';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../constants';
+import { SUPABASE_URL, SUPABASE_ANON_KEY, VIP_EMAILS } from '../constants';
 import { User, VipUser } from '../types';
 
 // ═══════════════════════════════════════════════════════════
@@ -77,16 +77,31 @@ export const onAuthStateChange = (callback: (user: SupabaseUser | null) => void)
 // ═══════════════════════════════════════════════════════════
 
 export const checkIsVip = async (email: string): Promise<boolean> => {
-    // Use RPC to check VIP status securely (works for anon users)
-    const { data, error } = await getSupabase().rpc('check_is_vip', {
-        check_email: email
-    });
+    if (!email) return false;
+    const lowerEmail = email.toLowerCase().trim();
 
-    if (error) {
-        console.error('VIP check error:', error);
+    // 1. Check Local Hardcoded List (Fastest & Most Reliable for constants)
+    if (VIP_EMAILS.includes(lowerEmail)) {
+        console.log(`VIP Access Granted (Local List): ${lowerEmail}`);
+        return true;
+    }
+
+    // 2. Use RPC to check VIP status securely (works for anon users)
+    try {
+        const { data, error } = await getSupabase().rpc('check_is_vip', {
+            check_email: lowerEmail
+        });
+
+        if (error) {
+            console.warn('VIP RPC check error (ignoring if local passed):', error);
+            // Don't return false yet if we want to be lenient, but strictly speaking if not in local and RPC fails, it's false.
+            return false;
+        }
+        return !!data;
+    } catch (e) {
+        console.error("Critical VIP Check Error", e);
         return false;
     }
-    return !!data;
 };
 
 export const getAllVipUsers = async (): Promise<VipUser[]> => {
